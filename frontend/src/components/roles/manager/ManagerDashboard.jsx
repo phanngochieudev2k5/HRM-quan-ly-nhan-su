@@ -71,18 +71,24 @@ export default function ManagerDashboard({ onNavigate }) {
           </div>
           <div className="card-b">
             <div className="mgr-member-list">
-              {teamEmps.map(emp => (
-                <div key={emp.id} className="mgr-member-item">
-                  <div className="mgr-member-info">
-                    <img src={emp.avatar} alt={emp.name} className="mgr-avatar" />
-                    <div>
-                      <div className="mgr-member-name">{emp.name}</div>
-                      <div className="mgr-member-pos">{emp.position} · {emp.id}</div>
-                    </div>
-                  </div>
-                  <StatusBadge status={emp.status} />
+              {teamEmps.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                  Chưa có nhân sự nào trong bộ phận.
                 </div>
-              ))}
+              ) : (
+                teamEmps.map(emp => (
+                  <div key={emp.id} className="mgr-member-item">
+                    <div className="mgr-member-info">
+                      <img src={emp.avatar} alt={emp.name} className="mgr-avatar" />
+                      <div>
+                        <div className="mgr-member-name">{emp.name}</div>
+                        <div className="mgr-member-pos">{emp.position} · {emp.id}</div>
+                      </div>
+                    </div>
+                    <StatusBadge status={emp.status} />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -100,43 +106,51 @@ export default function ManagerDashboard({ onNavigate }) {
           </div>
           <div className="card-b">
             <div className="mgr-task-list">
-              {leaveRequestsData.filter(l => l.status === 'PENDING').map(l => (
-                <div key={l.id} className="mgr-req-card mgr-req-leave">
-                  <div>
-                    <div className="mgr-req-title" style={{ color: '#92400e' }}>
-                      {l.empName} - Xin nghỉ phép ({l.days} ngày)
-                    </div>
-                    <div className="mgr-req-sub" style={{ color: '#b45309' }}>
-                      Lý do: {l.reason} · Thời gian: {l.startDate}
-                    </div>
-                  </div>
-                  <button
-                    className="btn pri sm"
-                    onClick={() => onNavigate('manager-leaves')}
-                  >
-                    Xử lý
-                  </button>
+              {leaveRequestsData.filter(l => l.status === 'PENDING').length === 0 && overtimeRequestsData.filter(o => o.status === 'PENDING').length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                  Hiện tại không có yêu cầu nào chờ bạn phê duyệt.
                 </div>
-              ))}
+              ) : (
+                <>
+                  {leaveRequestsData.filter(l => l.status === 'PENDING').map(l => (
+                    <div key={l.id} className="mgr-req-card mgr-req-leave">
+                      <div>
+                        <div className="mgr-req-title" style={{ color: '#92400e' }}>
+                          {l.empName} - Xin nghỉ phép ({l.days} ngày)
+                        </div>
+                        <div className="mgr-req-sub" style={{ color: '#b45309' }}>
+                          Lý do: {l.reason} · Thời gian: {l.startDate}
+                        </div>
+                      </div>
+                      <button
+                        className="btn pri sm"
+                        onClick={() => onNavigate('manager-leaves')}
+                      >
+                        Xử lý
+                      </button>
+                    </div>
+                  ))}
 
-              {overtimeRequestsData.filter(o => o.status === 'PENDING').map(o => (
-                <div key={o.id} className="mgr-req-card mgr-req-ot">
-                  <div>
-                    <div className="mgr-req-title" style={{ color: '#5b21b6' }}>
-                      {o.empName} - Đăng ký tăng ca ({o.hours}h)
+                  {overtimeRequestsData.filter(o => o.status === 'PENDING').map(o => (
+                    <div key={o.id} className="mgr-req-card mgr-req-ot">
+                      <div>
+                        <div className="mgr-req-title" style={{ color: '#5b21b6' }}>
+                          {o.empName} - Đăng ký tăng ca ({o.hours}h)
+                        </div>
+                        <div className="mgr-req-sub" style={{ color: '#6d28d9' }}>
+                          Dự án: {o.project} · Thời gian: {o.date}
+                        </div>
+                      </div>
+                      <button
+                        className="btn pri sm"
+                        onClick={() => onNavigate('manager-overtime')}
+                      >
+                        Xử lý
+                      </button>
                     </div>
-                    <div className="mgr-req-sub" style={{ color: '#6d28d9' }}>
-                      Dự án: {o.project} · Thời gian: {o.date}
-                    </div>
-                  </div>
-                  <button
-                    className="btn pri sm"
-                    onClick={() => onNavigate('manager-overtime')}
-                  >
-                    Xử lý
-                  </button>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Mail, Phone, Calendar, X } from 'lucide-react';
 import PageHeader from '../../common/PageHeader';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
+import { Users } from 'lucide-react';
 import { employeesData, attendanceHistoryData } from '../../../data/mockData';
 import '../../../styles/roles/manager/TeamMembersView.css';
 
 export default function TeamMembersView() {
-  const teamEmployees = employeesData.filter(e => e.department === 'Khối Kỹ Thuật (IT)' || e.manager === 'Trần Thị Bích');
+  const teamEmployees = (employeesData || []).filter(e => e.department === 'Khối Kỹ Thuật (IT)' || e.manager === 'Trần Thị Bích');
   const [selectedMember, setSelectedMember] = useState(null);
 
   return (
@@ -17,8 +19,15 @@ export default function TeamMembersView() {
         subtitle="Theo dõi thông tin liên lạc, hồ sơ pháp lý, tình hình chấm công và trạng thái công tác của thành viên trong nhóm"
       />
 
-      <div className="team-grid">
-        {teamEmployees.map(emp => {
+      {teamEmployees.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Chưa có thành viên trực thuộc bộ phận"
+          description="Danh sách nhân sự thuộc phòng ban quản lý sẽ hiển thị tại đây khi kết nối dữ liệu từ CSDL."
+        />
+      ) : (
+        <div className="team-grid">
+          {teamEmployees.map(emp => {
           const todayAttendance = attendanceHistoryData.find(a => a.empId === emp.id);
           return (
             <div key={emp.id} className="card team-card">
@@ -76,7 +85,8 @@ export default function TeamMembersView() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {selectedMember && (
         <div className="modal-backdrop">

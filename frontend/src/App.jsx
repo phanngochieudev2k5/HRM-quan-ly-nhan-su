@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
+import AuthPage from './components/auth/AuthPage';
 
 import AdminDashboard from './components/roles/admin/AdminDashboard';
 import UserAccountsView from './components/roles/admin/UserAccountsView';
@@ -36,37 +37,79 @@ import HrOvertimeView from './components/roles/hr/HrOvertimeView';
 import HrAssetsView from './components/roles/hr/HrAssetsView';
 import HrReportsView from './components/roles/hr/HrReportsView';
 
-import { employeesData, currentUsersByRole } from './data/mockData';
+import AuthService from './services/AuthService';
+import HrService from './services/HrService';
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState('HR');
-  const [activeModule, setActiveModule] = useState('hr-dashboard');
-  const [activeSubModule, setActiveSubModule] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [employees, setEmployees] = useState(employeesData);
-  const [selectedEmployee, setSelectedEmployee] = useState(employeesData[0]);
+  
+  const [authToken, setAuthToken] = useState(() => AuthService.getToken());
+  const [currentUser, setCurrentUser] = useState(() => AuthService.getCurrentUser());
 
-  const handleRoleChange = (newRole) => {
-    setCurrentRole(newRole);
-    setActiveSubModule(null);
-    switch (newRole) {
+  const [currentRole, setCurrentRole] = useState(() => {
+    const user = AuthService.getCurrentUser();
+    return user?.role || 'Employee';
+  });
+
+  const getDefaultModuleForRole = (role) => {
+    switch (role) {
       case 'Admin':
-        setActiveModule('admin-dashboard');
-        break;
+        return 'admin-dashboard';
       case 'Manager':
-        setActiveModule('manager-dashboard');
-        break;
+        return 'manager-dashboard';
       case 'Employee':
-        setActiveModule('employee-dashboard');
-        break;
+        return 'employee-dashboard';
       case 'Finance':
-        setActiveModule('finance-dashboard');
-        break;
+        return 'finance-dashboard';
       case 'HR':
       default:
-        setActiveModule('hr-dashboard');
-        break;
+        return 'hr-dashboard';
     }
+  };
+
+  const [activeModule, setActiveModule] = useState(() => {
+    const user = AuthService.getCurrentUser();
+    return getDefaultModuleForRole(user?.role || 'Employee');
+  });
+
+  const [activeSubModule, setActiveSubModule] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      handleLogout();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    if (authToken && (currentRole === 'HR' || currentRole === 'Admin')) {
+      HrService.getEmployees().then(data => {
+        if (data && data.length > 0) {
+          setEmployees(data);
+          setSelectedEmployee(data[0]);
+        }
+      });
+    }
+  }, [authToken, currentRole]);
+
+  const handleAuthSuccess = (user, token) => {
+    setAuthToken(token);
+    setCurrentUser(user);
+
+    const userRole = user.role || 'Employee';
+    setCurrentRole(userRole);
+    setActiveSubModule(null);
+    setActiveModule(getDefaultModuleForRole(userRole));
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setAuthToken(null);
+    setCurrentUser(null);
   };
 
   const handleNavigate = (module, subModule = null) => {
@@ -107,7 +150,9 @@ export default function App() {
     }
   };
 
-  const currentUser = currentUsersByRole[currentRole] || currentUsersByRole.HR;
+  if (!authToken || !currentUser) {
+    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+  }
 
   return (
     <div className="app-container">
@@ -123,8 +168,8 @@ export default function App() {
       <div className="main-wrapper">
         <Header
           currentRole={currentRole}
-          setCurrentRole={handleRoleChange}
           currentUser={currentUser}
+          onLogout={handleLogout}
           onNavigate={handleNavigate}
         />
 
@@ -159,10 +204,10 @@ export default function App() {
           )}
 
           {activeModule === 'employee-dashboard' && (
-            <EmployeeDashboard onNavigate={handleNavigate} />
+            <EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />
           )}
           {activeModule === 'employee-profile' && (
-            <MyProfileView />
+            <MyProfileView user={currentUser} />
           )}
           {activeModule === 'employee-checkin' && (
             <MyFaceCheckinView />

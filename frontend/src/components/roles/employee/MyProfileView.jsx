@@ -1,11 +1,31 @@
 import React from 'react';
 import { User, Mail, Phone, MapPin, Building, Briefcase, Calendar, ShieldCheck, FileText } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
-import { employeesData } from '../../../data/mockData';
+import AuthService from '../../../services/AuthService';
 import '../../../styles/roles/employee/MyProfileView.css';
 
-export default function MyProfileView() {
-  const me = employeesData.find(e => e.id === 'EMP003') || employeesData[0];
+export default function MyProfileView({ user }) {
+  const currentUser = user || AuthService.getCurrentUser() || {};
+
+  const me = {
+    id: currentUser.employeeCode || `NV${String(currentUser.id || 1).padStart(3, '0')}`,
+    name: currentUser.name || currentUser.fullName || currentUser.username || 'Nhân sự',
+    gender: currentUser.gender || 'Nam',
+    birthDate: currentUser.birthDate || 'Chưa cập nhật',
+    phone: currentUser.phone || 'Chưa cập nhật',
+    email: currentUser.email || 'Chưa cập nhật',
+    idCard: currentUser.idCard || 'Chưa cập nhật',
+    taxCode: currentUser.taxCode || 'Chưa cập nhật',
+    department: currentUser.department || 'Phòng Nhân sự & Kỹ thuật',
+    position: currentUser.position || currentUser.roleTitle || 'Chuyên viên',
+    joinDate: currentUser.joinDate || '2026-01-01',
+    status: 'Đang làm việc',
+    contractType: 'Hợp đồng lao động chính thức',
+    baseSalary: 15000000,
+    faceRegistered: !!currentUser.faceRegistered,
+    address: 'Việt Nam',
+    manager: 'Trưởng bộ phận'
+  };
 
   const formatVND = (n) => Math.round(+n || 0).toLocaleString('vi-VN') + ' đ';
 
@@ -14,7 +34,7 @@ export default function MyProfileView() {
       <div className="ph">
         <div>
           <h1>Hồ sơ lý lịch cá nhân</h1>
-          <p>Dữ liệu hợp đồng lao động, thông tin thuế, bảo hiểm và sinh trắc học Face ID</p>
+          <p>Dữ liệu hợp đồng lao động, thông tin thuế, bảo hiểm và sinh trắc học Face ID của bạn</p>
         </div>
       </div>
 
@@ -65,47 +85,42 @@ export default function MyProfileView() {
               <strong>{me.position}</strong>
             </div>
             <div className="profile-detail-field">
-              <span>Ngày vào làm:</span>
+              <span>Ngày nhận việc:</span>
               <strong>{me.joinDate}</strong>
             </div>
             <div className="profile-detail-field">
-              <span>Người quản lý trực tiếp:</span>
-              <strong>{me.manager}</strong>
-            </div>
-            <div className="profile-detail-field">
-              <span>Ngân hàng nhận lương:</span>
-              <strong>{me.bankName}</strong>
-            </div>
-            <div className="profile-detail-field">
-              <span>Số tài khoản:</span>
-              <strong>{me.bankAccount}</strong>
-            </div>
-            <div className="profile-detail-field">
-              <span>Số người phụ thuộc (NPT):</span>
-              <strong>{me.dependents} người</strong>
+              <span>Loại hợp đồng:</span>
+              <strong>{me.contractType}</strong>
             </div>
           </div>
         </div>
 
         <div className="card">
+          <div className="card-h">
+            <h3>Ảnh chân dung & Sinh trắc Face ID</h3>
+          </div>
           <div className="card-b" style={{ textAlign: 'center' }}>
-            <div className="profile-avatar-large" style={{ margin: '0 auto 12px', width: '84px', height: '84px', fontSize: '28px' }}>
+            <div style={{
+              width: '96px',
+              height: '96px',
+              borderRadius: '50%',
+              background: '#0f766e',
+              color: '#ffffff',
+              fontSize: '36px',
+              fontWeight: '700',
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 16px auto'
+            }}>
               {me.name[0]}
             </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#042f2e', margin: 0 }}>{me.name}</h2>
-            <div style={{ color: '#0f766e', fontWeight: 600, fontSize: '13px', marginTop: '2px' }}>{me.position}</div>
-            <div style={{ color: '#64748b', fontSize: '12px' }}>{me.department} · {me.id}</div>
-
-            <div className="row mt" style={{ justifyContent: 'center', gap: '6px' }}>
-              <span className="badge b-green">{me.status}</span>
-              <span className="badge b-p">Đã nạp Face ID AI</span>
-            </div>
-
-            <div style={{ marginTop: '20px', borderTop: '1px solid #eef2f1', paddingTop: '16px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px' }}>
-              <div><span>Địa chỉ liên hệ:</span> <strong>{me.address}</strong></div>
-              <div><span>Hợp đồng lao động:</span> <strong>{me.contractType}</strong></div>
-              <div><span>Mã số BHXH:</span> <strong>{me.socialInsuranceNo}</strong></div>
-              <div><span>Lương cơ bản tháng:</span> <strong style={{ color: '#0f766e' }}>{formatVND(me.baseSalary)}</strong></div>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>{me.name}</h4>
+            <p style={{ margin: '0 0 16px 0', color: 'var(--muted)', fontSize: '13px' }}>
+              {me.position} · {me.id}
+            </p>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'var(--p50)', color: 'var(--pd)', fontSize: '12.5px', fontWeight: 600 }}>
+              <ShieldCheck size={16} />
+              <span>Face ID: Đã kích hoạt</span>
             </div>
           </div>
         </div>

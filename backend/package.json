@@ -1,0 +1,20 @@
+{
+  "name": "hrm-enterprise-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "Server.js",
+  "scripts": {
+    "start": "node Server.js",
+    "dev": "node --watch Server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "hrm-enterprise-project": "file:..",
+    "jsonwebtoken": "^9.0.2",
+    "msnodesqlv8": "^4.2.2",
+    "mssql": "^11.0.1"
+  }
+}

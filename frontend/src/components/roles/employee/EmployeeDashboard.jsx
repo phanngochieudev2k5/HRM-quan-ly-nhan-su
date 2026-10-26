@@ -2,9 +2,13 @@ import React from 'react';
 import { Camera, Calendar, Clock, DollarSign, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 import StatCard from '../../common/StatCard';
 import StatusBadge from '../../common/StatusBadge';
+import AuthService from '../../../services/AuthService';
 import '../../../styles/roles/employee/EmployeeDashboard.css';
 
-export default function EmployeeDashboard({ onNavigate }) {
+export default function EmployeeDashboard({ onNavigate, currentUser }) {
+  const user = currentUser || AuthService.getCurrentUser() || {};
+  const displayName = user.name || user.fullName || user.username || 'Nhân viên';
+
   return (
     <div className="employee-dashboard-container">
       <div className="emp-hero-banner">
@@ -12,9 +16,9 @@ export default function EmployeeDashboard({ onNavigate }) {
           <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#5eead4', fontWeight: 700 }}>
             CỔNG THÔNG TIN NHÂN SỰ CÁ NHÂN
           </div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '4px 0' }}>Xin chào, Lê Hoàng Long!</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '4px 0' }}>Xin chào, {displayName}!</h1>
           <p style={{ margin: 0, fontSize: '13px', color: '#99f6e4' }}>
-            Hôm nay: Thứ Hai · Ca làm việc: Ca Hành Chính Chuẩn (08:00 - 17:30) · Đã check-in lúc 08:02
+            Vai trò: <strong>{user.roleTitle || 'Nhân viên cá nhân'}</strong> · Ca làm việc: Ca Hành Chính Chuẩn (08:00 - 17:30)
           </p>
         </div>
 

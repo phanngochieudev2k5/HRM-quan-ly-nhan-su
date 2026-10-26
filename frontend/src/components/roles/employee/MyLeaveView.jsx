@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { CalendarDays, Plus, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
 import StatCard from '../../common/StatCard';
+import EmptyState from '../../common/EmptyState';
 import { leaveRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/employee/MyLeaveView.css';
 
 export default function MyLeaveView() {
-  const [myLeaves, setMyLeaves] = useState(
-    leaveRequestsData.filter(l => l.empId === 'EMP003')
-  );
+  const [myLeaves, setMyLeaves] = useState(leaveRequestsData || []);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     type: 'Nghỉ phép năm',
@@ -99,7 +98,18 @@ export default function MyLeaveView() {
               </tr>
             </thead>
             <tbody>
-              {myLeaves.map(leave => (
+              {myLeaves.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={8}
+                  icon={CalendarDays}
+                  title="Bạn chưa có đơn xin nghỉ phép nào"
+                  description="Bấm 'Tạo đơn xin nghỉ' để nộp đơn xin nghỉ phép mới đến cấp trên phê duyệt."
+                  actionLabel="Tạo đơn xin nghỉ"
+                  onAction={() => setModalOpen(true)}
+                />
+              ) : (
+                myLeaves.map(leave => (
                 <tr key={leave.id}>
                   <td><code>{leave.id}</code></td>
                   <td>
@@ -116,7 +126,7 @@ export default function MyLeaveView() {
                     <StatusBadge status={leave.status} />
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

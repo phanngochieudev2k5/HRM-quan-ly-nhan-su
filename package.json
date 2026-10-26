@@ -6,7 +6,12 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
-    "frontend:dev": "npm --prefix frontend run dev",
-    "frontend:build": "npm --prefix frontend run build"
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev",
+    "dev:all": "concurrently \"npm:backend:dev\" \"npm:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }

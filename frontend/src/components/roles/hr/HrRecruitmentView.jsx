@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Briefcase, Plus, Users, ArrowRight, Star, Clock } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import { recruitmentJobs, candidatesPipeline } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrRecruitmentView.css';
 
 export default function HrRecruitmentView({ subModule = 'jobs', onNavigate }) {
-  const [jobs] = useState(recruitmentJobs);
-  const [candidates] = useState(candidatesPipeline);
+  const [jobs] = useState(recruitmentJobs || []);
+  const [candidates] = useState(candidatesPipeline || []);
 
   const stages = [
     { key: 'Applied', label: 'Ứng tuyển mới', badge: 'b-p' },
@@ -104,7 +105,18 @@ export default function HrRecruitmentView({ subModule = 'jobs', onNavigate }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {jobs.map(job => (
+                  {jobs.length === 0 ? (
+                    <EmptyState
+                      isTable
+                      colSpan={7}
+                      icon={Briefcase}
+                      title="Chưa có tin tuyển dụng nào đang mở"
+                      description="Danh sách vị trí tuyển dụng và chỉ tiêu định biên nhân sự sẵn sàng kết nối API."
+                      actionLabel="Tạo vị trí tuyển mới"
+                      onAction={() => alert('Mở form tạo vị trí tuyển mới')}
+                    />
+                  ) : (
+                    jobs.map(job => (
                     <tr key={job.id}>
                       <td><b>{job.title}</b></td>
                       <td>{job.dept}</td>
@@ -116,7 +128,7 @@ export default function HrRecruitmentView({ subModule = 'jobs', onNavigate }) {
                         <StatusBadge status={job.status} />
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>

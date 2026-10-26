@@ -1,28 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, ShieldAlert, Key, Server, Cpu, Activity,
-  UserPlus, Database, ShieldCheck, ArrowRight
+  UserPlus, Database, ShieldCheck, ArrowRight, Inbox
 } from 'lucide-react';
 import StatCard from '../../common/StatCard';
 import StatusBadge from '../../common/StatusBadge';
-import { userAccountsData, systemAuditLogsData } from '../../../data/mockData';
+import AdminService from '../../../services/AdminService';
 import '../../../styles/roles/admin/AdminDashboard.css';
 
 export default function AdminDashboard({ onNavigate }) {
-  const activeCount = userAccountsData.filter(a => a.status === 'Active').length;
-  const lockedCount = userAccountsData.filter(a => a.status === 'Locked').length;
+  const [accounts, setAccounts] = useState([]);
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [accs, auditLogs] = await Promise.all([
+          AdminService.getAccounts(),
+          AdminService.getAuditLogs()
+        ]);
+        setAccounts(accs || []);
+        setLogs(auditLogs || []);
+      } catch (err) {
+        console.error('Lỗi tải dữ liệu admin dashboard:', err);
+      }
+    };
+    loadData();
+  }, []);
+
+  const activeCount = accounts.filter(a => !a.IsLocked).length;
+  const lockedCount = accounts.filter(a => a.IsLocked).length;
 
   return (
     <div className="admin-dashboard-container">
       <div className="ph">
         <div>
           <h1>Bảng điều khiển quản trị hệ thống (System Admin)</h1>
-          <p>Giám sát tài khoản người dùng, máy chủ AI OpenCV, phân quyền RBAC và nhật ký bảo mật</p>
+          <p>Dữ liệu động kết nối trực tiếp CSDL SQL Server (HRM_Enterprise_DB) qua API Backend Node.js</p>
         </div>
         <div className="ph-tools">
           <button className="btn pri" onClick={() => onNavigate('admin-accounts')}>
             <UserPlus size={15} />
-            <span>Thêm tài khoản</span>
+            <span>Quản lý tài khoản</span>
           </button>
           <button className="btn" onClick={() => onNavigate('admin-settings')}>
             <span>Cấu hình tham số</span>
@@ -33,8 +52,8 @@ export default function AdminDashboard({ onNavigate }) {
       <div className="grid c4">
         <StatCard
           title="TỔNG TÀI KHOẢN RBAC"
-          value={userAccountsData.length}
-          subtext="5 nhóm phân quyền vai trò"
+          value={accounts.length}
+          subtext="Đồng bộ từ CSDL SQL Server"
           icon={Users}
           color="#0f766e"
           bg="#ccfbf1"
@@ -57,9 +76,9 @@ export default function AdminDashboard({ onNavigate }) {
           bg="#fee2e2"
         />
         <StatCard
-          title="MÁY CHỦ OPENCV AI"
+          title="MÁY CHỦ CSDL SQL SERVER"
           value="Trực tuyến"
-          subtext="Độ chính xác Face ID 99.4%"
+          subtext="CODER\\SQLEXPRESS01"
           icon={Server}
           color="#7c3aed"
           bg="#ede9fe"
@@ -111,26 +130,33 @@ export default function AdminDashboard({ onNavigate }) {
             </button>
           </div>
           <div className="card-b">
-            {systemAuditLogsData.slice(0, 4).map((log) => {
-              const timeStr = log.time || log.timestamp || '25/04/2026 08:30:00';
-              const userName = log.user || log.userName || 'System';
-              const ipStr = log.ip || log.ipAddress || '192.168.1.1';
-              const displayTime = timeStr.includes(' ') ? timeStr.split(' ')[1] : timeStr;
-              return (
-                <div key={log.id} className="tli">
-                  <div className="avatar" style={{ background: '#f0fdfa', color: '#0f766e' }}>
-                    <ShieldCheck size={16} />
+            {logs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748b' }}>
+                <Inbox size={28} style={{ color: '#cbd5e1', marginBottom: '6px' }} />
+                <div style={{ fontSize: '13px' }}>Chưa có nhật ký bảo mật mới từ SQL Server.</div>
+              </div>
+            ) : (
+              logs.slice(0, 4).map((log) => {
+                const timeStr = log.time || log.timestamp || 'Vừa xong';
+                const userName = log.user || log.userName || 'System';
+                const ipStr = log.ip || log.ipAddress || '127.0.0.1';
+                const displayTime = timeStr.includes(' ') ? timeStr.split(' ')[1] : timeStr;
+                return (
+                  <div key={log.id} className="tli">
+                    <div className="avatar" style={{ background: '#f0fdfa', color: '#0f766e' }}>
+                      <ShieldCheck size={16} />
+                    </div>
+                    <div className="grow">
+                      <b>{log.action}</b>
+                      <small>{userName} · {ipStr}</small>
+                    </div>
+                    <div className="v">
+                      <span className="badge b-green">{displayTime}</span>
+                    </div>
                   </div>
-                  <div className="grow">
-                    <b>{log.action}</b>
-                    <small>{userName} · {ipStr}</small>
-                  </div>
-                  <div className="v">
-                    <span className="badge b-green">{displayTime}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>

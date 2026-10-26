@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { CalendarDays, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import { leaveRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrLeaveView.css';
 
 export default function HrLeaveView() {
-  const [requests, setRequests] = useState(leaveRequestsData);
+  const [requests, setRequests] = useState(leaveRequestsData || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const filteredRequests = requests.filter(r => {
-    const matchSearch = r.empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = !searchTerm ||
+      (r.empName && r.empName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.id && r.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.type && r.type.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -78,7 +80,16 @@ export default function HrLeaveView() {
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.map((r) => (
+              {filteredRequests.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={9}
+                  icon={CalendarDays}
+                  title="Chưa có yêu cầu nghỉ phép"
+                  description="Danh sách đơn nghỉ phép của nhân sự toàn công ty sẽ hiển thị tại đây khi có dữ liệu từ backend."
+                />
+              ) : (
+                filteredRequests.map((r) => (
                 <tr key={r.id}>
                   <td><code>{r.id}</code></td>
                   <td>
@@ -124,7 +135,7 @@ export default function HrLeaveView() {
                     )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

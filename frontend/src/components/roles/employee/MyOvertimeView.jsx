@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Timer, Plus } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import { overtimeRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/employee/MyOvertimeView.css';
 
 export default function MyOvertimeView() {
-  const [myOts, setMyOts] = useState(
-    overtimeRequestsData.filter(o => o.empId === 'EMP003')
-  );
+  const [myOts, setMyOts] = useState(overtimeRequestsData || []);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
@@ -65,7 +64,18 @@ export default function MyOvertimeView() {
               </tr>
             </thead>
             <tbody>
-              {myOts.map(ot => (
+              {myOts.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={7}
+                  icon={Timer}
+                  title="Bạn chưa có đăng ký làm thêm giờ (OT) nào"
+                  description="Bấm 'Đăng ký tăng ca' để gửi kế hoạch làm thêm giờ ngoài giờ hành chính."
+                  actionLabel="Đăng ký tăng ca"
+                  onAction={() => setModalOpen(true)}
+                />
+              ) : (
+                myOts.map(ot => (
                 <tr key={ot.id}>
                   <td><code>{ot.id}</code></td>
                   <td>{ot.date}</td>
@@ -77,7 +87,7 @@ export default function MyOvertimeView() {
                     <StatusBadge status={ot.status} />
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

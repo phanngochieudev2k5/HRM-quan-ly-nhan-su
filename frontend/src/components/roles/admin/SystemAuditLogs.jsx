@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Search, Download, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Search, Download, RefreshCw, FileText } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
-import { systemAuditLogsData } from '../../../data/mockData';
+import EmptyState from '../../common/EmptyState';
+import AdminService from '../../../services/AdminService';
 import '../../../styles/roles/admin/SystemAuditLogs.css';
 
 export default function SystemAuditLogs() {
-  const [logs] = useState(systemAuditLogsData);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const data = await AdminService.getAuditLogs();
+      setLogs(data);
+    } catch (err) {
+      console.error('Lỗi tải audit logs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log =>
     (log.userName && log.userName.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -21,9 +39,13 @@ export default function SystemAuditLogs() {
       <div className="ph">
         <div>
           <h1>Nhật ký kiểm toán an ninh & Thao tác (Audit Logs)</h1>
-          <p>Ghi vết toàn diện mọi sự kiện đăng nhập, sửa đổi dữ liệu nhân sự, bảng lương và chấm công</p>
+          <p>Ghi vết toàn diện mọi sự kiện đăng nhập, sửa đổi dữ liệu nhân sự, bảng lương và chấm công từ CSDL SQL Server (tblAuditLog)</p>
         </div>
         <div className="ph-tools">
+          <button className="btn" onClick={fetchLogs} disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
+            <span>Làm mới</span>
+          </button>
           <button className="btn" onClick={() => window.print()}>
             <Download size={15} />
             <span>Kết xuất nhật ký</span>
@@ -62,20 +84,31 @@ export default function SystemAuditLogs() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map(log => (
-                <tr key={log.id}>
-                  <td><code>{log.id}</code></td>
-                  <td>{log.time || log.timestamp || '25/04/2026 08:30'}</td>
-                  <td>
-                    <b>{log.userName || log.user}</b>
-                  </td>
-                  <td>{log.action}</td>
-                  <td><code>{log.ipAddress || log.ip}</code></td>
-                  <td>
-                    <StatusBadge status={log.status || 'Thành công'} />
-                  </td>
-                </tr>
-              ))}
+              {filteredLogs.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={6}
+                  icon={FileText}
+                  title="Chưa có nhật ký kiểm toán mới"
+                  description="Hệ thống tự động ghi nhật ký khi người dùng đăng nhập, sửa đổi thông tin hoặc thực hiện phân quyền."
+                  onRefresh={fetchLogs}
+                />
+              ) : (
+                filteredLogs.map(log => (
+                  <tr key={log.id}>
+                    <td><code>{log.id}</code></td>
+                    <td>{log.time || log.timestamp || 'Vừa xong'}</td>
+                    <td>
+                      <b>{log.userName || log.user}</b>
+                    </td>
+                    <td>{log.action}</td>
+                    <td><code>{log.ipAddress || log.ip}</code></td>
+                    <td>
+                      <StatusBadge status={log.status || 'Thành công'} />
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

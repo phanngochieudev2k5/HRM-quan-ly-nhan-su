@@ -15,7 +15,6 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
     'hr-recruitment': true
   });
 
-  // Tự động mở menu con khi mục cha tương ứng đang được kích hoạt
   useEffect(() => {
     if (activeModule) {
       setOpenSubmenus(prev => ({
@@ -154,11 +153,11 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
                 onClick={() => {
                   if (hasSub) {
                     if (!isActive) {
-                      // Chuyển sang mục này: tự động mở menu con và chọn mục con đầu tiên
+                      
                       setOpenSubmenus(prev => ({ ...prev, [item.id]: true }));
                       onNavigate(item.id, item.subItems[0].id);
                     } else {
-                      // Đã ở mục này: bật/tắt đóng mở menu con
+                      
                       toggleSubmenu(item.id);
                     }
                   } else {

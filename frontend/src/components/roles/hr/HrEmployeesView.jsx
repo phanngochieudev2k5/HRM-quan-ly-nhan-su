@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus, Edit2, Trash2, Eye, ShieldCheck,
   Search, Building2, FileText, ArrowLeft, Calendar, Phone, Mail, MapPin, User,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { onboardingList, contractsData, orgHierarchyData } from '../../../data/mockData';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import '../../../styles/roles/hr/HrEmployeesView.css';
 
 export default function HrEmployeesView({
@@ -23,7 +24,11 @@ export default function HrEmployeesView({
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [localEmployees, setLocalEmployees] = useState(employees);
+  const [localEmployees, setLocalEmployees] = useState(employees || []);
+
+  useEffect(() => {
+    setLocalEmployees(employees || []);
+  }, [employees]);
 
   const [onboardings, setOnboardings] = useState(onboardingList);
   const [contracts, setContracts] = useState(contractsData);
@@ -270,7 +275,15 @@ export default function HrEmployeesView({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {onboardings.map(item => {
+          {onboardings.length === 0 ? (
+            <EmptyState
+              title="Chưa có hồ sơ tiếp nhận nhân sự mới (Onboarding)"
+              description="Quy trình hội nhập sẽ hiển thị danh sách các bước chuẩn bị tài khoản, hợp đồng và đăng ký Face ID khi có nhân sự mới."
+              actionLabel="Tiếp nhận nhân sự mới"
+              onAction={() => alert('Thêm hồ sơ tiếp nhận nhân sự mới')}
+            />
+          ) : (
+            onboardings.map(item => {
             const stepsCount = Object.values(item.steps).filter(Boolean).length;
             const isCompleted = stepsCount === 4;
 
@@ -347,7 +360,7 @@ export default function HrEmployeesView({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
     );
@@ -426,7 +439,17 @@ export default function HrEmployeesView({
                 </tr>
               </thead>
               <tbody>
-                {filteredContracts.map(c => (
+                {filteredContracts.length === 0 ? (
+                  <EmptyState
+                    isTable
+                    colSpan={8}
+                    title="Chưa có hợp đồng lao động từ máy chủ"
+                    description="Hồ sơ hợp đồng sẽ hiển thị tại đây khi kết nối cơ sở dữ liệu."
+                    actionLabel="Tạo hợp đồng mới"
+                    onAction={() => alert('Thêm mới hợp đồng')}
+                  />
+                ) : (
+                  filteredContracts.map(c => (
                   <tr key={c.id}>
                     <td><code>{c.id}</code></td>
                     <td>
@@ -451,7 +474,7 @@ export default function HrEmployeesView({
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -479,7 +502,7 @@ export default function HrEmployeesView({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Cấp Ban Giám Đốc */}
+          
           <div className="org-tree-node root-node">
             <div className="org-tree-user">
               <img src={orgHierarchyData.avatar} alt={orgHierarchyData.head} className="org-avatar" />
@@ -497,7 +520,6 @@ export default function HrEmployeesView({
             </div>
           </div>
 
-          {/* Các phòng ban trực thuộc */}
           <div style={{ paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {orgHierarchyData.children.map(dept => {
               const isExpanded = !!expandedDept[dept.id];
@@ -527,7 +549,6 @@ export default function HrEmployeesView({
                     </div>
                   </div>
 
-                  {/* Nhóm/Đội chuyên môn cấp dưới */}
                   {isExpanded && dept.children && (
                     <div style={{ paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {dept.children.map(team => (
@@ -625,7 +646,17 @@ export default function HrEmployeesView({
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map((emp) => (
+              {filteredEmployees.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={10}
+                  title="Chưa có dữ liệu nhân sự từ máy chủ"
+                  description="Bấm 'Thêm nhân viên mới' hoặc đồng bộ từ CSDL SQL Server (tblEmployee)."
+                  actionLabel="Thêm nhân viên mới"
+                  onAction={() => setIsAddModalOpen(true)}
+                />
+              ) : (
+                filteredEmployees.map((emp) => (
                 <tr key={emp.id} className="click" onClick={() => onSelectEmployee && onSelectEmployee(emp)}>
                   <td><code>{emp.id}</code></td>
                   <td>
@@ -671,7 +702,7 @@ export default function HrEmployeesView({
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

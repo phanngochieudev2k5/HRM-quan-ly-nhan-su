@@ -33,7 +33,6 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
     subModule === 'shifts' ? 'shifts' : 'matrix'
   );
 
-  // Đồng bộ tab khi chuyển mục từ sidebar hoặc nơi khác
   useEffect(() => {
     if (subModule === 'face-checkin') {
       setActiveTab('kiosk');

@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import PageHeader from '../../common/PageHeader';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import { overtimeRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/manager/TeamOvertimeApprovals.css';
 
 export default function TeamOvertimeApprovals() {
-  const [otList, setOtList] = useState(overtimeRequestsData);
+  const [otList, setOtList] = useState(overtimeRequestsData || []);
 
   const handleAction = (id, newStatus) => {
     setOtList(otList.map(item => item.id === id ? { ...item, status: newStatus } : item));
@@ -37,7 +38,15 @@ export default function TeamOvertimeApprovals() {
               </tr>
             </thead>
             <tbody>
-              {otList.map(ot => (
+              {otList.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={9}
+                  title="Chưa có yêu cầu làm thêm giờ (OT)"
+                  description="Kế hoạch tăng ca của nhân sự trong nhóm sẽ hiển thị tại đây khi có dữ liệu."
+                />
+              ) : (
+                otList.map(ot => (
                 <tr key={ot.id}>
                   <td style={{ fontWeight: 700, color: 'var(--muted)', fontFamily: 'monospace' }}>{ot.id}</td>
                   <td>
@@ -82,7 +91,7 @@ export default function TeamOvertimeApprovals() {
                     )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

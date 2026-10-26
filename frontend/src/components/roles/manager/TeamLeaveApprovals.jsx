@@ -3,11 +3,12 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import PageHeader from '../../common/PageHeader';
 import StatusBadge from '../../common/StatusBadge';
 import ConfirmModal from '../../common/ConfirmModal';
+import EmptyState from '../../common/EmptyState';
 import { leaveRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/manager/TeamLeaveApprovals.css';
 
 export default function TeamLeaveApprovals() {
-  const [requests, setRequests] = useState(leaveRequestsData);
+  const [requests, setRequests] = useState(leaveRequestsData || []);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedReq, setSelectedReq] = useState(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -81,7 +82,15 @@ export default function TeamLeaveApprovals() {
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.map(req => (
+              {filteredRequests.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={8}
+                  title="Chưa có đơn nghỉ phép cần duyệt"
+                  description="Các yêu cầu xin nghỉ phép của thành viên trong nhóm sẽ hiển thị tại đây."
+                />
+              ) : (
+                filteredRequests.map(req => (
                 <tr key={req.id}>
                   <td style={{ fontWeight: 700, color: 'var(--muted)', fontFamily: 'monospace' }}>{req.id}</td>
                   <td>
@@ -127,7 +136,7 @@ export default function TeamLeaveApprovals() {
                     )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Timer, Search, CheckCircle2 } from 'lucide-react';
 import StatusBadge from '../../common/StatusBadge';
+import EmptyState from '../../common/EmptyState';
 import { overtimeRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrOvertimeView.css';
 
 export default function HrOvertimeView() {
-  const [otList, setOtList] = useState(overtimeRequestsData);
+  const [otList, setOtList] = useState(overtimeRequestsData || []);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredOt = otList.filter(ot =>
-    ot.empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ot.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ot.project.toLowerCase().includes(searchTerm.toLowerCase())
+    !searchTerm ||
+    (ot.empName && ot.empName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (ot.id && ot.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (ot.project && ot.project.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -56,7 +58,16 @@ export default function HrOvertimeView() {
               </tr>
             </thead>
             <tbody>
-              {filteredOt.map((ot) => (
+              {filteredOt.length === 0 ? (
+                <EmptyState
+                  isTable
+                  colSpan={8}
+                  icon={Timer}
+                  title="Chưa có ca làm thêm giờ (OT)"
+                  description="Danh sách đăng ký làm thêm ngoài giờ toàn công ty sẵn sàng hiển thị khi có dữ liệu backend."
+                />
+              ) : (
+                filteredOt.map((ot) => (
                 <tr key={ot.id}>
                   <td><code>{ot.id}</code></td>
                   <td>
@@ -79,7 +90,7 @@ export default function HrOvertimeView() {
                     <StatusBadge status={ot.status} />
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

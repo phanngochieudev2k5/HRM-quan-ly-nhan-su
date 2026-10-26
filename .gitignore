@@ -28,3 +28,13 @@ backend/uploads/*
 *.njsproj
 *.sln
 *.sw?
+
+# Tài liệu và CSDL nội bộ
+cau-truc-thu-muc.md
+database_hrm.sql
+HRM_UI_Specification.md
+Nhóm 2 product backlog.docx
+PHAN_TICH_PRODUCT_BACKLOG_VA_PHAN_QUYEN.md
+README.md
+ui-template
+
