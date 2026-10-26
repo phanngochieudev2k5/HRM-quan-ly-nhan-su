@@ -1,0 +1,71 @@
+.my-attendance-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-dow-header {
+  text-align: center;
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+
+.calendar-dow-header.weekend {
+  color: #e11d48;
+}
+
+.calendar-day-tile {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calendar-day-tile:hover {
+  border-color: var(--p);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.12);
+}
+
+.calendar-day-tile.today {
+  border-color: var(--p);
+  background: #f0fdfa;
+}
+
+.calendar-day-tile.weekend {
+  background: #fffbfb;
+}
+
+.calendar-tile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-tile-number {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.calendar-tile-body {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}

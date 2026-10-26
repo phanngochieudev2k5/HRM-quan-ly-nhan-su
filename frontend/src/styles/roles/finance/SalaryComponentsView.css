@@ -1,0 +1,49 @@
+.salary-components-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gross-net-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.gross-net-calculator-box {
+  background: #f8fbfa;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.calc-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+  gap: 12px;
+}
+
+.calc-breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.calc-breakdown-row b {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.calc-breakdown-row.net-highlight {
+  padding: 12px 0 6px;
+  font-size: 15px;
+}
+
+.calc-breakdown-row.net-highlight b {
+  font-size: 19px;
+  color: var(--pd);
+  font-weight: 800;
+}

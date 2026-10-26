@@ -1,0 +1,18 @@
+.employee-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emp-hero-banner {
+  background: linear-gradient(105deg, var(--ink) 0%, var(--pd) 60%, var(--p) 100%);
+  border-radius: var(--radius-lg);
+  padding: 22px 28px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+}

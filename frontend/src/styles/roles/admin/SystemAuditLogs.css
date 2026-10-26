@@ -1,0 +1,5 @@
+.system-audit-logs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

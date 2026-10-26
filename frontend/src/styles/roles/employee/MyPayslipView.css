@@ -1,0 +1,53 @@
+.payslip-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.payslip-selector-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.payslip-selector-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payslip-main-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+.payslip-dispute-box {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: var(--p50);
+  border: 1px dashed var(--p100);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.payslip-dispute-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--pd);
+}

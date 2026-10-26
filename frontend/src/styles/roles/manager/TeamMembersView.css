@@ -1,0 +1,170 @@
+.team-members-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.team-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+}
+
+.team-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-avatar-lg {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--p100);
+}
+
+.team-head-info {
+  flex: 1;
+}
+
+.team-head-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.team-member-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.team-member-pos {
+  font-size: 12px;
+  color: var(--p);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.team-member-id {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.team-status-strip {
+  background: var(--p50);
+  border: 1px solid var(--p100);
+  padding: 8px 12px;
+  border-radius: var(--rad);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-contact-list {
+  font-size: 12px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.team-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+}
+
+.team-card-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-face-badge-valid {
+  font-size: 11.5px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.team-face-badge-pending {
+  font-size: 11.5px;
+  color: var(--acc);
+  font-weight: 600;
+}
+
+.team-modal-card {
+  max-width: 540px;
+  width: 100%;
+}
+
+.team-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.team-modal-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-modal-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.team-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}
+
+.team-profile-field label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.team-profile-field .val {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.team-profile-field .val-mono {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--p);
+}

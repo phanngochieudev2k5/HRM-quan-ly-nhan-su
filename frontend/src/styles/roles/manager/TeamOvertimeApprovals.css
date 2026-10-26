@@ -1,0 +1,35 @@
+.team-ot-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ot-hours-tag {
+  font-weight: 800;
+  color: var(--p);
+  font-size: 13.5px;
+}
+
+.ot-mult-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid #a7f3d0;
+}
+
+.ot-project-desc {
+  max-width: 240px;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.ot-action-group {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
