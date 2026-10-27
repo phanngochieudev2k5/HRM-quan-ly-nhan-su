@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import PageHeader from '../../common/PageHeader';
-import StatusBadge from '../../common/StatusBadge';
-import ConfirmModal from '../../common/ConfirmModal';
-import EmptyState from '../../common/EmptyState';
+import PageHeader from '../../../components/common/PageHeader';
+import StatusBadge from '../../../components/common/StatusBadge';
+import ConfirmModal from '../../../components/common/ConfirmModal';
+import EmptyState from '../../../components/common/EmptyState';
 import { leaveRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/manager/TeamLeaveApprovals.css';
 

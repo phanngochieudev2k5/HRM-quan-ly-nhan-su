@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Edit3 } from 'lucide-react';
-import PageHeader from '../../common/PageHeader';
-import StatusBadge from '../../common/StatusBadge';
-import ConfirmModal from '../../common/ConfirmModal';
+import PageHeader from '../../../components/common/PageHeader';
+import StatusBadge from '../../../components/common/StatusBadge';
+import ConfirmModal from '../../../components/common/ConfirmModal';
 import '../../../styles/roles/manager/TeamPerformanceKpi.css';
 
 export default function TeamPerformanceKpi() {

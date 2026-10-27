@@ -6,8 +6,8 @@ import {
   Upload, Printer, Sparkles, UserPlus, Layers, ExternalLink
 } from 'lucide-react';
 import { onboardingList, contractsData, orgHierarchyData } from '../../../data/mockData';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import '../../../styles/roles/hr/HrEmployeesView.css';
 
 export default function HrEmployeesView({

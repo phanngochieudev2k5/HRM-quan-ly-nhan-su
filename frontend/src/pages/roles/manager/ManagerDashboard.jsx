@@ -1,8 +1,8 @@
 import React from 'react';
 import { Users, Clock, CalendarDays, Timer, ArrowRight } from 'lucide-react';
-import PageHeader from '../../common/PageHeader';
-import StatCard from '../../common/StatCard';
-import StatusBadge from '../../common/StatusBadge';
+import PageHeader from '../../../components/common/PageHeader';
+import StatCard from '../../../components/common/StatCard';
+import StatusBadge from '../../../components/common/StatusBadge';
 import { employeesData, leaveRequestsData, overtimeRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/manager/ManagerDashboard.css';
 

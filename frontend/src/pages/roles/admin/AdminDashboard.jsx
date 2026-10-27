@@ -3,8 +3,8 @@ import {
   Users, ShieldAlert, Key, Server, Cpu, Activity,
   UserPlus, Database, ShieldCheck, ArrowRight, Inbox
 } from 'lucide-react';
-import StatCard from '../../common/StatCard';
-import StatusBadge from '../../common/StatusBadge';
+import StatCard from '../../../components/common/StatCard';
+import StatusBadge from '../../../components/common/StatusBadge';
 import AdminService from '../../../services/AdminService';
 import '../../../styles/roles/admin/AdminDashboard.css';
 

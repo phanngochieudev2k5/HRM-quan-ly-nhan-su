@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart3, Download, Users, TrendingUp, Calendar, Printer } from 'lucide-react';
-import StatCard from '../../common/StatCard';
+import StatCard from '../../../components/common/StatCard';
 import '../../../styles/roles/hr/HrReportsView.css';
 
 export default function HrReportsView() {

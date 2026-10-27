@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Search, Download, RefreshCw, FileText } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import AdminService from '../../../services/AdminService';
 import '../../../styles/roles/admin/SystemAuditLogs.css';
 

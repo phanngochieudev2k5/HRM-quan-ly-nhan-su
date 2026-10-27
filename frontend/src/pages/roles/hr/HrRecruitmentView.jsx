@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Briefcase, Plus, Users, ArrowRight, Star, Clock } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import { recruitmentJobs, candidatesPipeline } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrRecruitmentView.css';
 

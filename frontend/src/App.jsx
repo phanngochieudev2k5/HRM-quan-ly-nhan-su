@@ -1,41 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import AuthPage from './components/auth/AuthPage';
+import AuthPage from './pages/auth/AuthPage';
 
-import AdminDashboard from './components/roles/admin/AdminDashboard';
-import UserAccountsView from './components/roles/admin/UserAccountsView';
-import SystemAuditLogs from './components/roles/admin/SystemAuditLogs';
-import SystemSettingsView from './components/roles/admin/SystemSettingsView';
+import AdminDashboard from './pages/roles/admin/AdminDashboard';
+import UserAccountsView from './pages/roles/admin/UserAccountsView';
+import SystemAuditLogs from './pages/roles/admin/SystemAuditLogs';
+import SystemSettingsView from './pages/roles/admin/SystemSettingsView';
 
-import ManagerDashboard from './components/roles/manager/ManagerDashboard';
-import TeamMembersView from './components/roles/manager/TeamMembersView';
-import TeamLeaveApprovals from './components/roles/manager/TeamLeaveApprovals';
-import TeamOvertimeApprovals from './components/roles/manager/TeamOvertimeApprovals';
-import TeamPerformanceKpi from './components/roles/manager/TeamPerformanceKpi';
+import ManagerDashboard from './pages/roles/manager/ManagerDashboard';
+import TeamMembersView from './pages/roles/manager/TeamMembersView';
+import TeamLeaveApprovals from './pages/roles/manager/TeamLeaveApprovals';
+import TeamOvertimeApprovals from './pages/roles/manager/TeamOvertimeApprovals';
+import TeamPerformanceKpi from './pages/roles/manager/TeamPerformanceKpi';
 
-import EmployeeDashboard from './components/roles/employee/EmployeeDashboard';
-import MyProfileView from './components/roles/employee/MyProfileView';
-import MyFaceCheckinView from './components/roles/employee/MyFaceCheckinView';
-import MyAttendanceView from './components/roles/employee/MyAttendanceView';
-import MyLeaveView from './components/roles/employee/MyLeaveView';
-import MyOvertimeView from './components/roles/employee/MyOvertimeView';
-import MyPayslipView from './components/roles/employee/MyPayslipView';
-import MyTrainingView from './components/roles/employee/MyTrainingView';
+import EmployeeDashboard from './pages/roles/employee/EmployeeDashboard';
+import MyProfileView from './pages/roles/employee/MyProfileView';
+import MyFaceCheckinView from './pages/roles/employee/MyFaceCheckinView';
+import MyAttendanceView from './pages/roles/employee/MyAttendanceView';
+import MyLeaveView from './pages/roles/employee/MyLeaveView';
+import MyOvertimeView from './pages/roles/employee/MyOvertimeView';
+import MyPayslipView from './pages/roles/employee/MyPayslipView';
+import MyTrainingView from './pages/roles/employee/MyTrainingView';
 
-import FinanceDashboard from './components/roles/finance/FinanceDashboard';
-import SalaryComponentsView from './components/roles/finance/SalaryComponentsView';
-import PayrollCalculationView from './components/roles/finance/PayrollCalculationView';
-import PayrollReportsView from './components/roles/finance/PayrollReportsView';
+import FinanceDashboard from './pages/roles/finance/FinanceDashboard';
+import SalaryComponentsView from './pages/roles/finance/SalaryComponentsView';
+import PayrollCalculationView from './pages/roles/finance/PayrollCalculationView';
+import PayrollReportsView from './pages/roles/finance/PayrollReportsView';
 
-import HrDashboard from './components/roles/hr/HrDashboard';
-import HrEmployeesView from './components/roles/hr/HrEmployeesView';
-import HrAttendanceView from './components/roles/hr/HrAttendanceView';
-import HrRecruitmentView from './components/roles/hr/HrRecruitmentView';
-import HrLeaveView from './components/roles/hr/HrLeaveView';
-import HrOvertimeView from './components/roles/hr/HrOvertimeView';
-import HrAssetsView from './components/roles/hr/HrAssetsView';
-import HrReportsView from './components/roles/hr/HrReportsView';
+import HrDashboard from './pages/roles/hr/HrDashboard';
+import HrEmployeesView from './pages/roles/hr/HrEmployeesView';
+import HrAttendanceView from './pages/roles/hr/HrAttendanceView';
+import HrRecruitmentView from './pages/roles/hr/HrRecruitmentView';
+import HrLeaveView from './pages/roles/hr/HrLeaveView';
+import HrOvertimeView from './pages/roles/hr/HrOvertimeView';
+import HrAssetsView from './pages/roles/hr/HrAssetsView';
+import HrReportsView from './pages/roles/hr/HrReportsView';
 
 import AuthService from './services/AuthService';
 import HrService from './services/HrService';

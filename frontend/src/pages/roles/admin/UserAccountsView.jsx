@@ -3,8 +3,8 @@ import {
   UserPlus, Shield, Lock, Unlock, Search, Key,
   CheckCircle2, RefreshCw, AlertCircle, Sparkles
 } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import AdminService from '../../../services/AdminService';
 import AuthService from '../../../services/AuthService';
 import '../../../styles/roles/admin/UserAccountsView.css';

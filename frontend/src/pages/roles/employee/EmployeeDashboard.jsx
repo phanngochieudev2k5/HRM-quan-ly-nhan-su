@@ -1,7 +1,7 @@
 import React from 'react';
 import { Camera, Calendar, Clock, DollarSign, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
-import StatCard from '../../common/StatCard';
-import StatusBadge from '../../common/StatusBadge';
+import StatCard from '../../../components/common/StatCard';
+import StatusBadge from '../../../components/common/StatusBadge';
 import AuthService from '../../../services/AuthService';
 import '../../../styles/roles/employee/EmployeeDashboard.css';
 

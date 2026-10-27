@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Mail, Phone, Calendar, X } from 'lucide-react';
-import PageHeader from '../../common/PageHeader';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import PageHeader from '../../../components/common/PageHeader';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import { Users } from 'lucide-react';
 import { employeesData, attendanceHistoryData } from '../../../data/mockData';
 import '../../../styles/roles/manager/TeamMembersView.css';

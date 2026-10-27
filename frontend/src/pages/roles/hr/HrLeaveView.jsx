@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CalendarDays, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import { leaveRequestsData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrLeaveView.css';
 

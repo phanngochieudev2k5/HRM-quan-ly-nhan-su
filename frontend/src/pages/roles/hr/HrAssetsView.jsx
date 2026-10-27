@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Laptop, Plus, Search } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import { assetsData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrAssetsView.css';
 

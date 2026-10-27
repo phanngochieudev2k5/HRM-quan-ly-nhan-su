@@ -1,6 +1,6 @@
 import React from 'react';
 import { User, Mail, Phone, MapPin, Building, Briefcase, Calendar, ShieldCheck, FileText } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
+import StatusBadge from '../../../components/common/StatusBadge';
 import AuthService from '../../../services/AuthService';
 import '../../../styles/roles/employee/MyProfileView.css';
 

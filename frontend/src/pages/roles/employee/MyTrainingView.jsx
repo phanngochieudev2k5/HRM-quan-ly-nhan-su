@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, Clock, Calendar, CheckCircle2, User, BookOpen } from 'lucide-react';
-import StatusBadge from '../../common/StatusBadge';
-import EmptyState from '../../common/EmptyState';
+import StatusBadge from '../../../components/common/StatusBadge';
+import EmptyState from '../../../components/common/EmptyState';
 import { trainingCoursesData } from '../../../data/mockData';
 import '../../../styles/roles/employee/MyTrainingView.css';
 
