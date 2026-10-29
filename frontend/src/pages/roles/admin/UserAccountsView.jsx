@@ -86,7 +86,7 @@ export default function UserAccountsView() {
     e.preventDefault();
     if (!formData.username || !formData.name || !formData.email) return;
     try {
-      
+
       const res = await AuthService.register({
         username: formData.username,
         password: formData.password || '123456',
@@ -119,7 +119,6 @@ export default function UserAccountsView() {
       <div className="ph">
         <div>
           <h1>Tài khoản đăng nhập & Phân quyền RBAC</h1>
-          <p>Dữ liệu động kết nối trực tiếp CSDL SQL Server (tblUser & tblRole). Chỉ Admin có quyền thay đổi vai trò người dùng.</p>
         </div>
         <div className="ph-tools">
           <button className="btn" onClick={fetchAccounts} disabled={loading}>
@@ -133,44 +132,6 @@ export default function UserAccountsView() {
         </div>
       </div>
 
-      {notification && (
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.1)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          color: '#059669',
-          padding: '10px 16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontSize: '13.5px',
-          fontWeight: '500'
-        }}>
-          <CheckCircle2 size={16} />
-          <span>{notification}</span>
-        </div>
-      )}
-
-      <div style={{
-        background: '#f0fdfa',
-        border: '1px solid #ccfbf1',
-        borderRadius: '10px',
-        padding: '12px 16px',
-        marginBottom: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: '13px',
-        color: '#0f766e'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles size={16} />
-          <span>
-            <strong>Chính sách phân quyền:</strong> Tài khoản khi đăng ký mới luôn mặc định là <strong>Nhân viên (Employee)</strong>. Chỉ có Admin tại màn hình này mới có quyền thay đổi vai trò người dùng (HR, Manager, Finance, Admin).
-          </span>
-        </div>
-      </div>
 
       <div className="tbl-card">
         <div className="tbl-tools">
@@ -244,7 +205,7 @@ export default function UserAccountsView() {
                     </td>
                     <td>{acc.email}</td>
                     <td>
-                      
+
                       <select
                         className="inp"
                         style={{
