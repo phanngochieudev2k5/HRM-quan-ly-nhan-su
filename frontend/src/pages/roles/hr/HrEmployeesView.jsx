@@ -9,6 +9,7 @@ import { onboardingList, contractsData, orgHierarchyData } from '../../../data/m
 import StatusBadge from '../../../components/common/StatusBadge';
 import EmptyState from '../../../components/common/EmptyState';
 import '../../../styles/roles/hr/HrEmployeesView.css';
+import OrgStructureManagement from './components/OrgStructureManagement';
 
 export default function HrEmployeesView({
   employees = [],
@@ -484,6 +485,15 @@ export default function HrEmployeesView({
   }
 
   if (subModule === 'org') {
+    return (
+      <div className="hr-employees-container">
+        {renderTabsHeader()}
+        <OrgStructureManagement onNavigate={onNavigate} />
+      </div>
+    );
+  }
+
+  if (false && subModule === 'org_legacy') {
     return (
       <div className="hr-employees-container">
         {renderTabsHeader()}

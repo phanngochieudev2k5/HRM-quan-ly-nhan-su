@@ -6,6 +6,7 @@ import { connectDb } from './src/Config/DbConfig.js';
 import AuthRoutes from './src/Routes/AuthRoutes.js';
 import AdminRoutes from './src/Routes/AdminRoutes.js';
 import HrRoutes from './src/Routes/HrRoutes.js';
+import OrgRoutes from './src/Routes/OrgRoutes.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', AuthRoutes);
 app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
+app.use('/api/org', OrgRoutes);
 
 const startServer = async () => {
   try {
