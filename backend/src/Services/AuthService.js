@@ -25,14 +25,19 @@ export class AuthService {
 
     await UserModel.updateLastLogin(user.UserId);
 
+    const isPending = user.RoleCode === 'Employee' && (!user.EmployeeId || !user.DepartmentId);
+    const roleTitle = isPending ? 'Nhân viên (Chờ tiếp nhận)' : (user.RoleName || user.RoleCode);
+
     const tokenPayload = {
       userId: user.UserId,
       username: user.Username,
       fullName: user.FullName,
       email: user.Email,
       role: user.RoleCode,
-      roleTitle: user.RoleName,
+      roleTitle,
       employeeId: user.EmployeeId || null,
+      departmentId: user.DepartmentId || null,
+      isPending,
       avatar: user.AvatarUrl || null
     };
 
@@ -42,14 +47,29 @@ export class AuthService {
       token,
       user: {
         id: user.UserId,
+        userId: user.UserId,
         username: user.Username,
         name: user.FullName,
+        fullName: user.FullName,
         email: user.Email,
+        phone: user.Phone || null,
         role: user.RoleCode,
-        roleTitle: user.RoleName,
+        roleTitle,
         avatar: user.AvatarUrl || null,
         employeeId: user.EmployeeId || null,
-        phone: user.Phone || null
+        employeeCode: user.EmployeeCode || null,
+        departmentId: user.DepartmentId || null,
+        department: user.DepartmentName || null,
+        position: user.PositionName || null,
+        gender: user.Gender || 'Nam',
+        birthDate: user.BirthDate || '',
+        address: user.Address || '',
+        idCardNumber: user.IdCardNumber || '',
+        bankName: user.BankName || '',
+        bankAccountNumber: user.BankAccountNumber || '',
+        joinDate: user.JoinDate || '',
+        workStatus: user.WorkStatus || '',
+        isPending
       }
     };
   }
@@ -86,14 +106,8 @@ export class AuthService {
       passwordHash,
       email: email.trim(),
       fullName: fullName.trim(),
+      phone: phone ? phone.trim() : null,
       roleId
-    });
-
-    await UserModel.createDefaultEmployee({
-      userId: newUser.UserId,
-      fullName: fullName.trim(),
-      email: email.trim(),
-      phone: phone ? phone.trim() : ''
     });
 
     const tokenPayload = {
@@ -102,7 +116,10 @@ export class AuthService {
       fullName: newUser.FullName,
       email: newUser.Email,
       role: defaultRoleCode,
-      roleTitle: 'Nhân viên (Cá nhân)',
+      roleTitle: 'Nhân viên (Chờ tiếp nhận)',
+      employeeId: null,
+      departmentId: null,
+      isPending: true,
       avatar: null
     };
 
@@ -112,11 +129,28 @@ export class AuthService {
       token,
       user: {
         id: newUser.UserId,
+        userId: newUser.UserId,
         username: newUser.Username,
         name: newUser.FullName,
+        fullName: newUser.FullName,
         email: newUser.Email,
+        phone: newUser.Phone || (phone ? phone.trim() : null),
         role: defaultRoleCode,
-        roleTitle: 'Nhân viên (Cá nhân)',
+        roleTitle: 'Nhân viên (Chờ tiếp nhận)',
+        employeeId: null,
+        employeeCode: null,
+        departmentId: null,
+        department: null,
+        position: null,
+        gender: 'Nam',
+        birthDate: '',
+        address: '',
+        idCardNumber: '',
+        bankName: '',
+        bankAccountNumber: '',
+        joinDate: '',
+        workStatus: '',
+        isPending: true,
         avatar: null
       }
     };
@@ -128,17 +162,92 @@ export class AuthService {
       throw new Error('Không tìm thấy thông tin người dùng!');
     }
 
+    const isPending = user.RoleCode === 'Employee' && (!user.EmployeeId || !user.DepartmentId);
+    const roleTitle = isPending ? 'Nhân viên (Chờ tiếp nhận)' : (user.RoleName || user.RoleCode);
+
     return {
       id: user.UserId,
+      userId: user.UserId,
       username: user.Username,
       name: user.FullName,
+      fullName: user.FullName,
       email: user.Email,
+      phone: user.Phone || null,
       role: user.RoleCode,
-      roleTitle: user.RoleName,
-      department: user.DepartmentName || 'Khối Kỹ Thuật (IT)',
-      position: user.PositionName || 'Nhân viên',
+      roleTitle,
+      employeeId: user.EmployeeId || null,
+      employeeCode: user.EmployeeCode || null,
+      departmentId: user.DepartmentId || null,
+      department: user.DepartmentName || null,
+      position: user.PositionName || null,
       avatar: user.AvatarUrl || null,
-      phone: user.Phone || null
+      gender: user.Gender || 'Nam',
+      birthDate: user.BirthDate || '',
+      address: user.Address || '',
+      idCardNumber: user.IdCardNumber || '',
+      idCardDate: user.IdCardDate || '',
+      idCardPlace: user.IdCardPlace || '',
+      bankName: user.BankName || '',
+      bankAccountNumber: user.BankAccountNumber || '',
+      taxCode: user.TaxCode || '',
+      insuranceBookNumber: user.InsuranceBookNumber || '',
+      joinDate: user.JoinDate || '',
+      workStatus: user.WorkStatus || '',
+      isPending
     };
+  }
+
+  static async changePassword(userId, currentPassword, newPassword) {
+    if (!currentPassword || !newPassword) {
+      throw new Error('Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!');
+    }
+
+    if (newPassword.length < 6) {
+      throw new Error('Mật khẩu mới phải có tối thiểu 6 ký tự!');
+    }
+
+    if (currentPassword === newPassword) {
+      throw new Error('Mật khẩu mới không được trùng với mật khẩu cũ!');
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error('Không tìm thấy tài khoản người dùng!');
+    }
+
+    const isMatch = bcrypt.compareSync(currentPassword, user.PasswordHash);
+    if (!isMatch) {
+      throw new Error('Mật khẩu hiện tại không chính xác!');
+    }
+
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await UserModel.updatePassword(userId, newHash);
+    return true;
+  }
+
+  static async updateProfile(userId, profileData) {
+    const { fullName, phone, email, gender, birthDate, address, idCardNumber, bankName, bankAccountNumber } = profileData;
+
+    if (!fullName || !fullName.trim()) {
+      throw new Error('Họ và tên không được để trống!');
+    }
+
+    if (!email || !email.trim()) {
+      throw new Error('Email không được để trống!');
+    }
+
+    await UserModel.updateProfile(userId, {
+      fullName: fullName.trim(),
+      phone: phone ? phone.trim() : null,
+      email: email.trim(),
+      gender: gender || 'Nam',
+      birthDate: birthDate ? birthDate : null,
+      address: address ? address.trim() : null,
+      idCardNumber: idCardNumber ? idCardNumber.trim() : null,
+      bankName: bankName ? bankName.trim() : null,
+      bankAccountNumber: bankAccountNumber ? bankAccountNumber.trim() : null
+    });
+
+    return await this.getMe(userId);
   }
 }

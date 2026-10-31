@@ -1,96 +1,102 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Save, AlertCircle } from 'lucide-react';
+import { X, UserPlus, Save, AlertCircle, Lock, UserCheck, CheckCircle2 } from 'lucide-react';
+import HrService from '../../../../services/HrService';
 
 export default function EmployeeModal({ isOpen, onClose, onSave, employee = null, departments = [], positions = [] }) {
   const isEdit = !!employee?.EmployeeId;
 
   const [formData, setFormData] = useState({
+    UserId: null,
     EmployeeCode: '',
     FullName: '',
-    Gender: 'Nam',
-    BirthDate: '1995-01-01',
     Phone: '',
     Email: '',
-    Address: '',
-    IdCardNumber: '',
-    IdCardDate: '',
-    IdCardPlace: '',
-    TaxCode: '',
-    InsuranceBookNumber: '',
-    BankName: 'Vietcombank',
-    BankAccountNumber: '',
-    DependentsCount: 0,
     DepartmentId: '',
     PositionId: '',
     JoinDate: new Date().toISOString().slice(0, 10),
     WorkStatus: 'Đang làm việc',
     BaseSalary: 15000000,
-    InsuranceSalary: 15000000,
-    FaceRegistered: false,
-    AvatarUrl: ''
+    InsuranceSalary: 15000000
   });
 
+  const [unassignedUsers, setUnassignedUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [loadingUnassigned, setLoadingUnassigned] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (isOpen && !isEdit) {
+      setLoadingUnassigned(true);
+      HrService.getUnassignedUsers()
+        .then(users => {
+          setUnassignedUsers(users || []);
+        })
+        .catch(() => setUnassignedUsers([]))
+        .finally(() => setLoadingUnassigned(false));
+    }
+  }, [isOpen, isEdit]);
+
+  useEffect(() => {
     if (employee) {
       setFormData({
+        UserId: employee.UserId || null,
         EmployeeCode: employee.EmployeeCode || employee.id || '',
         FullName: employee.FullName || employee.name || '',
-        Gender: employee.Gender || employee.gender || 'Nam',
-        BirthDate: employee.BirthDate || employee.birthDate || '',
         Phone: employee.Phone || employee.phone || '',
         Email: employee.Email || employee.email || '',
-        Address: employee.Address || employee.address || '',
-        IdCardNumber: employee.IdCardNumber || employee.idCard || '',
-        IdCardDate: employee.IdCardDate || employee.idCardDate || '',
-        IdCardPlace: employee.IdCardPlace || employee.idCardPlace || '',
-        TaxCode: employee.TaxCode || employee.taxCode || '',
-        InsuranceBookNumber: employee.InsuranceBookNumber || employee.insuranceBookNumber || '',
-        BankName: employee.BankName || employee.bankName || 'Vietcombank',
-        BankAccountNumber: employee.BankAccountNumber || employee.bankAccount || '',
-        DependentsCount: employee.DependentsCount ?? employee.dependents ?? 0,
         DepartmentId: employee.DepartmentId || '',
         PositionId: employee.PositionId || '',
         JoinDate: employee.JoinDate || employee.joinDate || new Date().toISOString().slice(0, 10),
         WorkStatus: employee.WorkStatus || employee.status || 'Đang làm việc',
         BaseSalary: employee.BaseSalary ?? employee.baseSalary ?? 15000000,
-        InsuranceSalary: employee.InsuranceSalary ?? employee.insuranceSalary ?? 15000000,
-        FaceRegistered: !!(employee.FaceRegistered ?? employee.faceRegistered),
-        AvatarUrl: employee.AvatarUrl || employee.avatar || ''
+        InsuranceSalary: employee.InsuranceSalary ?? employee.insuranceSalary ?? 15000000
       });
+      setSelectedUserId(employee.UserId ? String(employee.UserId) : '');
     } else {
       setFormData({
+        UserId: null,
         EmployeeCode: '',
         FullName: '',
-        Gender: 'Nam',
-        BirthDate: '1995-01-01',
         Phone: '',
         Email: '',
-        Address: '',
-        IdCardNumber: '',
-        IdCardDate: '',
-        IdCardPlace: '',
-        TaxCode: '',
-        InsuranceBookNumber: '',
-        BankName: 'Vietcombank',
-        BankAccountNumber: '',
-        DependentsCount: 0,
         DepartmentId: departments[0]?.DepartmentId || '',
         PositionId: positions[0]?.PositionId || '',
         JoinDate: new Date().toISOString().slice(0, 10),
         WorkStatus: 'Đang làm việc',
         BaseSalary: 15000000,
-        InsuranceSalary: 15000000,
-        FaceRegistered: false,
-        AvatarUrl: ''
+        InsuranceSalary: 15000000
       });
+      setSelectedUserId('');
     }
     setErrorMsg('');
-  }, [employee, departments, positions, isOpen]);
+  }, [employee, departments, positions, isOpen, isEdit]);
 
   if (!isOpen) return null;
+
+  const handleSelectUser = (uId) => {
+    setSelectedUserId(uId);
+    if (!uId) {
+      setFormData(prev => ({
+        ...prev,
+        UserId: null,
+        FullName: '',
+        Email: '',
+        Phone: ''
+      }));
+      return;
+    }
+    const found = unassignedUsers.find(u => String(u.UserId) === String(uId));
+    if (found) {
+      setFormData(prev => ({
+        ...prev,
+        UserId: found.UserId,
+        FullName: found.FullName || found.Username,
+        Email: found.Email || '',
+        Phone: found.Phone || ''
+      }));
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -102,15 +108,44 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isEdit && !formData.UserId) {
+      setErrorMsg('Vui lòng chọn tài khoản nhân sự đã đăng ký!');
+      return;
+    }
+
     if (!formData.FullName || !formData.FullName.trim()) {
-      setErrorMsg('Vui lòng nhập họ và tên nhân viên!');
+      setErrorMsg('Họ và tên nhân viên là bắt buộc!');
+      return;
+    }
+
+    if (!formData.DepartmentId) {
+      setErrorMsg('Vui lòng chọn phòng ban trực thuộc cho nhân viên!');
+      return;
+    }
+
+    if (!formData.PositionId) {
+      setErrorMsg('Vui lòng chọn chức vụ công tác!');
+      return;
+    }
+
+    if (!formData.JoinDate) {
+      setErrorMsg('Vui lòng chọn ngày vào làm!');
+      return;
+    }
+
+    if (formData.BaseSalary === '' || formData.BaseSalary === null || Number(formData.BaseSalary) < 0) {
+      setErrorMsg('Vui lòng nhập mức lương cơ bản hợp lệ!');
       return;
     }
 
     try {
       setSubmitting(true);
       setErrorMsg('');
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        BaseSalary: Number(formData.BaseSalary) || 0,
+        InsuranceSalary: Number(formData.InsuranceSalary) || 0
+      });
       onClose();
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi lưu thông tin nhân sự!');
@@ -121,11 +156,11 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
 
   return (
     <div className="modal-wrap" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div className="modal" style={{ maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="modal-h" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {isEdit ? <Save size={20} style={{ color: '#0f766e' }} /> : <UserPlus size={20} style={{ color: '#0f766e' }} />}
-            <h3>{isEdit ? `Cập nhật hồ sơ: ${formData.FullName || formData.EmployeeCode}` : 'Thêm mới hồ sơ nhân sự (tblEmployee)'}</h3>
+            <h3>{isEdit ? `Cập nhật thông tin phân bổ: ${formData.FullName || formData.EmployeeCode}` : 'Tiếp nhận & Xếp phòng ban nhân sự mới'}</h3>
           </div>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
             <X size={18} />
@@ -142,138 +177,151 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
         <form onSubmit={handleSubmit}>
           <div className="modal-b" style={{ padding: '16px 20px' }}>
             <div className="form">
-              {/* PHẦN 1 */}
-              <div className="fsec" style={{ color: '#0f766e', fontWeight: 700 }}>1. Thông tin lý lịch & Định danh cá nhân</div>
+              {isEdit ? (
+                <>
+                  <div className="fsec" style={{ color: '#0f766e', fontWeight: 700 }}>1. THÔNG TIN NHÂN SỰ</div>
+                  <label className="field">
+                    <span>Mã nhân viên: <i className="req">*</i></span>
+                    <input
+                      name="EmployeeCode"
+                      className="inp"
+                      value={formData.EmployeeCode}
+                      disabled
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed', fontWeight: 600 }}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Họ và tên: <i className="req">*</i></span>
+                    <input
+                      name="FullName"
+                      className="inp"
+                      value={formData.FullName}
+                      disabled
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed', fontWeight: 600 }}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Email: <i className="req">*</i></span>
+                    <input
+                      name="Email"
+                      className="inp"
+                      value={formData.Email}
+                      disabled
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Số điện thoại:</span>
+                    <input
+                      name="Phone"
+                      className="inp"
+                      value={formData.Phone}
+                      disabled
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <div style={{ gridColumn: 'span 2', background: '#f0fdfa', border: '1px solid #99f6e4', padding: '16px', borderRadius: '10px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f766e', fontWeight: 700, fontSize: '13.5px' }}>
+                        <UserCheck size={18} />
+                        <span>Chọn tài khoản nhân sự đã đăng ký (Chờ xếp phòng ban) <i className="req">*</i></span>
+                      </div>
+                      {loadingUnassigned && (
+                        <span style={{ fontSize: '12px', color: '#0d9488' }}>Đang tải danh sách tài khoản...</span>
+                      )}
+                    </div>
+                    <select
+                      className="inp"
+                      value={selectedUserId}
+                      onChange={(e) => handleSelectUser(e.target.value)}
+                      style={{ borderColor: '#14b8a6', fontWeight: 600, background: '#ffffff', color: '#0f172a' }}
+                      required
+                    >
+                      <option value="">
+                        -- Chọn tài khoản từ danh sách đăng ký ({unassignedUsers.length} tài khoản chờ) --
+                      </option>
+                      {unassignedUsers.map(u => (
+                        <option key={u.UserId} value={u.UserId}>
+                          {u.FullName} (@{u.Username} - {u.Email}) {u.Phone ? `· SĐT: ${u.Phone}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedUserId ? (
+                      <div style={{ fontSize: '12px', color: '#0d9488', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 size={14} />
+                        <span>Thông tin cá nhân do nhân sự tự đăng ký. HR chỉ phân bổ phòng ban, chức vụ và mức lương.</span>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
+                        {unassignedUsers.length === 0 && !loadingUnassigned
+                          ? 'Hiện chưa có tài khoản nào đăng ký mới đang chờ tiếp nhận.'
+                          : 'Vui lòng chọn tài khoản nhân sự từ danh sách trên để tiếp nhận vào tổ chức.'}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="fsec" style={{ color: '#0f766e', fontWeight: 700 }}>1. THÔNG TIN CÁ NHÂN (DO NHÂN SỰ ĐĂNG KÝ)</div>
+
+                  <label className="field" style={{ gridColumn: 'span 2' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Họ và tên: <i className="req">*</i>
+                      {selectedUserId && <Lock size={12} style={{ color: '#64748b' }} />}
+                    </span>
+                    <input
+                      name="FullName"
+                      className="inp"
+                      required
+                      placeholder="Chọn tài khoản để hiển thị họ tên"
+                      value={formData.FullName}
+                      readOnly
+                      style={{ background: '#f8fafc', color: '#1e293b', fontWeight: 600, cursor: 'not-allowed' }}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Email: <i className="req">*</i>
+                      {selectedUserId && <Lock size={12} style={{ color: '#64748b' }} />}
+                    </span>
+                    <input
+                      type="email"
+                      name="Email"
+                      className="inp"
+                      required
+                      placeholder="Chọn tài khoản để hiển thị email"
+                      value={formData.Email}
+                      readOnly
+                      style={{ background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' }}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Số điện thoại:
+                      {selectedUserId && <Lock size={12} style={{ color: '#64748b' }} />}
+                    </span>
+                    <input
+                      name="Phone"
+                      className="inp"
+                      placeholder="Chọn tài khoản để hiển thị SĐT"
+                      value={formData.Phone}
+                      readOnly
+                      style={{ background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' }}
+                    />
+                  </label>
+                </>
+              )}
+
+              <div className="fsec" style={{ color: '#0f766e', fontWeight: 700, marginTop: '8px' }}>
+                2. PHÒNG BAN & VỊ TRÍ CÔNG TÁC (HR PHÂN BỔ)
+              </div>
 
               <label className="field">
-                <span>Mã nhân viên: <i className="req">*</i></span>
-                <input
-                  name="EmployeeCode"
-                  className="inp"
-                  required
-                  placeholder="Để trống để tự tạo (VD: NV010)"
-                  value={formData.EmployeeCode}
-                  onChange={handleChange}
-                  disabled={isEdit}
-                />
-              </label>
-
-              <label className="field">
-                <span>Họ và tên: <i className="req">*</i></span>
-                <input
-                  name="FullName"
-                  className="inp"
-                  required
-                  placeholder="Nguyễn Văn A"
-                  value={formData.FullName}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Giới tính:</span>
-                <select name="Gender" className="inp" value={formData.Gender} onChange={handleChange}>
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                  <option value="Khác">Khác</option>
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Ngày sinh:</span>
-                <input
-                  type="date"
-                  name="BirthDate"
-                  className="inp"
-                  value={formData.BirthDate}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Số điện thoại:</span>
-                <input
-                  name="Phone"
-                  className="inp"
-                  placeholder="0912345678"
-                  value={formData.Phone}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Email:</span>
-                <input
-                  type="email"
-                  name="Email"
-                  className="inp"
-                  placeholder="nhanvien@company.vn"
-                  value={formData.Email}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field" style={{ gridColumn: 'span 2' }}>
-                <span>Địa chỉ thường trú:</span>
-                <input
-                  name="Address"
-                  className="inp"
-                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP"
-                  value={formData.Address}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Số CCCD / CMND:</span>
-                <input
-                  name="IdCardNumber"
-                  className="inp"
-                  placeholder="001095001234"
-                  value={formData.IdCardNumber}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Ngày cấp CCCD:</span>
-                <input
-                  type="date"
-                  name="IdCardDate"
-                  className="inp"
-                  value={formData.IdCardDate}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Nơi cấp CCCD:</span>
-                <input
-                  name="IdCardPlace"
-                  className="inp"
-                  placeholder="Cục CS QLHC về TTXH"
-                  value={formData.IdCardPlace}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Ảnh đại diện (URL):</span>
-                <input
-                  name="AvatarUrl"
-                  className="inp"
-                  placeholder="https://..."
-                  value={formData.AvatarUrl}
-                  onChange={handleChange}
-                />
-              </label>
-
-              {/* PHẦN 2 */}
-              <div className="fsec" style={{ color: '#0f766e', fontWeight: 700, marginTop: '10px' }}>2. Phòng ban & Vị trí công tác</div>
-
-              <label className="field">
-                <span>Phòng ban:</span>
-                <select name="DepartmentId" className="inp" value={formData.DepartmentId} onChange={handleChange}>
+                <span>Phòng ban: <i className="req">*</i></span>
+                <select name="DepartmentId" className="inp" value={formData.DepartmentId} onChange={handleChange} required>
                   <option value="">-- Chọn phòng ban --</option>
                   {departments.map(d => (
                     <option key={d.DepartmentId} value={d.DepartmentId}>
@@ -284,8 +332,8 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
               </label>
 
               <label className="field">
-                <span>Chức vụ:</span>
-                <select name="PositionId" className="inp" value={formData.PositionId} onChange={handleChange}>
+                <span>Chức vụ: <i className="req">*</i></span>
+                <select name="PositionId" className="inp" value={formData.PositionId} onChange={handleChange} required>
                   <option value="">-- Chọn chức vụ --</option>
                   {positions.map(p => (
                     <option key={p.PositionId} value={p.PositionId}>
@@ -296,11 +344,12 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
               </label>
 
               <label className="field">
-                <span>Ngày vào làm:</span>
+                <span>Ngày vào làm: <i className="req">*</i></span>
                 <input
                   type="date"
                   name="JoinDate"
                   className="inp"
+                  required
                   value={formData.JoinDate}
                   onChange={handleChange}
                 />
@@ -316,8 +365,9 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
                 </select>
               </label>
 
-              {/* PHẦN 3 */}
-              <div className="fsec" style={{ color: '#0f766e', fontWeight: 700, marginTop: '10px' }}>3. Chế độ lương, Thuế & Tài khoản ngân hàng</div>
+              <div className="fsec" style={{ color: '#0f766e', fontWeight: 700, marginTop: '8px' }}>
+                3. CHẾ ĐỘ LƯƠNG, THUẾ & TÀI KHOẢN NGÂN HÀNG
+              </div>
 
               <label className="field">
                 <span>Lương cơ bản (VNĐ): <i className="req">*</i></span>
@@ -343,76 +393,6 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
                   onChange={handleChange}
                 />
               </label>
-
-              <label className="field">
-                <span>Số người phụ thuộc (NPT):</span>
-                <input
-                  type="number"
-                  min="0"
-                  name="DependentsCount"
-                  className="inp num"
-                  value={formData.DependentsCount}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Mã số thuế cá nhân:</span>
-                <input
-                  name="TaxCode"
-                  className="inp"
-                  placeholder="8019283741"
-                  value={formData.TaxCode}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Số sổ BHXH:</span>
-                <input
-                  name="InsuranceBookNumber"
-                  className="inp"
-                  placeholder="7912345678"
-                  value={formData.InsuranceBookNumber}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Ngân hàng thụ hưởng:</span>
-                <input
-                  name="BankName"
-                  className="inp"
-                  placeholder="Vietcombank, MB Bank, Techcombank..."
-                  value={formData.BankName}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="field">
-                <span>Số tài khoản ngân hàng:</span>
-                <input
-                  name="BankAccountNumber"
-                  className="inp"
-                  placeholder="19036789123456"
-                  value={formData.BankAccountNumber}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <div className="field" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-                <input
-                  type="checkbox"
-                  id="FaceRegisteredCheckbox"
-                  name="FaceRegistered"
-                  checked={formData.FaceRegistered}
-                  onChange={handleChange}
-                  style={{ width: '17px', height: '17px', accentColor: '#0f766e', cursor: 'pointer' }}
-                />
-                <label htmlFor="FaceRegisteredCheckbox" style={{ fontSize: '13px', cursor: 'pointer', fontWeight: 600, color: '#334155' }}>
-                  Đã hoàn tất đăng ký dữ liệu nhận diện khuôn mặt OpenCV (FaceRegistered)
-                </label>
-              </div>
             </div>
           </div>
 
@@ -421,7 +401,7 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
               Hủy
             </button>
             <button type="submit" className="btn pri" disabled={submitting}>
-              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Thêm mới nhân viên'}
+              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Lưu tiếp nhận nhân sự'}
             </button>
           </div>
         </form>
@@ -429,4 +409,3 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
     </div>
   );
 }
-

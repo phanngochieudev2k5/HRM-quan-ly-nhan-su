@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.use(verifyToken, requireRole('HR', 'Admin'));
 
+router.get('/unassigned-users', EmployeeController.getUnassignedUsers);
 router.get('/', EmployeeController.getEmployees);
 router.get('/:id', EmployeeController.getEmployeeById);
 router.post('/', EmployeeController.createEmployee);

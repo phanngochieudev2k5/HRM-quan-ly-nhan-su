@@ -1,6 +1,15 @@
 import ApiClient from './ApiClient';
 
 export const HrService = {
+  async getUnassignedUsers() {
+    try {
+      const res = await ApiClient.get('/employees/unassigned-users');
+      return res.data || [];
+    } catch {
+      return [];
+    }
+  },
+
   /**
    * Lấy danh sách nhân sự (hỗ trợ phân trang, tìm kiếm, lọc)
    * @param {Object} params { page, limit, search, departmentId, workStatus }

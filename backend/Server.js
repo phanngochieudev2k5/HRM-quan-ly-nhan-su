@@ -8,6 +8,7 @@ import AdminRoutes from './src/Routes/AdminRoutes.js';
 import HrRoutes from './src/Routes/HrRoutes.js';
 import EmployeeRoutes from './src/Routes/EmployeeRoutes.js';
 import ContractRoutes from './src/Routes/ContractRoutes.js';
+import OrgRoutes from './src/Routes/OrgRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';

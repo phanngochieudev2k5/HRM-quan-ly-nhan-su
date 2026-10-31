@@ -1,7 +1,6 @@
 import ApiClient from './ApiClient';
 
 export const AuthService = {
-  
   async login(username, password) {
     const res = await ApiClient.post('/auth/login', { username, password });
     if (res.success && res.data) {
@@ -26,6 +25,20 @@ export const AuthService = {
 
   async getMe() {
     return await ApiClient.get('/auth/me');
+  },
+
+  async updateProfile(profileData) {
+    const res = await ApiClient.put('/auth/profile', profileData);
+    if (res.success && res.data) {
+      const current = this.getCurrentUser() || {};
+      const updated = { ...current, ...res.data };
+      this.setSession(null, updated);
+    }
+    return res;
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    return await ApiClient.post('/auth/change-password', { currentPassword, newPassword });
   },
 
   logout() {

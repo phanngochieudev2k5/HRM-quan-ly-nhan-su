@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useNavigate, useLocation, useParams } 
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import AuthPage from './pages/auth/AuthPage';
+import PendingApprovalView from './pages/auth/PendingApprovalView';
 
 import AdminDashboard from './pages/roles/admin/AdminDashboard';
 import UserAccountsView from './pages/roles/admin/UserAccountsView';
@@ -179,6 +180,25 @@ export default function App() {
     }
   };
 
+  const isPendingEmployee = currentRole === 'Employee' && (currentUser?.isPending || (!currentUser?.departmentId && !currentUser?.employeeId));
+
+  if (authToken && currentUser && isPendingEmployee) {
+    return (
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <PendingApprovalView
+              currentUser={currentUser}
+              onAuthSuccess={handleAuthSuccess}
+              onLogout={handleLogout}
+            />
+          }
+        />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route
@@ -208,12 +228,7 @@ export default function App() {
               />
 
               <div className="main-wrapper">
-                <Header
-                  currentRole={currentRole}
-                  currentUser={currentUser}
-                  onLogout={handleLogout}
-                  onNavigate={handleNavigate}
-                />
+                <Header currentRole={currentRole} currentUser={currentUser} onLogout={handleLogout} onNavigate={handleNavigate} onUserUpdate={(updated) => setCurrentUser(prev => ({ ...prev, ...updated }))} />
 
                 <main className="content-area">
                   <Outlet />
@@ -340,3 +355,4 @@ export default function App() {
     </Routes>
   );
 }
+

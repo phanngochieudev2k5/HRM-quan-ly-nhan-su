@@ -4,7 +4,7 @@ dotenv.config();
 
 const connectionString =
     process.env.DB_CONNECTION_STRING ||
-    'Driver={ODBC Driver 17 for SQL Server};Server=芒果\\SQLEXPRESS;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
+    'Driver={ODBC Driver 17 for SQL Server};Server=CODER\\SQLEXPRESS01;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
 
 let pool = null;
 
@@ -17,6 +17,16 @@ export const connectDb = async () => {
             console.log(
                 '✅ Kết nối thành công đến SQL Server (HRM_Enterprise_DB)!',
             );
+            try {
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblUser') AND name = 'Phone')
+                    BEGIN
+                        ALTER TABLE tblUser ADD Phone VARCHAR(20) NULL;
+                    END
+                `);
+            } catch (migrationErr) {
+                console.warn('Cảnh báo migration tblUser.Phone:', migrationErr.message);
+            }
         }
         return pool;
     } catch (error) {

@@ -2,6 +2,25 @@ import { connectDb, sql } from '../../Config/DbConfig.js';
 import { sendSuccess, sendError } from '../../Utils/ResponseHelper.js';
 
 export class EmployeeController {
+
+  static async getUnassignedUsers(req, res) {
+    try {
+      const pool = await connectDb();
+      const result = await pool.request().query(`
+        SELECT u.UserId, u.Username, u.Email, u.FullName, u.Phone, u.CreatedAt
+        FROM tblUser u
+        JOIN tblRole r ON u.RoleId = r.RoleId
+        LEFT JOIN tblEmployee e ON u.UserId = e.UserId
+        WHERE r.RoleCode = 'Employee' AND (e.EmployeeId IS NULL OR e.DepartmentId IS NULL)
+        ORDER BY u.UserId DESC
+      `);
+      return sendSuccess(res, result.recordset, 'Lấy danh sách tài khoản chờ tiếp nhận thành công!');
+    } catch (error) {
+      console.error('[EmployeeController.getUnassignedUsers] Error:', error);
+      return sendError(res, error.message, 500, error);
+    }
+  }
+
   
   static async getEmployees(req, res) {
     try {
@@ -218,19 +237,32 @@ export class EmployeeController {
         return sendError(res, 'Họ và tên nhân viên là bắt buộc!', 400);
       }
 
-      
       let employeeCode = (body.EmployeeCode || '').trim();
       if (!employeeCode) {
-        const countRes = await pool.request().query('SELECT COUNT(*) as total FROM tblEmployee');
-        const nextIdx = (countRes.recordset[0].total || 0) + 1;
-        employeeCode = `NV${String(nextIdx).padStart(3, '0')}`;
+        const maxRes = await pool.request().query(`
+          SELECT MAX(CAST(SUBSTRING(EmployeeCode, 3, 10) AS INT)) as maxNum 
+          FROM tblEmployee 
+          WHERE EmployeeCode LIKE 'NV%' AND ISNUMERIC(SUBSTRING(EmployeeCode, 3, 10)) = 1
+        `);
+        const nextNum = (maxRes.recordset[0]?.maxNum || 0) + 1;
+        employeeCode = `NV${String(nextNum).padStart(3, '0')}`;
       } else {
-        
         const checkCode = await pool.request()
           .input('code', sql.VarChar(20), employeeCode)
           .query('SELECT EmployeeId FROM tblEmployee WHERE EmployeeCode = @code');
         if (checkCode.recordset.length > 0) {
           return sendError(res, `Mã nhân viên "${employeeCode}" đã tồn tại trong hệ thống!`, 400);
+        }
+      }
+
+      const userId = body.UserId ? parseInt(body.UserId) : null;
+      let existingEmpId = null;
+      if (userId) {
+        const checkUserEmp = await pool.request()
+          .input('checkUserId', sql.Int, userId)
+          .query('SELECT EmployeeId FROM tblEmployee WHERE UserId = @checkUserId');
+        if (checkUserEmp.recordset.length > 0) {
+          existingEmpId = checkUserEmp.recordset[0].EmployeeId;
         }
       }
 
@@ -253,7 +285,7 @@ export class EmployeeController {
       request.input('DepartmentId', sql.Int, body.DepartmentId ? parseInt(body.DepartmentId) : null);
       request.input('PositionId', sql.Int, body.PositionId ? parseInt(body.PositionId) : null);
       request.input('ManagerId', sql.Int, body.ManagerId ? parseInt(body.ManagerId) : null);
-      request.input('UserId', sql.Int, body.UserId ? parseInt(body.UserId) : null);
+      request.input('UserId', sql.Int, userId);
       request.input('JoinDate', sql.Date, body.JoinDate || new Date().toISOString().slice(0, 10));
       request.input('WorkStatus', sql.NVarChar(50), body.WorkStatus || 'Đang làm việc');
       request.input('BaseSalary', sql.Decimal(18, 2), parseFloat(body.BaseSalary) || 0);
@@ -261,38 +293,70 @@ export class EmployeeController {
       request.input('FaceRegistered', sql.Bit, body.FaceRegistered ? 1 : 0);
       request.input('AvatarUrl', sql.NVarChar(500), body.AvatarUrl || null);
 
-      const insertResult = await request.query(`
-        INSERT INTO tblEmployee (
-          EmployeeCode, FullName, Gender, BirthDate, Phone, Email, Address,
-          IdCardNumber, IdCardDate, IdCardPlace, TaxCode, InsuranceBookNumber,
-          BankName, BankAccountNumber, DependentsCount, DepartmentId, PositionId,
-          ManagerId, UserId, JoinDate, WorkStatus, BaseSalary, InsuranceSalary,
-          FaceRegistered, AvatarUrl, CreatedAt, UpdatedAt
-        )
-        OUTPUT INSERTED.EmployeeId, INSERTED.EmployeeCode
-        VALUES (
-          @EmployeeCode, @FullName, @Gender, @BirthDate, @Phone, @Email, @Address,
-          @IdCardNumber, @IdCardDate, @IdCardPlace, @TaxCode, @InsuranceBookNumber,
-          @BankName, @BankAccountNumber, @DependentsCount, @DepartmentId, @PositionId,
-          @ManagerId, @UserId, @JoinDate, @WorkStatus, @BaseSalary, @InsuranceSalary,
-          @FaceRegistered, @AvatarUrl, SYSDATETIME(), SYSDATETIME()
-        )
-      `);
-
-      const newEmployeeId = insertResult.recordset[0].EmployeeId;
+      let savedEmpId = existingEmpId;
+      if (existingEmpId) {
+        request.input('ExistingEmpId', sql.Int, existingEmpId);
+        await request.query(`
+          UPDATE tblEmployee SET
+            EmployeeCode = @EmployeeCode,
+            FullName = @FullName,
+            Gender = @Gender,
+            BirthDate = @BirthDate,
+            Phone = @Phone,
+            Email = @Email,
+            Address = @Address,
+            IdCardNumber = @IdCardNumber,
+            IdCardDate = @IdCardDate,
+            IdCardPlace = @IdCardPlace,
+            TaxCode = @TaxCode,
+            InsuranceBookNumber = @InsuranceBookNumber,
+            BankName = @BankName,
+            BankAccountNumber = @BankAccountNumber,
+            DependentsCount = @DependentsCount,
+            DepartmentId = @DepartmentId,
+            PositionId = @PositionId,
+            ManagerId = @ManagerId,
+            JoinDate = @JoinDate,
+            WorkStatus = @WorkStatus,
+            BaseSalary = @BaseSalary,
+            InsuranceSalary = @InsuranceSalary,
+            FaceRegistered = @FaceRegistered,
+            AvatarUrl = @AvatarUrl,
+            UpdatedAt = SYSDATETIME()
+          WHERE EmployeeId = @ExistingEmpId
+        `);
+      } else {
+        const insertResult = await request.query(`
+          INSERT INTO tblEmployee (
+            EmployeeCode, FullName, Gender, BirthDate, Phone, Email, Address,
+            IdCardNumber, IdCardDate, IdCardPlace, TaxCode, InsuranceBookNumber,
+            BankName, BankAccountNumber, DependentsCount, DepartmentId, PositionId,
+            ManagerId, UserId, JoinDate, WorkStatus, BaseSalary, InsuranceSalary,
+            FaceRegistered, AvatarUrl, CreatedAt, UpdatedAt
+          )
+          OUTPUT INSERTED.EmployeeId, INSERTED.EmployeeCode
+          VALUES (
+            @EmployeeCode, @FullName, @Gender, @BirthDate, @Phone, @Email, @Address,
+            @IdCardNumber, @IdCardDate, @IdCardPlace, @TaxCode, @InsuranceBookNumber,
+            @BankName, @BankAccountNumber, @DependentsCount, @DepartmentId, @PositionId,
+            @ManagerId, @UserId, @JoinDate, @WorkStatus, @BaseSalary, @InsuranceSalary,
+            @FaceRegistered, @AvatarUrl, SYSDATETIME(), SYSDATETIME()
+          )
+        `);
+        savedEmpId = insertResult.recordset[0].EmployeeId;
+      }
 
       return sendSuccess(res, {
-        EmployeeId: newEmployeeId,
+        EmployeeId: savedEmpId,
         EmployeeCode: employeeCode,
         FullName: body.FullName
-      }, 'Thêm mới hồ sơ nhân sự thành công!', 201);
+      }, 'Tiếp nhận và lưu hồ sơ nhân sự thành công!', 201);
     } catch (error) {
       console.error('[EmployeeController.createEmployee] Error:', error);
       return sendError(res, error.message, 500, error);
     }
   }
 
-  
   static async updateEmployee(req, res) {
     try {
       const { id } = req.params;
