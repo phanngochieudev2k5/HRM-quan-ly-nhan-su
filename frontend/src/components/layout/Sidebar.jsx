@@ -47,7 +47,8 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
           { id: 'manager-team', label: 'Thành viên trong nhóm', icon: Users },
           { id: 'manager-leaves', label: 'Phê duyệt đơn nghỉ', icon: CalendarDays, badge: '1 chờ' },
           { id: 'manager-overtime', label: 'Phê duyệt tăng ca', icon: Timer, badge: '1 chờ' },
-          { id: 'manager-performance', label: 'Đánh giá KPI nhóm', icon: Award }
+          { id: 'manager-performance', label: 'Đánh giá KPI nhóm', icon: Award },
+          { id: 'manager-payslip', label: 'Phiếu lương cá nhân', icon: DollarSign }
         ];
 
       case 'Employee':
@@ -67,7 +68,8 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
           { id: 'finance-dashboard', label: 'Tổng quan quỹ lương', icon: LayoutDashboard },
           { id: 'finance-calc', label: 'Bảng thanh toán lương', icon: DollarSign, badge: 'T04' },
           { id: 'finance-components', label: 'Gross ⇄ Net & Phụ cấp', icon: Settings },
-          { id: 'finance-reports', label: 'Báo cáo thuế & Ngân hàng', icon: BarChart3 }
+          { id: 'finance-reports', label: 'Báo cáo thuế & Ngân hàng', icon: BarChart3 },
+          { id: 'finance-payslip', label: 'Phiếu lương cá nhân', icon: DollarSign }
         ];
 
       case 'HR':
@@ -109,7 +111,8 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
           { id: 'hr-leave', label: 'Quản lý nghỉ phép', icon: CalendarDays },
           { id: 'hr-overtime', label: 'Quản lý tăng ca (OT)', icon: Timer },
           { id: 'hr-assets', label: 'Tài sản thiết bị', icon: Laptop },
-          { id: 'hr-reports', label: 'Báo cáo nhân sự', icon: BarChart3 }
+          { id: 'hr-reports', label: 'Báo cáo nhân sự', icon: BarChart3 },
+          { id: 'hr-payslip', label: 'Phiếu lương cá nhân', icon: DollarSign }
         ];
     }
   };
@@ -153,11 +156,9 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
                 onClick={() => {
                   if (hasSub) {
                     if (!isActive) {
-                      
                       setOpenSubmenus(prev => ({ ...prev, [item.id]: true }));
                       onNavigate(item.id, item.subItems[0].id);
                     } else {
-                      
                       toggleSubmenu(item.id);
                     }
                   } else {

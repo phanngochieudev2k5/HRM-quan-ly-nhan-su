@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import {
   Search, Bell, Shield, LogOut, CheckCircle2,
-  ChevronDown, User, Sparkles
+  ChevronDown, User, Sparkles, UserCog
 } from 'lucide-react';
+import AccountManagementModal from '../common/AccountManagementModal';
+import Toast from '../common/Toast';
 import '../../styles/layout/Header.css';
 
-export default function Header({ currentRole, currentUser, onLogout, onNavigate }) {
+export default function Header({ currentRole, currentUser, onLogout, onNavigate, onUserUpdate }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
 
   const notifications = [
     { id: 1, title: 'Hệ thống xác thực JWT', desc: 'Phiên đăng nhập phân quyền bảo mật đang hoạt động', time: 'Vừa xong' },
@@ -34,149 +42,175 @@ export default function Header({ currentRole, currentUser, onLogout, onNavigate 
   const roleInfo = getRoleBadgeInfo(currentUser?.role || currentRole);
 
   return (
-    <header className="app-header">
-      <div className="header-search">
-        <Search size={15} className="header-search-icon" />
-        <input
-          type="text"
-          className="header-search-input"
-          placeholder="Tìm nhân viên, hợp đồng, bảng lương..."
-        />
-      </div>
-
-      <div className="header-actions">
-        
-        <div
-          className="active-role-badge"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '5px 12px',
-            background: roleInfo.bg,
-            border: `1px solid ${roleInfo.color}30`,
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: '600',
-            color: roleInfo.color
-          }}
-          title={`Tài khoản đang đăng nhập với quyền: ${roleInfo.label}`}
-        >
-          <Shield size={13} style={{ color: roleInfo.color }} />
-          <span>Vai trò: <strong>{currentUser?.roleTitle || roleInfo.label}</strong></span>
+    <>
+      <header className="app-header">
+        <div className="header-search">
+          <Search size={15} className="header-search-icon" />
+          <input
+            type="text"
+            className="header-search-input"
+            placeholder="Tìm nhân viên, hợp đồng, bảng lương..."
+          />
         </div>
 
-        <div style={{ position: 'relative' }}>
-          <button
-            className="header-icon-btn"
-            onClick={() => {
-              setShowNotifications(!showNotifications);
-              setShowUserMenu(false);
-            }}
-            title="Thông báo hệ thống"
-          >
-            <Bell size={17} />
-            <span className="header-badge-count">3</span>
-          </button>
-
-          {showNotifications && (
-            <div className="role-dropdown-menu" style={{ width: '320px' }}>
-              <div className="role-dropdown-header">
-                Thông báo hệ thống
-              </div>
-              {notifications.map(n => (
-                <div key={n.id} className="role-option-item">
-                  <CheckCircle2 size={15} style={{ color: '#10b981', marginTop: '2px', flexShrink: 0 }} />
-                  <div className="role-option-info">
-                    <b>{n.title}</b>
-                    <small>{n.desc}</small>
-                    <span style={{ fontSize: '10.5px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>{n.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{ position: 'relative' }}>
+        <div className="header-actions">
           <div
-            className="user-profile-summary"
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              setShowUserMenu(!showUserMenu);
-              setShowNotifications(false);
+            className="active-role-badge"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              background: roleInfo.bg,
+              border: `1px solid ${roleInfo.color}30`,
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: roleInfo.color
             }}
+            title={`Tài khoản đang đăng nhập với quyền: ${roleInfo.label}`}
           >
-            <div className="user-avatar-header">
-              {currentUser?.avatar ? (
-                <img src={currentUser.avatar} alt={currentUser.name} />
-              ) : (
-                currentUser?.name ? currentUser.name[0] : (currentUser?.fullName ? currentUser.fullName[0] : 'U')
-              )}
-            </div>
-            <div className="user-text-info">
-              <span className="user-text-name">{currentUser?.name || currentUser?.fullName || 'Người dùng'}</span>
-              <span className="user-text-role">{currentUser?.username || currentUser?.roleTitle || 'HRM User'}</span>
-            </div>
-            <ChevronDown size={13} style={{ color: '#94a3b8', marginLeft: '4px' }} />
+            <Shield size={13} style={{ color: roleInfo.color }} />
+            <span>Vai trò: <strong>{currentUser?.roleTitle || roleInfo.label}</strong></span>
           </div>
 
-          {showUserMenu && (
-            <div className="role-dropdown-menu" style={{ width: '240px', right: 0 }}>
-              <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
-                  {currentUser?.name || currentUser?.fullName || 'Người dùng'}
-                </div>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                  {currentUser?.email || `@${currentUser?.username}`}
-                </div>
-                <div style={{
-                  display: 'inline-block',
-                  marginTop: '6px',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '10.5px',
-                  fontWeight: '700',
-                  background: roleInfo.bg,
-                  color: roleInfo.color
-                }}>
-                  {currentUser?.roleTitle || roleInfo.label}
-                </div>
-              </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              className="header-icon-btn"
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowUserMenu(false);
+              }}
+              title="Thông báo hệ thống"
+            >
+              <Bell size={17} />
+              <span className="header-badge-count">3</span>
+            </button>
 
-              {currentUser?.role === 'Employee' && (
-                <div
-                  className="role-option-item"
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    if (onNavigate) onNavigate('employee-profile');
-                  }}
-                >
-                  <User size={14} style={{ color: '#64748b' }} />
-                  <div className="role-option-info">
-                    <b style={{ fontSize: '12.5px' }}>Hồ sơ của tôi</b>
+            {showNotifications && (
+              <div className="role-dropdown-menu" style={{ width: '320px' }}>
+                <div className="role-dropdown-header">
+                  Thông báo hệ thống
+                </div>
+                {notifications.map(n => (
+                  <div key={n.id} className="role-option-item">
+                    <CheckCircle2 size={15} style={{ color: '#10b981', marginTop: '2px', flexShrink: 0 }} />
+                    <div className="role-option-info">
+                      <b>{n.title}</b>
+                      <small>{n.desc}</small>
+                      <span style={{ fontSize: '10.5px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>{n.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <div
+              className="user-profile-summary"
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
+            >
+              <div className="user-avatar-header">
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt={currentUser.name} />
+                ) : (
+                  currentUser?.name ? currentUser.name[0] : (currentUser?.fullName ? currentUser.fullName[0] : 'U')
+                )}
+              </div>
+              <div className="user-text-info">
+                <span className="user-text-name">{currentUser?.name || currentUser?.fullName || 'Người dùng'}</span>
+                <span className="user-text-role">{currentUser?.username || currentUser?.roleTitle || 'HRM User'}</span>
+              </div>
+              <ChevronDown size={13} style={{ color: '#94a3b8', marginLeft: '4px' }} />
+            </div>
+
+            {showUserMenu && (
+              <div className="role-dropdown-menu" style={{ width: '250px', right: 0 }}>
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+                    {currentUser?.name || currentUser?.fullName || 'Người dùng'}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                    {currentUser?.email || `@${currentUser?.username}`}
+                  </div>
+                  <div style={{
+                    display: 'inline-block',
+                    marginTop: '6px',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '10.5px',
+                    fontWeight: '700',
+                    background: roleInfo.bg,
+                    color: roleInfo.color
+                  }}>
+                    {currentUser?.roleTitle || roleInfo.label}
                   </div>
                 </div>
-              )}
 
-              <div
-                className="role-option-item"
-                style={{ color: '#ef4444', marginTop: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}
-                onClick={() => {
-                  setShowUserMenu(false);
-                  if (onLogout) onLogout();
-                }}
-              >
-                <LogOut size={14} style={{ color: '#ef4444' }} />
-                <div className="role-option-info">
-                  <b style={{ fontSize: '12.5px', color: '#ef4444' }}>Đăng xuất khỏi hệ thống</b>
-                  <small style={{ color: '#f87171' }}>Xóa phiên đăng nhập</small>
+                <div
+                  className="role-option-item"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    setIsAccountModalOpen(true);
+                  }}
+                >
+                  <UserCog size={15} style={{ color: '#0f766e', flexShrink: 0 }} />
+                  <div className="role-option-info">
+                    <b style={{ fontSize: '12.5px', color: '#1e293b' }}>Quản lý tài khoản</b>
+                    <small style={{ color: '#64748b' }}>Thông tin & Đổi mật khẩu</small>
+                  </div>
+                </div>
+
+                {currentUser?.role === 'Employee' && (
+                  <div
+                    className="role-option-item"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      if (onNavigate) onNavigate('employee-profile');
+                    }}
+                  >
+                    <User size={14} style={{ color: '#64748b' }} />
+                    <div className="role-option-info">
+                      <b style={{ fontSize: '12.5px' }}>Hồ sơ của tôi</b>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className="role-option-item"
+                  style={{ color: '#ef4444', marginTop: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    if (onLogout) onLogout();
+                  }}
+                >
+                  <LogOut size={14} style={{ color: '#ef4444' }} />
+                  <div className="role-option-info">
+                    <b style={{ fontSize: '12.5px', color: '#ef4444' }}>Đăng xuất khỏi hệ thống</b>
+                    <small style={{ color: '#f87171' }}>Xóa phiên đăng nhập</small>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <AccountManagementModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        currentUser={currentUser}
+        onUserUpdate={onUserUpdate}
+        onToast={showToast}
+      />
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </>
   );
 }

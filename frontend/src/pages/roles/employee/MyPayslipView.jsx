@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
 import {
   Printer, HelpCircle, CheckCircle2,
-  Calendar, Send, X, ShieldAlert
+  Calendar, Send, X, ShieldAlert,
+  FileSpreadsheet, Eye, EyeOff
 } from 'lucide-react';
+import AuthService from '../../../services/AuthService';
+import EmptyState from '../../../components/common/EmptyState';
 import '../../../styles/roles/employee/MyPayslipView.css';
 
-export default function MyPayslipView() {
+export default function MyPayslipView({ role, user }) {
+  const currentUser = user || AuthService.getCurrentUser() || {};
+  const currentRole = role || currentUser?.role || 'Employee';
+  const isEmployeeRole = currentRole === 'Employee';
+
   const [selectedMonth, setSelectedMonth] = useState('2026-04');
   const [isDisputeOpen, setIsDisputeOpen] = useState(false);
   const [disputeText, setDisputeText] = useState('');
   const [disputeSent, setDisputeSent] = useState(false);
+  const [showPreviewSample, setShowPreviewSample] = useState(false);
 
   const payslips = {
     '2026-04': {
-      empName: 'Lê Hoàng Long',
-      empId: 'NV003',
-      dept: 'Khối Kỹ Thuật (IT)',
-      position: 'Backend Developer',
-      joinDate: '01/06/2023',
-      idCard: '001096009876',
-      taxCode: '8719283719',
-      bankName: 'Vietcombank - CN Ba Đình',
-      bankAccount: '045100039281',
+      empName: currentUser.name || currentUser.fullName || 'Lê Hoàng Long',
+      empId: currentUser.employeeCode || 'NV003',
+      dept: currentUser.department || 'Khối Kỹ Thuật (IT)',
+      position: currentUser.position || currentUser.roleTitle || 'Backend Developer',
+      joinDate: currentUser.joinDate || '01/06/2023',
+      idCard: currentUser.idCardNumber || '001096009876',
+      taxCode: currentUser.taxCode || '8719283719',
+      bankName: currentUser.bankName || 'Vietcombank - CN Ba Đình',
+      bankAccount: currentUser.bankAccountNumber || '045100039281',
       standardDays: 26,
       actualDays: 26.0,
       paidDays: 26.0,
@@ -60,15 +68,15 @@ export default function MyPayslipView() {
       totalCompanyCost: 32769231
     },
     '2026-03': {
-      empName: 'Lê Hoàng Long',
-      empId: 'NV003',
-      dept: 'Khối Kỹ Thuật (IT)',
-      position: 'Backend Developer',
-      joinDate: '01/06/2023',
-      idCard: '001096009876',
-      taxCode: '8719283719',
-      bankName: 'Vietcombank - CN Ba Đình',
-      bankAccount: '045100039281',
+      empName: currentUser.name || currentUser.fullName || 'Lê Hoàng Long',
+      empId: currentUser.employeeCode || 'NV003',
+      dept: currentUser.department || 'Khối Kỹ Thuật (IT)',
+      position: currentUser.position || currentUser.roleTitle || 'Backend Developer',
+      joinDate: currentUser.joinDate || '01/06/2023',
+      idCard: currentUser.idCardNumber || '001096009876',
+      taxCode: currentUser.taxCode || '8719283719',
+      bankName: currentUser.bankName || 'Vietcombank - CN Ba Đình',
+      bankAccount: currentUser.bankAccountNumber || '045100039281',
       standardDays: 26,
       actualDays: 25.5,
       paidDays: 25.5,
@@ -163,22 +171,40 @@ export default function MyPayslipView() {
     }, 1500);
   };
 
+  const hasData = isEmployeeRole || showPreviewSample;
+
   return (
     <div className="payslip-container">
       <div className="ph">
         <div>
           <h1>Phiếu lương cá nhân</h1>
-          <p>Xem chi tiết ngày công làm việc, phụ cấp, bảo hiểm và thu nhập thực lĩnh chuyển khoản</p>
+          <p>
+            Xem chi tiết ngày công làm việc, phụ cấp, bảo hiểm và thu nhập thực lĩnh chuyển khoản của {currentUser.name || currentUser.fullName || 'bạn'}
+          </p>
         </div>
         <div className="ph-tools">
-          <button className="btn" onClick={() => window.print()}>
-            <Printer size={15} />
-            <span>In phiếu lương</span>
-          </button>
-          <button className="btn pri" onClick={() => setIsDisputeOpen(true)}>
-            <HelpCircle size={15} />
-            <span>Phản hồi kỳ lương</span>
-          </button>
+          {hasData && (
+            <button className="btn" onClick={() => window.print()}>
+              <Printer size={15} />
+              <span>In phiếu lương</span>
+            </button>
+          )}
+          {hasData && (
+            <button className="btn pri" onClick={() => setIsDisputeOpen(true)}>
+              <HelpCircle size={15} />
+              <span>Phản hồi kỳ lương</span>
+            </button>
+          )}
+          {!isEmployeeRole && (
+            <button
+              className="btn"
+              onClick={() => setShowPreviewSample(!showPreviewSample)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              {showPreviewSample ? <EyeOff size={15} /> : <Eye size={15} />}
+              <span>{showPreviewSample ? 'Trở về trạng thái chưa có dữ liệu' : 'Xem giao diện mẫu phiếu lương'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -192,256 +218,327 @@ export default function MyPayslipView() {
               onChange={(e) => setSelectedMonth(e.target.value)}
             />
           </label>
-          <span className="badge b-green">Đã thanh toán ngân hàng</span>
+          <span className={`badge ${hasData ? 'b-green' : 'b-amber'}`}>
+            {hasData ? (showPreviewSample ? 'Bản xem trước mẫu' : 'Đã thanh toán ngân hàng') : 'Chưa chốt số liệu'}
+          </span>
         </div>
         <div className="small muted">
-          Hình thức chi trả: <strong>{current.bankName} - {current.bankAccount}</strong>
+          Tài khoản: <strong>{currentUser.name || currentUser.fullName || 'Người dùng'} ({currentUser.roleTitle || currentRole})</strong>
         </div>
       </div>
 
-      <div className="payslip-main-card">
-        <div className="ps">
-          <div className="ps-top">
-            <div className="ps-co">
-              <div>
-                <b>CÔNG TY CỔ PHẦN CÔNG NGHỆ ENTERPRISE VN</b>
-                <div className="l">Số 12 Phố Mẫu, Quận Cầu Giấy, Hà Nội</div>
-                <div className="l">ĐT: 024 3999 8888 · MST: 0101 234 567</div>
+      {!hasData ? (
+        <div className="payslip-main-card" style={{ padding: '24px' }}>
+          <div style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px'
+          }}>
+            <div>
+              <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Họ và tên</span>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', marginTop: '2px' }}>
+                {currentUser.name || currentUser.fullName || 'Chưa cập nhật'}
               </div>
             </div>
-            <div className="ps-tt">
-              <h1>PHIẾU LƯƠNG</h1>
-              <div>Kỳ lương: <b>{selectedMonth}</b></div>
-              <div>Số phiếu: <b>PL-{selectedMonth.replace('-', '')}-{current.empId}</b></div>
-            </div>
-          </div>
-
-          <div className="ps-band"></div>
-
-          <div className="ps-emp">
-            <div className="ps-av">
-              {(current?.empName || 'N').split(' ').slice(-1)[0]?.[0] || 'N'}
-            </div>
-            <div className="ps-eg">
-              <div><span>Họ và tên:</span><b>{current.empName}</b></div>
-              <div><span>Mã nhân viên:</span><b>{current.empId}</b></div>
-              <div><span>Phòng ban:</span><b>{current.dept}</b></div>
-              <div><span>Chức vụ:</span><b>{current.position}</b></div>
-              <div><span>Ngày vào làm:</span><b>{current.joinDate}</b></div>
-              <div><span>Mã số thuế:</span><b>{current.taxCode}</b></div>
-              <div><span>Ngân hàng:</span><b>{current.bankName}</b></div>
-              <div><span>Số tài khoản:</span><b>{current.bankAccount}</b></div>
-            </div>
-          </div>
-
-          <div className="ps-att">
-            <div><b>{current.standardDays}</b><span>Công chuẩn</span></div>
-            <div><b>{current.actualDays}</b><span>Công thực tế</span></div>
-            <div><b>{current.otHours}</b><span>Giờ làm thêm (OT)</span></div>
-            <div><b>{current.unpaidDays}</b><span>Nghỉ không lương</span></div>
-            <div><b>{formatMoney(current.baseSalary)}</b><span>Lương cơ bản</span></div>
-            <div className="hl"><b>{formatMoney(current.net)}</b><span>Thực lĩnh (VND)</span></div>
-          </div>
-
-          <table className="ps-t">
-            <thead>
-              <tr>
-                <th style={{ width: '40px' }}>STT</th>
-                <th style={{ textAlign: 'left' }}>Khoản mục thu nhập & khấu trừ</th>
-                <th style={{ textAlign: 'left' }}>Diễn giải công thức</th>
-                <th style={{ textAlign: 'right', width: '140px' }}>Số tiền (VNĐ)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="sec">
-                <td colSpan="4">A. CÁC KHOẢN THU NHẬP (EARNINGS)</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>1</td>
-                <td>Lương theo ngày công làm việc</td>
-                <td className="dg">{formatMoney(current.baseSalary)} ÷ {current.standardDays} × {current.paidDays} công</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.salaryByDays)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>2</td>
-                <td>Phụ cấp chuyên cần & trách nhiệm</td>
-                <td className="dg">Đạt chuẩn ngày công trong tháng</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.attendanceBonus + current.taxableAllowance)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>3</td>
-                <td>Phụ cấp thâm niên & xăng xe</td>
-                <td className="dg">Quy chế nội bộ công ty</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.seniorityBonus + current.transportAllowance)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>4</td>
-                <td>Phụ cấp ăn trưa (miễn thuế TNCN)</td>
-                <td className="dg">Hạn mức tối đa 730.000 đ/tháng</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.lunchAllowance)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>5</td>
-                <td>Tiền làm thêm giờ (OT)</td>
-                <td className="dg">{current.otHours} giờ × hệ số 1.5 (miễn thuế TNCN)</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.otPay)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>6</td>
-                <td>Thưởng năng suất & hiệu quả dự án</td>
-                <td className="dg">Đánh giá hiệu suất đạt A</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.performanceBonus)}</td>
-              </tr>
-              <tr className="sub">
-                <td></td>
-                <td colSpan="2">TỔNG THU NHẬP (A)</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.gross)}</td>
-              </tr>
-
-              <tr className="sec">
-                <td colSpan="4">B. CÁC KHOẢN KHẤU TRỪ BẮT BUỘC (DEDUCTIONS)</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>1</td>
-                <td>Bảo hiểm xã hội (BHXH 8%)</td>
-                <td className="dg">8% trên mức đóng {formatMoney(current.insuranceSalary)}</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.bhxh)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>2</td>
-                <td>Bảo hiểm y tế (BHYT 1.5%)</td>
-                <td className="dg">1.5% trên mức lương đóng</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.bhyt)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>3</td>
-                <td>Bảo hiểm thất nghiệp (BHTN 1%)</td>
-                <td className="dg">1% trên mức lương đóng</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.bhtn)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>4</td>
-                <td>Thuế thu nhập cá nhân (TNCN)</td>
-                <td className="dg">Giảm trừ bản thân 15.5tr + {current.dependents} người phụ thuộc</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.tax)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'center' }}>5</td>
-                <td>Tạm ứng lương đã nhận trong tháng</td>
-                <td className="dg">Khấu trừ tiền ứng</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.advance)}</td>
-              </tr>
-              <tr className="sub">
-                <td></td>
-                <td colSpan="2">TỔNG KHẤU TRỪ (B)</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(current.totalDeduction)}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="ps-net">
             <div>
-              <span>THỰC LĨNH CHUYỂN KHOẢN (A - B)</span>
-              <small>Bằng chữ: {numberToWords(current.net)}</small>
-            </div>
-            <b>{formatVND(current.net)}</b>
-          </div>
-
-          <div className="ps-2">
-            <div className="ps-box">
-              <h4>Chi tiết giảm trừ thuế TNCN</h4>
-              <div><span>Thu nhập chịu thuế:</span><b>{formatVND(current.taxableIncome)}</b></div>
-              <div><span>Giảm trừ bản thân:</span><b>- {formatVND(current.personalDeduction)}</b></div>
-              <div><span>Giảm trừ người phụ thuộc:</span><b>- {formatVND(current.dependentDeduction)}</b></div>
-              <div><span>Bảo hiểm phần NLĐ trích nộp:</span><b>- {formatVND(current.totalEmployeeInsurance)}</b></div>
-              <div><span>Thu nhập tính thuế:</span><b>{formatVND(current.calculatedTaxable)}</b></div>
-              <div><span>Thuế TNCN nộp ngân sách:</span><b>{formatVND(current.tax)}</b></div>
-            </div>
-            <div className="ps-box">
-              <h4>Doanh nghiệp đóng thêm cho bạn (21.5%)</h4>
-              <div><span>BHXH doanh nghiệp (17.5%):</span><b>{formatVND(current.bdxh)}</b></div>
-              <div><span>BHYT doanh nghiệp (3%):</span><b>{formatVND(current.bdyt)}</b></div>
-              <div><span>BHTN doanh nghiệp (1%):</span><b>{formatVND(current.bdtn)}</b></div>
-              <div><span>Kinh phí công đoàn (2%):</span><b>{formatVND(current.kpcd)}</b></div>
-              <div><span>Tổng quỹ công ty chi cho bạn:</span><b>{formatVND(current.totalCompanyCost)}</b></div>
-            </div>
-          </div>
-
-          <div className="ps-sign">
-            <div>
-              <b>Người lập phiếu</b>
-              <i>(Ký và ghi rõ họ tên)</i>
-              <div className="sp"></div>
+              <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Mã nhân sự</span>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f766e', marginTop: '2px' }}>
+                {currentUser.employeeCode || `NV${String(currentUser.id || 1).padStart(3, '0')}`}
+              </div>
             </div>
             <div>
-              <b>Kế toán trưởng</b>
-              <i>(Ký và ghi rõ họ tên)</i>
-              <div className="sp"></div>
+              <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Phòng ban</span>
+              <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px' }}>
+                {currentUser.department || (currentRole === 'HR' ? 'Phòng Nhân Sự' : currentRole === 'Finance' ? 'Phòng Kế Toán' : 'Khối Kỹ Thuật (IT)')}
+              </div>
             </div>
             <div>
-              <b>Người nhận lương</b>
-              <i>(Ký và ghi rõ họ tên)</i>
-              <div className="sp"></div>
-              <b>{current.empName}</b>
+              <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Chức danh</span>
+              <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px' }}>
+                {currentUser.position || currentUser.roleTitle || currentRole}
+              </div>
             </div>
           </div>
 
-          <div className="ps-foot">
-            Phiếu lương là thông tin bảo mật cá nhân, vui lòng không chia sẻ ra ngoài. Mọi thắc mắc xin phản hồi phòng Kế toán - Nhân sự trong vòng 03 ngày làm việc kể từ ngày nhận phiếu.
+          <EmptyState
+            title={`Chưa có dữ liệu phiếu lương kỳ ${selectedMonth}`}
+            description={`Tài khoản của bạn (${currentUser.roleTitle || currentRole}) hiện chưa có dữ liệu bảng lương được tính và chốt sổ kỳ này. Sau khi Kế toán hoàn tất khóa sổ bảng thanh toán lương (/finance/calc), phiếu lương chi tiết sẽ tự động hiển thị tại đây.`}
+            icon={FileSpreadsheet}
+            actionLabel="Xem thử bố cục mẫu phiếu lương"
+            onAction={() => setShowPreviewSample(true)}
+          />
+        </div>
+      ) : (
+        <div className="payslip-main-card">
+          <div className="ps">
+            <div className="ps-top">
+              <div className="ps-co">
+                <div>
+                  <b>CÔNG TY CỔ PHẦN CÔNG NGHỆ ENTERPRISE VN</b>
+                  <div className="l">Số 12 Phố Mẫu, Quận Cầu Giấy, Hà Nội</div>
+                  <div className="l">ĐT: 024 3999 8888 · MST: 0101 234 567</div>
+                </div>
+              </div>
+              <div className="ps-tt">
+                <h1>PHIẾU LƯƠNG</h1>
+                <div>Kỳ lương: <b>{selectedMonth}</b></div>
+                <div>Số phiếu: <b>PL-{selectedMonth.replace('-', '')}-{current.empId}</b></div>
+              </div>
+            </div>
+
+            <div className="ps-band"></div>
+
+            <div className="ps-emp">
+              <div className="ps-av">
+                {(current?.empName || 'N').split(' ').slice(-1)[0]?.[0] || 'N'}
+              </div>
+              <div className="ps-eg">
+                <div><span>Họ và tên:</span><b>{current.empName}</b></div>
+                <div><span>Mã nhân viên:</span><b>{current.empId}</b></div>
+                <div><span>Phòng ban:</span><b>{current.dept}</b></div>
+                <div><span>Chức vụ:</span><b>{current.position}</b></div>
+                <div><span>Ngày vào làm:</span><b>{current.joinDate}</b></div>
+                <div><span>Mã số thuế:</span><b>{current.taxCode}</b></div>
+                <div><span>Ngân hàng:</span><b>{current.bankName}</b></div>
+                <div><span>Số tài khoản:</span><b>{current.bankAccount}</b></div>
+              </div>
+            </div>
+
+            <div className="ps-att">
+              <div><b>{current.standardDays}</b><span>Công chuẩn</span></div>
+              <div><b>{current.actualDays}</b><span>Công thực tế</span></div>
+              <div><b>{current.otHours}</b><span>Giờ làm thêm (OT)</span></div>
+              <div><b>{current.unpaidDays}</b><span>Nghỉ không lương</span></div>
+              <div><b>{formatMoney(current.baseSalary)}</b><span>Lương cơ bản</span></div>
+              <div className="hl"><b>{formatMoney(current.net)}</b><span>Thực lĩnh (VND)</span></div>
+            </div>
+
+            <table className="ps-t">
+              <thead>
+                <tr>
+                  <th style={{ width: '40px' }}>STT</th>
+                  <th style={{ textAlign: 'left' }}>Khoản mục thu nhập & khấu trừ</th>
+                  <th style={{ textAlign: 'left' }}>Diễn giải công thức</th>
+                  <th style={{ textAlign: 'right', width: '140px' }}>Số tiền (VNĐ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="sec">
+                  <td colSpan="4">A. CÁC KHOẢN THU NHẬP (EARNINGS)</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>1</td>
+                  <td><b>Lương thời gian thực tế</b></td>
+                  <td>({formatMoney(current.baseSalary)} / {current.standardDays}) × {current.actualDays} ngày</td>
+                  <td className="num">{formatMoney(current.salaryByDays)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>2</td>
+                  <td>Phụ cấp ăn trưa</td>
+                  <td>Mức chi ăn ca hỗ trợ 730.000 đ/tháng</td>
+                  <td className="num">{formatMoney(current.lunchAllowance)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>3</td>
+                  <td>Phụ cấp chuyên cần</td>
+                  <td>Nghỉ phép không quá 1 ngày trong tháng</td>
+                  <td className="num">{formatMoney(current.attendanceBonus)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>4</td>
+                  <td>Phụ cấp thâm niên công tác</td>
+                  <td>Theo quy chế thâm niên làm việc</td>
+                  <td className="num">{formatMoney(current.seniorityBonus)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>5</td>
+                  <td>Phụ cấp xăng xe & đi lại</td>
+                  <td>Hỗ trợ phương tiện di chuyển</td>
+                  <td className="num">{formatMoney(current.transportAllowance)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>6</td>
+                  <td>Phụ cấp chức vụ / trách nhiệm</td>
+                  <td>Khoản phụ cấp chịu thuế TNCN</td>
+                  <td className="num">{formatMoney(current.taxableAllowance)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>7</td>
+                  <td>Làm thêm giờ (OT)</td>
+                  <td>{current.otHours} giờ × hệ số 1.5</td>
+                  <td className="num">{formatMoney(current.otPay)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>8</td>
+                  <td>Thưởng hiệu suất / KPI tháng</td>
+                  <td>Đánh giá hoàn thành công việc xuất sắc</td>
+                  <td className="num">{formatMoney(current.performanceBonus)}</td>
+                </tr>
+                <tr className="subt">
+                  <td colSpan="3"><b>TỔNG THU NHẬP (GROSS) [A]</b></td>
+                  <td className="num"><b>{formatMoney(current.gross)}</b></td>
+                </tr>
+
+                <tr className="sec">
+                  <td colSpan="4">B. CÁC KHOẢN TRÍCH NỘP BẢO HIỂM (NLĐ ĐÓNG 10.5%)</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>1</td>
+                  <td>Bảo hiểm xã hội (BHXH)</td>
+                  <td>8.0% trên lương đóng BH ({formatMoney(current.insuranceSalary)})</td>
+                  <td className="num red">-{formatMoney(current.bhxh)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>2</td>
+                  <td>Bảo hiểm y tế (BHYT)</td>
+                  <td>1.5% trên lương đóng BH ({formatMoney(current.insuranceSalary)})</td>
+                  <td className="num red">-{formatMoney(current.bhyt)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>3</td>
+                  <td>Bảo hiểm thất nghiệp (BHTN)</td>
+                  <td>1.0% trên lương đóng BH ({formatMoney(current.insuranceSalary)})</td>
+                  <td className="num red">-{formatMoney(current.bhtn)}</td>
+                </tr>
+                <tr className="subt">
+                  <td colSpan="3"><b>TỔNG BẢO HIỂM KHẤU TRỪ [B]</b></td>
+                  <td className="num red"><b>-{formatMoney(current.totalEmployeeInsurance)}</b></td>
+                </tr>
+
+                <tr className="sec">
+                  <td colSpan="4">C. THUẾ THU NHẬP CÁ NHÂN (TNCN)</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>1</td>
+                  <td>Thu nhập chịu thuế</td>
+                  <td>Tổng thu nhập trừ tiền ăn trưa miễn thuế</td>
+                  <td className="num">{formatMoney(current.taxableIncome)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>2</td>
+                  <td>Giảm trừ gia cảnh bản thân</td>
+                  <td>Mức giảm trừ theo quy định</td>
+                  <td className="num">-{formatMoney(current.personalDeduction)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>3</td>
+                  <td>Giảm trừ người phụ thuộc</td>
+                  <td>{current.dependents} người phụ thuộc</td>
+                  <td className="num">-{formatMoney(current.dependentDeduction)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>4</td>
+                  <td>Thu nhập tính thuế</td>
+                  <td>Sau khi trừ bảo hiểm và các khoản giảm trừ</td>
+                  <td className="num">{formatMoney(current.calculatedTaxable)}</td>
+                </tr>
+                <tr className="subt">
+                  <td colSpan="3"><b>THUẾ TNCN PHẢI NỘP [C]</b></td>
+                  <td className="num red"><b>-{formatMoney(current.tax)}</b></td>
+                </tr>
+
+                <tr className="sec">
+                  <td colSpan="4">D. CÁC KHOẢN GIẢM TRỪ KHÁC</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>1</td>
+                  <td>Tạm ứng lương</td>
+                  <td>Tiền tạm ứng trong kỳ</td>
+                  <td className="num red">-{formatMoney(current.advance)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'center' }}>2</td>
+                  <td>Khấu trừ khác</td>
+                  <td>Thu hồi hoặc xử lý vi phạm nội quy</td>
+                  <td className="num red">-{formatMoney(current.otherDeduction)}</td>
+                </tr>
+
+                <tr className="tot">
+                  <td colSpan="3">
+                    <div className="ps-tot-lbl">THỰC LĨNH CHUYỂN KHOẢN (NET) = [A] - [B] - [C] - [D]</div>
+                    <div className="ps-words">Bằng chữ: <em>{numberToWords(current.net)}</em></div>
+                  </td>
+                  <td className="num">
+                    <span className="ps-net-val">{formatMoney(current.net)} đ</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="ps-sign">
+              <div>
+                <b>NGƯỜI LẬP PHIẾU</b>
+                <div className="sub">(Kế toán tiền lương)</div>
+                <div className="st">Đã ký điện tử</div>
+                <div>Vũ Thị Hoa</div>
+              </div>
+              <div>
+                <b>KẾ TOÁN TRƯỞNG</b>
+                <div className="sub">(Phê duyệt bảng lương)</div>
+                <div className="st">Đã ký điện tử</div>
+                <div>Phạm Minh Đức</div>
+              </div>
+              <div>
+                <b>NGƯỜI NHẬN TIỀN</b>
+                <div className="sub">(Xác nhận nhận đủ lương)</div>
+                <div className="st">Xác nhận trực tuyến</div>
+                <div>{current.empName}</div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="payslip-dispute-box">
-          <div className="payslip-dispute-info">
-            <ShieldAlert size={18} />
-            <span>Phát hiện sai sót về ngày công, giờ OT hoặc số tiền khấu trừ? Bạn có thể gửi phản hồi trực tiếp tới bộ phận C&B / Kế toán lương.</span>
-          </div>
-          <button className="btn sm teal" onClick={() => setIsDisputeOpen(true)}>
-            Gửi yêu cầu giải trình
-          </button>
-        </div>
-      </div>
+      )}
 
       {isDisputeOpen && (
         <div className="modal-wrap" onClick={() => setIsDisputeOpen(false)}>
-          <div className="modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-h">
-              <h3>Phản hồi thắc mắc về phiếu lương {selectedMonth}</h3>
-              <button className="ibtn" onClick={() => setIsDisputeOpen(false)}>
-                <X size={16} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldAlert size={20} style={{ color: '#0f766e' }} />
+                <h3>Gửi khiếu nại / Phản hồi kỳ lương</h3>
+              </div>
+              <button type="button" onClick={() => setIsDisputeOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={18} />
               </button>
             </div>
             <form onSubmit={handleSendDispute}>
               <div className="modal-b">
                 {disputeSent ? (
-                  <div className="banner" style={{ background: '#dcfce7', borderColor: '#bbf7d0', color: '#15803d' }}>
-                    <CheckCircle2 size={18} />
-                    <span>Đã gửi phản hồi thành công đến bộ phận C&B! Kế toán sẽ liên hệ xác minh trong 24 giờ làm việc.</span>
+                  <div style={{ padding: '24px', textAlign: 'center', color: '#16a34a' }}>
+                    <CheckCircle2 size={40} style={{ margin: '0 auto 12px' }} />
+                    <h4>Đã gửi phản hồi thành công!</h4>
+                    <p style={{ fontSize: '13px', color: '#64748b' }}>Bộ phận Kế toán & HR sẽ xem xét và phản hồi qua email của bạn.</p>
                   </div>
                 ) : (
-                  <div className="field">
-                    <span>Nội dung phản hồi hoặc nghi vấn:</span>
+                  <div>
+                    <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+                      Nếu bạn phát hiện sai sót về số ngày công, tiền làm thêm giờ (OT), mức khấu trừ hoặc thông tin tài khoản ngân hàng, vui lòng gửi phản hồi chi tiết tại đây:
+                    </p>
                     <textarea
                       className="inp"
-                      rows="4"
+                      rows="5"
                       required
-                      placeholder="Ví dụ: Ngày 15/04 tôi có tăng ca 2 giờ nhưng phiếu lương chưa ghi nhận đủ..."
+                      placeholder="Mô tả cụ thể nội dung cần kiểm tra lại (VD: Ngày 15/04 em có tăng ca 2 tiếng nhưng trên phiếu ghi nhận 0 tiếng...)"
                       value={disputeText}
                       onChange={(e) => setDisputeText(e.target.value)}
-                    ></textarea>
-                    <small>Yêu cầu sẽ được chuyển tới Kế toán trưởng và Nhân sự phụ trách bảng lương.</small>
+                    />
                   </div>
                 )}
               </div>
-              <div className="modal-f">
-                <button type="button" className="btn" onClick={() => setIsDisputeOpen(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn pri" disabled={disputeSent}>
-                  <Send size={14} />
-                  <span>Gửi phản hồi</span>
-                </button>
-              </div>
+              {!disputeSent && (
+                <div className="modal-f">
+                  <button type="button" className="btn" onClick={() => setIsDisputeOpen(false)}>Hủy</button>
+                  <button type="submit" className="btn pri">
+                    <Send size={15} style={{ marginRight: '6px' }} />
+                    <span>Gửi phản hồi</span>
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

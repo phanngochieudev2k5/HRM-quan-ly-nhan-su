@@ -8,7 +8,6 @@ import OrgService from '../../../../services/OrgService';
 import '../../../../styles/roles/hr/OrgStructure.css';
 
 export default function OrgStructureManagement() {
-  // Main Data States
   const [treeData, setTreeData] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -17,15 +16,12 @@ export default function OrgStructureManagement() {
   const [loading, setLoading] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState('');
 
-  // Expand/Collapse state (deptId -> boolean)
   const [expandedNodes, setExpandedNodes] = useState({});
 
-  // Alert/Toast State
   const [alertInfo, setAlertInfo] = useState(null);
 
-  // Modal States
   const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
-  const [deptFormMode, setDeptFormMode] = useState('create'); // 'create' | 'edit'
+  const [deptFormMode, setDeptFormMode] = useState('create');
   const [currentDept, setCurrentDept] = useState({
     DepartmentId: null,
     DepartmentCode: '',
@@ -37,7 +33,7 @@ export default function OrgStructureManagement() {
   });
 
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
-  const [posFormMode, setPosFormMode] = useState('create'); // 'create' | 'edit'
+  const [posFormMode, setPosFormMode] = useState('create');
   const [currentPos, setCurrentPos] = useState({
     PositionId: null,
     PositionCode: '',
@@ -79,7 +75,6 @@ export default function OrgStructureManagement() {
         totalEmployees: (empRes || []).length
       });
 
-      // Default expand all departments
       const exp = {};
       depts.forEach(d => {
         exp[d.DepartmentId] = true;
@@ -137,7 +132,6 @@ export default function OrgStructureManagement() {
     setExpandedNodes(exp);
   };
 
-  // ================= DEPARTMENT CRUD HANDLERS =================
   const handleOpenAddDept = (parentDeptId = null) => {
     setDeptFormMode('create');
     setCurrentDept({
@@ -199,7 +193,6 @@ export default function OrgStructureManagement() {
     }
   };
 
-  // ================= POSITION CRUD HANDLERS =================
   const handleOpenPosModal = () => {
     setPosFormMode('create');
     setCurrentPos({
@@ -233,7 +226,6 @@ export default function OrgStructureManagement() {
         await OrgService.updatePosition(currentPos.PositionId, currentPos);
         showAlert('success', 'Cập nhật chức vụ thành công!');
       }
-      // Reset form
       setPosFormMode('create');
       setCurrentPos({
         PositionId: null,
@@ -242,7 +234,6 @@ export default function OrgStructureManagement() {
         BaseSalaryMin: '',
         BaseSalaryMax: ''
       });
-      // Refresh positions
       const newPositions = await OrgService.getPositions();
       setPositions(newPositions);
     } catch (error) {
@@ -264,7 +255,6 @@ export default function OrgStructureManagement() {
     }
   };
 
-  // ================= ASSIGN & TRANSFER HANDLERS =================
   const handleOpenTransferModal = (employee = null, defaultDeptId = null) => {
     setTransferData({
       employeeId: employee ? String(employee.EmployeeId) : '',
@@ -297,7 +287,6 @@ export default function OrgStructureManagement() {
     }
   };
 
-  // Total Quota Headcount calculation
   const totalHeadCountQuota = useMemo(() => {
     return departments.reduce((acc, d) => acc + (d.HeadCount || 0), 0);
   }, [departments]);
@@ -307,10 +296,8 @@ export default function OrgStructureManagement() {
     return Math.round((stats.totalEmployees / totalHeadCountQuota) * 100);
   }, [stats.totalEmployees, totalHeadCountQuota]);
 
-  // Format VND
   const formatMoney = (n) => Math.round(+n || 0).toLocaleString('vi-VN');
 
-  // Filter tree recursive
   const filterNode = (node, keyword) => {
     const kw = keyword.toLowerCase();
     const matchSelf = (
@@ -338,7 +325,6 @@ export default function OrgStructureManagement() {
       .filter(Boolean);
   }, [treeData, searchKeyword]);
 
-  // Recursive Tree Node Renderer
   const renderTreeNode = (node, level = 0) => {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = !!expandedNodes[node.DepartmentId];
@@ -348,7 +334,6 @@ export default function OrgStructureManagement() {
       <div key={node.DepartmentId} style={{ display: 'flex', flexDirection: 'column' }}>
         <div className={`org-card-node level-${Math.min(level, 3)}`}>
           <div className="org-card-main">
-            {/* Left: Department & Manager */}
             <div className="org-card-left">
               {hasChildren ? (
                 <button
@@ -396,9 +381,7 @@ export default function OrgStructureManagement() {
               </div>
             </div>
 
-            {/* Right: Metrics & Actions */}
             <div className="org-card-right">
-              {/* Headcount pill */}
               <div
                 className={`org-metric-pill ${isOverQuota ? 'warning' : 'success'}`}
                 title={`Định biên nhân sự: ${node.HeadCount || 0} người`}
@@ -409,7 +392,6 @@ export default function OrgStructureManagement() {
                 </span>
               </div>
 
-              {/* Action Buttons */}
               <div className="org-card-actions">
                 <button
                   type="button"
@@ -464,7 +446,6 @@ export default function OrgStructureManagement() {
           </div>
         </div>
 
-        {/* Children branches */}
         {hasChildren && isExpanded && (
           <div className="org-children-wrapper">
             {node.children.map(child => renderTreeNode(child, level + 1))}
@@ -476,7 +457,6 @@ export default function OrgStructureManagement() {
 
   return (
     <div className="org-container">
-      {/* Toast Alert */}
       {alertInfo && (
         <div
           className={`badge ${alertInfo.type === 'success' ? 'b-green' : 'b-red'}`}
@@ -494,7 +474,6 @@ export default function OrgStructureManagement() {
         </div>
       )}
 
-      {/* Page Header */}
       <div className="ph">
         <div>
           <h1>Sơ đồ cơ cấu tổ chức doanh nghiệp</h1>
@@ -520,7 +499,6 @@ export default function OrgStructureManagement() {
         </div>
       </div>
 
-      {/* Stats Summary Cards */}
       <div className="org-stats-grid">
         <div className="org-stat-card">
           <div className="org-stat-icon primary">
@@ -563,7 +541,6 @@ export default function OrgStructureManagement() {
         </div>
       </div>
 
-      {/* Toolbar: Search and Expand/Collapse Controls */}
       <div className="org-toolbar">
         <div className="org-search-box">
           <Search size={16} color="#64748b" />
@@ -606,7 +583,6 @@ export default function OrgStructureManagement() {
         </div>
       </div>
 
-      {/* Main Hierarchical Tree View */}
       <div className="org-tree-wrapper">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
@@ -625,7 +601,6 @@ export default function OrgStructureManagement() {
         )}
       </div>
 
-      {/* ================= MODAL 1: QUẢN LÝ DANH MỤC CHỨC VỤ ================= */}
       {isPosModalOpen && (
         <div className="org-modal-overlay">
           <div className="org-modal-content wide">
@@ -644,7 +619,6 @@ export default function OrgStructureManagement() {
             </div>
 
             <div className="org-modal-body">
-              {/* Form Thêm/Sửa Chức vụ */}
               <form onSubmit={handleSavePos} style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#0f766e', fontWeight: 700 }}>
                   {posFormMode === 'create' ? '+ Thêm chức vụ mới vào hệ thống' : '✏️ Chỉnh sửa thông tin chức vụ'}
@@ -722,7 +696,6 @@ export default function OrgStructureManagement() {
                 </div>
               </form>
 
-              {/* Danh sách chức vụ trong DB */}
               <div style={{ marginTop: '8px' }}>
                 <h4 style={{ fontSize: '13.5px', marginBottom: '10px', color: '#1e293b' }}>
                   Danh sách chức vụ hiện tại ({positions.length})
@@ -802,7 +775,6 @@ export default function OrgStructureManagement() {
         </div>
       )}
 
-      {/* ================= MODAL 2: THÊM / SỬA PHÒNG BAN ================= */}
       {isDeptModalOpen && (
         <div className="org-modal-overlay">
           <div className="org-modal-content">
@@ -944,7 +916,6 @@ export default function OrgStructureManagement() {
             </div>
 
             <div className="org-modal-body">
-              {/* Department Overview Banner */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <div style={{ flex: '1', minWidth: '220px' }}>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Trưởng bộ phận:</div>
@@ -977,7 +948,6 @@ export default function OrgStructureManagement() {
                 )}
               </div>
 
-              {/* Action Toolbar for Department */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                 <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#1e293b' }}>
                   Danh sách nhân sự thuộc phòng ban ({selectedDeptDetail.employees?.length || 0})
@@ -993,7 +963,6 @@ export default function OrgStructureManagement() {
                 </button>
               </div>
 
-              {/* Employee Table */}
               <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                 <table className="org-positions-table">
                   <thead>

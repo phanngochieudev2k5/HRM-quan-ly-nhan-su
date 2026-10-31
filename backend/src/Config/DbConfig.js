@@ -2,24 +2,40 @@ import sql from 'mssql/msnodesqlv8.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const connectionString = process.env.DB_CONNECTION_STRING || 
-  'Driver={ODBC Driver 17 for SQL Server};Server=CODER\\SQLEXPRESS01;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
+const connectionString =
+    process.env.DB_CONNECTION_STRING ||
+    'Driver={ODBC Driver 17 for SQL Server};Server=CODER\\SQLEXPRESS01;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
 
 let pool = null;
 
 export const connectDb = async () => {
-  try {
-    if (!pool) {
-      pool = await new sql.ConnectionPool({
-        connectionString
-      }).connect();
-      console.log('✅ Kết nối thành công đến SQL Server (HRM_Enterprise_DB)!');
+    try {
+        if (!pool) {
+            pool = await new sql.ConnectionPool({
+                connectionString,
+            }).connect();
+            console.log(
+                '✅ Kết nối thành công đến SQL Server (HRM_Enterprise_DB)!',
+            );
+            try {
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblUser') AND name = 'Phone')
+                    BEGIN
+                        ALTER TABLE tblUser ADD Phone VARCHAR(20) NULL;
+                    END
+                `);
+            } catch (migrationErr) {
+                console.warn('Cảnh báo migration tblUser.Phone:', migrationErr.message);
+            }
+        }
+        return pool;
+    } catch (error) {
+        console.error(
+            '❌ Lỗi kết nối cơ sở dữ liệu SQL Server:',
+            error.message,
+        );
+        throw error;
     }
-    return pool;
-  } catch (error) {
-    console.error('❌ Lỗi kết nối cơ sở dữ liệu SQL Server:', error.message);
-    throw error;
-  }
 };
 
 export const getPool = () => pool;
