@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, Outlet, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import AuthPage from './pages/auth/AuthPage';
@@ -39,9 +40,66 @@ import HrReportsView from './pages/roles/hr/HrReportsView';
 
 import AuthService from './services/AuthService';
 import HrService from './services/HrService';
+import { getDefaultPathForRole, moduleToPath, pathToModule } from './routes/navigation';
+
+function HrEmployeesRouteWrapper({
+  employees,
+  selectedEmployee,
+  onSelectEmployee,
+  onAddEmployee,
+  onDeleteEmployee,
+  onBackToList,
+  onNavigateFaceRegistration,
+  onNavigate
+}) {
+  const { subModule } = useParams();
+  return (
+    <HrEmployeesView
+      employees={employees}
+      selectedEmployee={selectedEmployee}
+      onSelectEmployee={onSelectEmployee}
+      onAddEmployee={onAddEmployee}
+      onDeleteEmployee={onDeleteEmployee}
+      subModule={subModule || 'list'}
+      onBackToList={onBackToList}
+      onNavigateFaceRegistration={onNavigateFaceRegistration}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+function HrAttendanceRouteWrapper({
+  selectedEmployee,
+  onBack,
+  onCompleteRegistration,
+  onNavigate
+}) {
+  const { subModule } = useParams();
+  return (
+    <HrAttendanceView
+      subModule={subModule || 'history'}
+      employee={selectedEmployee}
+      onBack={onBack}
+      onCompleteRegistration={onCompleteRegistration}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+function HrRecruitmentRouteWrapper({ onNavigate }) {
+  const { subModule } = useParams();
+  return (
+    <HrRecruitmentView
+      subModule={subModule || 'jobs'}
+      onNavigate={onNavigate}
+    />
+  );
+}
 
 export default function App() {
-  
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [authToken, setAuthToken] = useState(() => AuthService.getToken());
   const [currentUser, setCurrentUser] = useState(() => AuthService.getCurrentUser());
 
@@ -50,30 +108,9 @@ export default function App() {
     return user?.role || 'Employee';
   });
 
-  const getDefaultModuleForRole = (role) => {
-    switch (role) {
-      case 'Admin':
-        return 'admin-dashboard';
-      case 'Manager':
-        return 'manager-dashboard';
-      case 'Employee':
-        return 'employee-dashboard';
-      case 'Finance':
-        return 'finance-dashboard';
-      case 'HR':
-      default:
-        return 'hr-dashboard';
-    }
-  };
+  const { module: activeModule, subModule: activeSubModule } = pathToModule(location.pathname);
 
-  const [activeModule, setActiveModule] = useState(() => {
-    const user = AuthService.getCurrentUser();
-    return getDefaultModuleForRole(user?.role || 'Employee');
-  });
-
-  const [activeSubModule, setActiveSubModule] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
@@ -102,31 +139,24 @@ export default function App() {
 
     const userRole = user.role || 'Employee';
     setCurrentRole(userRole);
-    setActiveSubModule(null);
-    setActiveModule(getDefaultModuleForRole(userRole));
+    navigate(getDefaultPathForRole(userRole));
   };
 
   const handleLogout = () => {
     AuthService.logout();
     setAuthToken(null);
     setCurrentUser(null);
+    navigate('/login');
   };
 
   const handleNavigate = (module, subModule = null) => {
-    let resolvedSubModule = subModule;
-    if (!resolvedSubModule) {
-      if (module === 'hr-employees') resolvedSubModule = 'list';
-      else if (module === 'hr-attendance') resolvedSubModule = 'history';
-      else if (module === 'hr-recruitment') resolvedSubModule = 'jobs';
-    }
-    setActiveModule(module);
-    setActiveSubModule(resolvedSubModule);
+    const targetPath = moduleToPath(module, subModule);
+    navigate(targetPath);
   };
 
   const handleSelectEmployee = (emp) => {
     setSelectedEmployee(emp);
-    setActiveModule('hr-employees');
-    setActiveSubModule('profile');
+    navigate('/hr/employees/profile');
   };
 
   const handleAddEmployee = (newEmp) => {
@@ -139,8 +169,7 @@ export default function App() {
 
   const handleStartFaceRegistration = (emp) => {
     setSelectedEmployee(emp);
-    setActiveModule('hr-attendance');
-    setActiveSubModule('register-face');
+    navigate('/hr/attendance/register-face');
   };
 
   const handleCompleteFaceRegistration = (empId) => {
@@ -150,152 +179,164 @@ export default function App() {
     }
   };
 
-  if (!authToken || !currentUser) {
-    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-  }
-
   return (
-    <div className="app-container">
-      <Sidebar
-        currentRole={currentRole}
-        activeModule={activeModule}
-        activeSubModule={activeSubModule}
-        onNavigate={handleNavigate}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          authToken && currentUser ? (
+            <Navigate to={getDefaultPathForRole(currentRole)} replace />
+          ) : (
+            <AuthPage onAuthSuccess={handleAuthSuccess} />
+          )
+        }
       />
 
-      <div className="main-wrapper">
-        <Header
-          currentRole={currentRole}
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-        />
+      <Route
+        element={
+          !authToken || !currentUser ? (
+            <Navigate to="/login" replace />
+          ) : (
+            <div className="app-container">
+              <Sidebar
+                currentRole={currentRole}
+                activeModule={activeModule}
+                activeSubModule={activeSubModule}
+                onNavigate={handleNavigate}
+                collapsed={sidebarCollapsed}
+                setCollapsed={setSidebarCollapsed}
+              />
 
-        <main className="content-area">
-          {activeModule === 'admin-dashboard' && (
-            <AdminDashboard onNavigate={handleNavigate} />
-          )}
-          {activeModule === 'admin-accounts' && (
-            <UserAccountsView />
-          )}
-          {activeModule === 'admin-logs' && (
-            <SystemAuditLogs />
-          )}
-          {activeModule === 'admin-settings' && (
-            <SystemSettingsView />
-          )}
+              <div className="main-wrapper">
+                <Header
+                  currentRole={currentRole}
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  onNavigate={handleNavigate}
+                />
 
-          {activeModule === 'manager-dashboard' && (
-            <ManagerDashboard onNavigate={handleNavigate} />
-          )}
-          {activeModule === 'manager-team' && (
-            <TeamMembersView />
-          )}
-          {activeModule === 'manager-leaves' && (
-            <TeamLeaveApprovals />
-          )}
-          {activeModule === 'manager-overtime' && (
-            <TeamOvertimeApprovals />
-          )}
-          {activeModule === 'manager-performance' && (
-            <TeamPerformanceKpi />
-          )}
+                <main className="content-area">
+                  <Outlet />
+                </main>
+              </div>
+            </div>
+          )
+        }
+      >
+        <Route path="/" element={<Navigate to={getDefaultPathForRole(currentRole)} replace />} />
 
-          {activeModule === 'employee-dashboard' && (
-            <EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />
-          )}
-          {activeModule === 'employee-profile' && (
-            <MyProfileView user={currentUser} />
-          )}
-          {activeModule === 'employee-checkin' && (
-            <MyFaceCheckinView />
-          )}
-          {activeModule === 'employee-attendance' && (
-            <MyAttendanceView />
-          )}
-          {activeModule === 'employee-leave' && (
-            <MyLeaveView />
-          )}
-          {activeModule === 'employee-overtime' && (
-            <MyOvertimeView />
-          )}
-          {activeModule === 'employee-payslip' && (
-            <MyPayslipView />
-          )}
-          {activeModule === 'employee-training' && (
-            <MyTrainingView />
-          )}
+        {/* Admin Routes */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard onNavigate={handleNavigate} />} />
+        <Route path="/admin/accounts" element={<UserAccountsView />} />
+        <Route path="/admin/logs" element={<SystemAuditLogs />} />
+        <Route path="/admin/settings" element={<SystemSettingsView />} />
 
-          {activeModule === 'finance-dashboard' && (
-            <FinanceDashboard onNavigate={handleNavigate} />
-          )}
-          {activeModule === 'finance-components' && (
-            <SalaryComponentsView />
-          )}
-          {activeModule === 'finance-calc' && (
-            <PayrollCalculationView />
-          )}
-          {activeModule === 'finance-reports' && (
-            <PayrollReportsView />
-          )}
+        {/* Manager Routes */}
+        <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
+        <Route path="/manager/dashboard" element={<ManagerDashboard onNavigate={handleNavigate} />} />
+        <Route path="/manager/team" element={<TeamMembersView />} />
+        <Route path="/manager/leaves" element={<TeamLeaveApprovals />} />
+        <Route path="/manager/overtime" element={<TeamOvertimeApprovals />} />
+        <Route path="/manager/performance" element={<TeamPerformanceKpi />} />
 
-          {activeModule === 'hr-dashboard' && (
-            <HrDashboard
-              onNavigate={handleNavigate}
-              currentUser={currentUser}
-            />
-          )}
+        {/* Employee Routes */}
+        <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />
+        <Route path="/employee/dashboard" element={<EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
+        <Route path="/employee/profile" element={<MyProfileView user={currentUser} />} />
+        <Route path="/employee/checkin" element={<MyFaceCheckinView />} />
+        <Route path="/employee/attendance" element={<MyAttendanceView />} />
+        <Route path="/employee/leave" element={<MyLeaveView />} />
+        <Route path="/employee/overtime" element={<MyOvertimeView />} />
+        <Route path="/employee/payslip" element={<MyPayslipView />} />
+        <Route path="/employee/training" element={<MyTrainingView />} />
 
-          {activeModule === 'hr-employees' && (
-            <HrEmployeesView
+        {/* Finance Routes */}
+        <Route path="/finance" element={<Navigate to="/finance/dashboard" replace />} />
+        <Route path="/finance/dashboard" element={<FinanceDashboard onNavigate={handleNavigate} />} />
+        <Route path="/finance/components" element={<SalaryComponentsView />} />
+        <Route path="/finance/calc" element={<PayrollCalculationView />} />
+        <Route path="/finance/reports" element={<PayrollReportsView />} />
+
+        {/* HR Routes */}
+        <Route path="/hr" element={<Navigate to="/hr/dashboard" replace />} />
+        <Route path="/hr/dashboard" element={<HrDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
+        <Route
+          path="/hr/employees"
+          element={
+            <HrEmployeesRouteWrapper
               employees={employees}
               selectedEmployee={selectedEmployee}
               onSelectEmployee={handleSelectEmployee}
               onAddEmployee={handleAddEmployee}
               onDeleteEmployee={handleDeleteEmployee}
-              subModule={activeSubModule}
               onBackToList={() => handleNavigate('hr-employees', 'list')}
               onNavigateFaceRegistration={handleStartFaceRegistration}
               onNavigate={handleNavigate}
             />
-          )}
-
-          {activeModule === 'hr-attendance' && (
-            <HrAttendanceView
-              subModule={activeSubModule}
-              employee={selectedEmployee}
+          }
+        />
+        <Route
+          path="/hr/employees/:subModule"
+          element={
+            <HrEmployeesRouteWrapper
+              employees={employees}
+              selectedEmployee={selectedEmployee}
+              onSelectEmployee={handleSelectEmployee}
+              onAddEmployee={handleAddEmployee}
+              onDeleteEmployee={handleDeleteEmployee}
+              onBackToList={() => handleNavigate('hr-employees', 'list')}
+              onNavigateFaceRegistration={handleStartFaceRegistration}
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+        <Route
+          path="/hr/attendance"
+          element={
+            <HrAttendanceRouteWrapper
+              selectedEmployee={selectedEmployee}
               onBack={() => handleNavigate('hr-attendance', 'face-checkin')}
               onCompleteRegistration={handleCompleteFaceRegistration}
               onNavigate={handleNavigate}
             />
-          )}
-
-          {activeModule === 'hr-recruitment' && (
-            <HrRecruitmentView
-              subModule={activeSubModule}
+          }
+        />
+        <Route
+          path="/hr/attendance/:subModule"
+          element={
+            <HrAttendanceRouteWrapper
+              selectedEmployee={selectedEmployee}
+              onBack={() => handleNavigate('hr-attendance', 'face-checkin')}
+              onCompleteRegistration={handleCompleteFaceRegistration}
               onNavigate={handleNavigate}
             />
-          )}
+          }
+        />
+        <Route
+          path="/hr/recruitment"
+          element={
+            <HrRecruitmentRouteWrapper
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+        <Route
+          path="/hr/recruitment/:subModule"
+          element={
+            <HrRecruitmentRouteWrapper
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+        <Route path="/hr/leave" element={<HrLeaveView />} />
+        <Route path="/hr/overtime" element={<HrOvertimeView />} />
+        <Route path="/hr/assets" element={<HrAssetsView />} />
+        <Route path="/hr/reports" element={<HrReportsView />} />
 
-          {activeModule === 'hr-leave' && (
-            <HrLeaveView />
-          )}
-
-          {activeModule === 'hr-overtime' && (
-            <HrOvertimeView />
-          )}
-
-          {activeModule === 'hr-assets' && (
-            <HrAssetsView />
-          )}
-
-          {activeModule === 'hr-reports' && (
-            <HrReportsView />
-          )}
-        </main>
-      </div>
-    </div>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to={getDefaultPathForRole(currentRole)} replace />} />
+      </Route>
+    </Routes>
   );
 }
