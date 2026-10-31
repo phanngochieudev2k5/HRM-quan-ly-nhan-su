@@ -39,6 +39,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', AuthRoutes);
 app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
+app.use('/api/org', OrgRoutes);
 
 // Direct CRUD endpoints for US-02
 app.use('/api/employees', EmployeeRoutes);

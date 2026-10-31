@@ -12,6 +12,7 @@ import Toast from './components/Toast';
 import EmptyState from '../../../components/common/EmptyState';
 import { onboardingList, orgHierarchyData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrEmployeesView.css';
+import OrgStructureManagement from './components/OrgStructureManagement';
 
 export default function HrEmployeesView({
   employees: initialEmployees = [],
@@ -396,6 +397,15 @@ export default function HrEmployeesView({
 
   // 4. ROUTE: /hr/employees/org
   if (currentSubModule === 'org') {
+    return (
+      <div className="hr-employees-container">
+        {renderTabsHeader()}
+        <OrgStructureManagement onNavigate={onNavigate} />
+      </div>
+    );
+  }
+
+  if (false && subModule === 'org_legacy') {
     return (
       <div className="hr-employees-container">
         {renderTabsHeader()}
