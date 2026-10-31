@@ -29,34 +29,26 @@ export default function HrEmployeesView({
   const routeParams = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Đọc tham số subModule từ props hoặc URL params / query params
   const currentSubModule = routeParams.subModule || searchParams.get('subModule') || propSubModule || 'list';
 
-  // Danh sách nhân viên
   const [employees, setEmployees] = useState(initialEmployees || []);
   const [pagination, setPagination] = useState({ total: initialEmployees.length || 0, page: 1, limit: 10, totalPages: 1 });
   const [loading, setLoading] = useState(false);
 
-  // Bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Danh mục phòng ban & chức vụ
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
 
-  // Dữ liệu Hồ sơ 360° nhân viên
   const [profileEmployee, setProfileEmployee] = useState(initialSelectedEmployee);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // Thông báo Toast
   const [toast, setToast] = useState(null);
 
-  // Số lượng hợp đồng (phục vụ badge)
   const [totalContractsCount, setTotalContractsCount] = useState(0);
 
-  // Tab khác
   const [onboardings, setOnboardings] = useState(onboardingList);
   const [expandedDept, setExpandedDept] = useState({
     ORG_HR: true,
@@ -69,7 +61,6 @@ export default function HrEmployeesView({
     setToast({ message, type });
   };
 
-  // Tải danh mục phòng ban và chức vụ
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
@@ -88,7 +79,6 @@ export default function HrEmployeesView({
     fetchMetadata();
   }, []);
 
-  // Tải danh sách nhân viên từ CSDL
   const loadEmployees = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -121,7 +111,6 @@ export default function HrEmployeesView({
     loadEmployees(1);
   }, [loadEmployees]);
 
-  // Tải thông tin chi tiết hồ sơ 360°
   const loadProfile360 = useCallback(async (emp) => {
     if (!emp) return;
     const empId = emp.EmployeeId || emp.id || emp.EmployeeCode;
@@ -143,7 +132,6 @@ export default function HrEmployeesView({
     }
   }, [initialSelectedEmployee, loadProfile360]);
 
-  // Điều hướng xem hồ sơ 360°
   const handleViewProfile = (emp) => {
     setProfileEmployee(emp);
     loadProfile360(emp);
@@ -154,7 +142,6 @@ export default function HrEmployeesView({
     }
   };
 
-  // Quay lại danh sách nhân viên
   const handleBackToList = () => {
     if (onBackToList) {
       onBackToList();
@@ -165,7 +152,6 @@ export default function HrEmployeesView({
     }
   };
 
-  // Thao tác CRUD nhân sự
   const handleCreateEmployee = async (formData) => {
     try {
       const created = await HrService.createEmployee(formData);
@@ -204,7 +190,6 @@ export default function HrEmployeesView({
     }
   };
 
-  // Thao tác CRUD Hợp đồng trong Hồ sơ 360
   const handleCreateContract = async (contractData) => {
     try {
       await HrService.createContract(contractData);
@@ -243,7 +228,6 @@ export default function HrEmployeesView({
     }
   };
 
-  // Header chuyển đổi giữa các Tab quản lý nhân sự
   const renderTabsHeader = () => (
     <div className="attendance-tabs-header">
       <button
@@ -301,7 +285,6 @@ export default function HrEmployeesView({
     </div>
   );
 
-  // 1. ROUTE: /hr/employees/contracts -> HIỂN THỊ TOÀN BỘ HỢP ĐỒNG TỪ CSDL
   if (currentSubModule === 'contracts') {
     return (
       <div className="hr-employees-container">
@@ -318,7 +301,6 @@ export default function HrEmployeesView({
     );
   }
 
-  // 2. ROUTE: /hr/employees/profile -> HỒ SƠ 360°
   if (currentSubModule === 'profile') {
     return (
       <div className="hr-employees-container">
@@ -348,7 +330,6 @@ export default function HrEmployeesView({
     );
   }
 
-  // 3. ROUTE: /hr/employees/onboarding
   if (currentSubModule === 'onboarding') {
     return (
       <div className="hr-employees-container">
@@ -395,7 +376,6 @@ export default function HrEmployeesView({
     );
   }
 
-  // 4. ROUTE: /hr/employees/org
   if (currentSubModule === 'org') {
     return (
       <div className="hr-employees-container">
@@ -447,7 +427,6 @@ export default function HrEmployeesView({
     );
   }
 
-  // 5. ROUTE: /hr/employees/list (HOẶC MẶC ĐỊNH) -> BẢNG DANH SÁCH NHÂN VIÊN
   return (
     <div className="hr-employees-container">
       {renderTabsHeader()}

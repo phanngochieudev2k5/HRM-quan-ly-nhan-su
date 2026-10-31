@@ -114,7 +114,6 @@ export default function ContractModal({
         <form onSubmit={handleSubmit}>
           <div className="modal-b" style={{ padding: '16px 20px' }}>
             <div className="form">
-              {/* CHỌN NHÂN VIÊN */}
               {!employeeId && !isEdit ? (
                 <label className="field" style={{ gridColumn: 'span 2' }}>
                   <span>Nhân viên áp dụng: <i className="req">*</i></span>

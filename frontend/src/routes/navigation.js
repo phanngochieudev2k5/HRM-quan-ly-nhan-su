@@ -16,7 +16,6 @@ export const getDefaultPathForRole = (role) => {
 
 export const moduleToPath = (module, subModule = null) => {
     switch (module) {
-        // Admin
         case 'admin-dashboard':
             return '/admin/dashboard';
         case 'admin-accounts':
@@ -26,7 +25,6 @@ export const moduleToPath = (module, subModule = null) => {
         case 'admin-settings':
             return '/admin/settings';
 
-        // Manager
         case 'manager-dashboard':
             return '/manager/dashboard';
         case 'manager-team':
@@ -37,8 +35,9 @@ export const moduleToPath = (module, subModule = null) => {
             return '/manager/overtime';
         case 'manager-performance':
             return '/manager/performance';
+        case 'manager-payslip':
+            return '/manager/payslip';
 
-        // Employee
         case 'employee-dashboard':
             return '/employee/dashboard';
         case 'employee-profile':
@@ -56,7 +55,6 @@ export const moduleToPath = (module, subModule = null) => {
         case 'employee-training':
             return '/employee/training';
 
-        // Finance
         case 'finance-dashboard':
             return '/finance/dashboard';
         case 'finance-calc':
@@ -65,8 +63,9 @@ export const moduleToPath = (module, subModule = null) => {
             return '/finance/components';
         case 'finance-reports':
             return '/finance/reports';
+        case 'finance-payslip':
+            return '/finance/payslip';
 
-        // HR
         case 'hr-dashboard':
             return '/hr/dashboard';
         case 'hr-employees':
@@ -89,6 +88,8 @@ export const moduleToPath = (module, subModule = null) => {
             return '/hr/assets';
         case 'hr-reports':
             return '/hr/reports';
+        case 'hr-payslip':
+            return '/hr/payslip';
 
         default:
             if (typeof module === 'string' && module.startsWith('/')) {

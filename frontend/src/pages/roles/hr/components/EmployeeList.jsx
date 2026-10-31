@@ -69,7 +69,6 @@ export default function EmployeeList({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* TOOLBAR: TIÊU ĐỀ & NÚT THÊM MỚI */}
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
@@ -93,10 +92,8 @@ export default function EmployeeList({
         </div>
       </div>
 
-      {/* FILTER & SEARCH BAR */}
       <div className="tbl-card">
         <div className="tbl-tools" style={{ flexWrap: 'wrap', gap: '10px' }}>
-          {/* SEARCH INPUT */}
           <div className="search" style={{ minWidth: '260px' }}>
             <Search size={15} />
             <input
@@ -108,7 +105,6 @@ export default function EmployeeList({
             />
           </div>
 
-          {/* DEPARTMENT FILTER */}
           <select
             className="inp"
             value={departmentFilter}
@@ -123,7 +119,6 @@ export default function EmployeeList({
             ))}
           </select>
 
-          {/* WORK STATUS FILTER */}
           <select
             className="inp"
             value={statusFilter}
@@ -144,7 +139,6 @@ export default function EmployeeList({
           </span>
         </div>
 
-        {/* DATA TABLE */}
         <div className="tbl-wrap">
           <table className="tbl">
             <thead>
@@ -195,14 +189,12 @@ export default function EmployeeList({
                       className="click"
                       onClick={() => onViewProfile(emp)}
                     >
-                      {/* Cột 1: Mã NV */}
                       <td>
                         <code style={{ fontWeight: 700, color: '#0f766e', fontSize: '13px' }}>
                           {empCode}
                         </code>
                       </td>
 
-                      {/* Cột 2: Ảnh đại diện */}
                       <td onClick={(e) => e.stopPropagation()}>
                         {emp.AvatarUrl ? (
                           <img
@@ -235,52 +227,44 @@ export default function EmployeeList({
                         )}
                       </td>
 
-                      {/* Cột 3: Họ và tên */}
                       <td>
                         <b style={{ color: '#0f172a', fontSize: '14px' }}>{empName}</b>
                       </td>
 
-                      {/* Cột 4: Email */}
                       <td>
                         <span style={{ color: '#475569', fontSize: '13px' }}>
                           {emp.Email || emp.email || '-'}
                         </span>
                       </td>
 
-                      {/* Cột 5: SĐT */}
                       <td>
                         <span style={{ color: '#475569', fontSize: '13px' }}>
                           {emp.Phone || emp.phone || '-'}
                         </span>
                       </td>
 
-                      {/* Cột 6: Phòng ban */}
                       <td>
                         <span style={{ fontWeight: 500, color: '#1e293b' }}>
                           {emp.DepartmentName || emp.department || '-'}
                         </span>
                       </td>
 
-                      {/* Cột 7: Chức vụ */}
                       <td>
                         <span style={{ color: '#64748b', fontSize: '13px' }}>
                           {emp.PositionName || emp.position || '-'}
                         </span>
                       </td>
 
-                      {/* Cột 8: Trạng thái */}
                       <td>
                         {getStatusBadge(emp.WorkStatus || emp.status)}
                       </td>
 
-                      {/* Cột 9: Face ID */}
                       <td className="c">
                         <span className={`badge ${isFace ? 'b-p' : 'b-amber'}`} style={{ fontSize: '11px' }}>
                           {isFace ? 'Đã quét' : 'Chưa có'}
                         </span>
                       </td>
 
-                      {/* Cột 10: Thao tác */}
                       <td className="act" onClick={(e) => e.stopPropagation()}>
                         <button
                           className="ibtn"
@@ -312,7 +296,6 @@ export default function EmployeeList({
           </table>
         </div>
 
-        {/* PHÂN TRANG (PAGINATION) */}
         {pagination.totalPages > 1 && (
           <div
             style={{
@@ -374,7 +357,6 @@ export default function EmployeeList({
         )}
       </div>
 
-      {/* MODAL THÊM / SỬA NHÂN VIÊN */}
       <EmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

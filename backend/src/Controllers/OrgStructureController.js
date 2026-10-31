@@ -2,15 +2,11 @@ import { connectDb, sql } from '../Config/DbConfig.js';
 import { sendSuccess, sendError } from '../Utils/ResponseHelper.js';
 
 export class OrgStructureController {
-  /**
-   * Lấy cấu trúc cây sơ đồ tổ chức công ty (Hierarchical Tree)
-   * Kèm thông tin định biên, quản lý, số lượng nhân sự thực tế và danh sách nhân sự
-   */
+  
   static async getOrgTree(req, res) {
     try {
       const pool = await connectDb();
 
-      // 1. Lấy tất cả phòng ban
       const deptResult = await pool.request().query(`
         SELECT d.DepartmentId, d.DepartmentCode, d.DepartmentName,
                d.ParentDepartmentId, parent.DepartmentName AS ParentDepartmentName,
@@ -25,7 +21,6 @@ export class OrgStructureController {
         ORDER BY d.DepartmentId ASC
       `);
 
-      // 2. Lấy danh sách nhân viên để gắn vào từng phòng ban
       const empResult = await pool.request().query(`
         SELECT e.EmployeeId, e.EmployeeCode, e.FullName, e.DepartmentId, e.PositionId,
                p.PositionName, e.Email, e.Phone, e.WorkStatus, e.AvatarUrl
@@ -34,13 +29,11 @@ export class OrgStructureController {
         ORDER BY e.FullName ASC
       `);
 
-      // 3. Thống kê tổng quan
       const posCountResult = await pool.request().query(`SELECT COUNT(*) AS totalPositions FROM tblPosition`);
       const totalEmployees = empResult.recordset.length;
       const totalDepartments = deptResult.recordset.length;
       const totalPositions = posCountResult.recordset[0]?.totalPositions || 0;
 
-      // Gom nhân viên theo DepartmentId
       const empByDept = {};
       for (const emp of empResult.recordset) {
         if (!empByDept[emp.DepartmentId]) {
@@ -49,7 +42,6 @@ export class OrgStructureController {
         empByDept[emp.DepartmentId].push(emp);
       }
 
-      // Xây dựng cây phân cấp (Tree Hierarchy)
       const deptMap = {};
       deptResult.recordset.forEach(d => {
         deptMap[d.DepartmentId] = {
@@ -84,9 +76,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Lấy danh sách tất cả phòng ban (dạng phẳng)
-   */
+  
   static async getDepartments(req, res) {
     try {
       const pool = await connectDb();
@@ -107,9 +97,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Tạo mới phòng ban
-   */
+  
   static async createDepartment(req, res) {
     try {
       const { departmentCode, departmentName, parentDepartmentId, managerEmployeeId, headCount, description } = req.body;
@@ -120,7 +108,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // Kiểm tra trùng mã
       const checkCode = await pool.request()
         .input('code', sql.VarChar(20), departmentCode.trim())
         .query(`SELECT DepartmentId FROM tblDepartment WHERE DepartmentCode = @code`);
@@ -152,9 +139,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Cập nhật thông tin phòng ban
-   */
+  
   static async updateDepartment(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
@@ -174,7 +159,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // Kiểm tra trùng mã với phòng ban khác
       const checkCode = await pool.request()
         .input('id', sql.Int, id)
         .input('code', sql.VarChar(20), departmentCode.trim())
@@ -217,9 +201,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Xóa phòng ban
-   */
+  
   static async deleteDepartment(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
@@ -229,7 +211,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // 1. Kiểm tra có phòng ban con hay không
       const checkChildren = await pool.request()
         .input('id', sql.Int, id)
         .query(`SELECT COUNT(*) AS cnt FROM tblDepartment WHERE ParentDepartmentId = @id`);
@@ -237,7 +218,6 @@ export class OrgStructureController {
         return sendError(res, `Không thể xóa vì phòng ban này đang có ${checkChildren.recordset[0].cnt} phòng ban con trực thuộc! Hãy chuyển các phòng ban con trước.`, 400);
       }
 
-      // 2. Kiểm tra có nhân viên trực thuộc hay không
       const checkEmployees = await pool.request()
         .input('id', sql.Int, id)
         .query(`SELECT COUNT(*) AS cnt FROM tblEmployee WHERE DepartmentId = @id`);
@@ -245,7 +225,6 @@ export class OrgStructureController {
         return sendError(res, `Không thể xóa vì phòng ban này đang có ${checkEmployees.recordset[0].cnt} nhân viên trực thuộc! Hãy điều chuyển nhân viên sang phòng ban khác trước.`, 400);
       }
 
-      // 3. Kiểm tra ràng buộc Onboarding hoặc Tuyển dụng
       const checkOnboarding = await pool.request()
         .input('id', sql.Int, id)
         .query(`SELECT COUNT(*) AS cnt FROM tblOnboarding WHERE DepartmentId = @id`);
@@ -271,11 +250,8 @@ export class OrgStructureController {
     }
   }
 
-  // ===================== CRUD CHỨC VỤ (POSITIONS) =====================
 
-  /**
-   * Lấy danh sách chức vụ kèm số nhân viên hiện tại
-   */
+  
   static async getPositions(req, res) {
     try {
       const pool = await connectDb();
@@ -292,9 +268,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Thêm chức vụ mới
-   */
+  
   static async createPosition(req, res) {
     try {
       const { positionCode, positionName, baseSalaryMin, baseSalaryMax } = req.body;
@@ -305,7 +279,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // Kiểm tra trùng mã
       const checkCode = await pool.request()
         .input('code', sql.VarChar(20), positionCode.trim())
         .query(`SELECT PositionId FROM tblPosition WHERE PositionCode = @code`);
@@ -334,9 +307,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Cập nhật chức vụ
-   */
+  
   static async updatePosition(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
@@ -351,7 +322,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // Kiểm tra trùng mã với chức vụ khác
       const checkCode = await pool.request()
         .input('id', sql.Int, id)
         .input('code', sql.VarChar(20), positionCode.trim())
@@ -390,9 +360,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Xóa chức vụ
-   */
+  
   static async deletePosition(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
@@ -402,7 +370,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // Kiểm tra có nhân viên đang giữ chức vụ hay không
       const checkEmp = await pool.request()
         .input('id', sql.Int, id)
         .query(`SELECT COUNT(*) AS cnt FROM tblEmployee WHERE PositionId = @id`);
@@ -421,11 +388,8 @@ export class OrgStructureController {
     }
   }
 
-  // ===================== GÁN & CHUYỂN NHÂN VIÊN =====================
 
-  /**
-   * Lấy danh sách nhân viên phục vụ gán/chuyển phòng ban
-   */
+  
   static async getEmployees(req, res) {
     try {
       const pool = await connectDb();
@@ -446,26 +410,21 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Ánh xạ tự động từ Chức vụ (Position) và Phòng ban (Department) sang Vai trò phân quyền phần mềm (System Role)
-   */
+  
   static mapPositionToRole(posCode, posName, deptCode, deptName) {
     const code = (posCode || '').toUpperCase();
     const name = (posName || '').toLowerCase();
     const dCode = (deptCode || '').toUpperCase();
     const dName = (deptName || '').toLowerCase();
 
-    // 1. Quản trị Nhân sự (HR): Phòng ban HR hoặc chức danh nhân sự
     if (code.includes('HR') || dCode === 'HR' || name.includes('nhân sự') || dName.includes('nhân sự')) {
       return 'HR';
     }
 
-    // 2. Kế toán / Tài chính (Finance): Phòng Tài chính / Kế toán hoặc chức danh kế toán tiền lương
     if (code.includes('FIN') || code.includes('PAYROLL') || dCode === 'FIN' || name.includes('kế toán') || name.includes('tài chính') || dName.includes('tài chính')) {
       return 'Finance';
     }
 
-    // 3. Trưởng bộ phận / Quản lý / Lãnh đạo (Manager): CEO, Tech Lead, Trưởng nhóm, Trưởng phòng, Giám đốc
     if (
       code === 'CEO' || code.includes('LEAD') || code.includes('MGR') || code.includes('DIR') ||
       name.includes('trưởng') || name.includes('quản lý') || name.includes('giám đốc') ||
@@ -474,18 +433,14 @@ export class OrgStructureController {
       return 'Manager';
     }
 
-    // 4. Mặc định là Nhân viên thông thường (Employee)
     return 'Employee';
   }
 
-  /**
-   * Đồng bộ toàn bộ vai trò phân quyền (tblUser.RoleId) dựa trên Chức vụ hiện tại của nhân viên (tblEmployee.PositionId)
-   */
+  
   static async syncAllUserRoles(req, res) {
     try {
       const pool = await connectDb();
 
-      // Lấy danh sách tất cả nhân viên có liên kết tài khoản User
       const empList = await pool.request().query(`
         SELECT e.EmployeeId, e.UserId, e.FullName,
                p.PositionCode, p.PositionName,
@@ -503,7 +458,6 @@ export class OrgStructureController {
       const syncDetails = [];
 
       for (const emp of empList.recordset) {
-        // Không hạ quyền của tài khoản Admin hệ thống
         if (emp.CurrentRoleCode === 'Admin') continue;
 
         const targetRole = OrgStructureController.mapPositionToRole(
@@ -543,9 +497,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Điều chuyển hoặc gán nhân viên vào phòng ban / chức vụ mới
-   */
+  
   static async assignEmployee(req, res) {
     try {
       const employeeId = parseInt(req.params.id, 10);
@@ -560,7 +512,6 @@ export class OrgStructureController {
 
       const pool = await connectDb();
 
-      // 1. Lấy thông tin nhân viên hiện tại để ghi nhận lịch sử công tác
       const currentEmp = await pool.request()
         .input('empId', sql.Int, employeeId)
         .query(`
@@ -580,7 +531,6 @@ export class OrgStructureController {
       const deptId = parseInt(targetDepartmentId, 10);
       const posId = targetPositionId ? parseInt(targetPositionId, 10) : empData.PositionId;
 
-      // 2. Lấy tên phòng ban và chức vụ mới
       const newDeptRes = await pool.request()
         .input('deptId', sql.Int, deptId)
         .query(`SELECT DepartmentName, DepartmentCode FROM tblDepartment WHERE DepartmentId = @deptId`);
@@ -593,7 +543,6 @@ export class OrgStructureController {
       const newPosName = newPosRes.recordset[0]?.PositionName || empData.OldPosition || 'Chức vụ mới';
       const newPosCode = newPosRes.recordset[0]?.PositionCode || '';
 
-      // 3. Cập nhật thông tin nhân viên
       await pool.request()
         .input('empId', sql.Int, employeeId)
         .input('deptId', sql.Int, deptId)
@@ -606,7 +555,6 @@ export class OrgStructureController {
           WHERE EmployeeId = @empId
         `);
 
-      // 4. Ghi nhận quá trình công tác vào tblCareerHistory nếu có thay đổi
       if (empData.DepartmentId !== deptId || empData.PositionId !== posId) {
         await pool.request()
           .input('empId', sql.Int, employeeId)
@@ -623,7 +571,6 @@ export class OrgStructureController {
           `);
       }
 
-      // 5. TỰ ĐỘNG ĐỒNG BỘ PHÂN QUYỀN HỆ THỐNG CHO TÀI KHOẢN (CÁCH 1: AUTO-SYNC ROLE)
       let syncedRoleCode = null;
       if (empData.UserId) {
         const userRes = await pool.request()
@@ -636,7 +583,6 @@ export class OrgStructureController {
           `);
 
         const currentUser = userRes.recordset[0];
-        // Bảo vệ tài khoản Admin hệ thống (không tự ý giáng quyền)
         if (currentUser && currentUser.RoleCode !== 'Admin') {
           const targetRole = OrgStructureController.mapPositionToRole(newPosCode, newPosName, newDeptCode, newDeptName);
           const targetRoleRes = await pool.request()
@@ -669,9 +615,7 @@ export class OrgStructureController {
     }
   }
 
-  /**
-   * Điều chuyển hàng loạt nhân sự vào phòng ban
-   */
+  
   static async batchTransferEmployees(req, res) {
     try {
       const { employeeIds, targetDepartmentId, targetPositionId, note, decisionNumber } = req.body;
@@ -707,7 +651,6 @@ export class OrgStructureController {
         const id = parseInt(empId, 10);
         if (!id) continue;
 
-        // Cập nhật từng nhân viên
         if (targetPositionId) {
           const posId = parseInt(targetPositionId, 10);
           await pool.request()
@@ -722,7 +665,6 @@ export class OrgStructureController {
             .query(`UPDATE tblEmployee SET DepartmentId = @deptId, UpdatedAt = SYSDATETIME() WHERE EmployeeId = @empId`);
         }
 
-        // Tự động đồng bộ phân quyền
         const empInfo = await pool.request()
           .input('empId', sql.Int, id)
           .query(`SELECT UserId, PositionId FROM tblEmployee WHERE EmployeeId = @empId`);

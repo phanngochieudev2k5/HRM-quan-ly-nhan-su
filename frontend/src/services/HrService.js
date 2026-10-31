@@ -10,10 +10,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy danh sách nhân sự (hỗ trợ phân trang, tìm kiếm, lọc)
-   * @param {Object} params { page, limit, search, departmentId, workStatus }
-   */
   async getEmployees(params = {}) {
     try {
       const query = new URLSearchParams();
@@ -38,10 +34,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy chi tiết hồ sơ 360° nhân viên bao gồm hợp đồng và user
-   * @param {string|number} id EmployeeId hoặc EmployeeCode
-   */
   async getEmployeeById(id) {
     try {
       const res = await ApiClient.get(`/employees/${id}`);
@@ -52,10 +44,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Thêm mới hồ sơ nhân sự
-   * @param {Object} employeeData
-   */
   async createEmployee(employeeData) {
     try {
       const res = await ApiClient.post('/employees', employeeData);
@@ -66,11 +54,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Cập nhật thông tin nhân sự
-   * @param {string|number} id
-   * @param {Object} employeeData
-   */
   async updateEmployee(id, employeeData) {
     try {
       const res = await ApiClient.put(`/employees/${id}`, employeeData);
@@ -81,10 +64,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Xóa nhân sự
-   * @param {string|number} id
-   */
   async deleteEmployee(id) {
     try {
       const res = await ApiClient.delete(`/employees/${id}`);
@@ -95,9 +74,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy danh sách hợp đồng (hỗ trợ lọc theo employeeId, status, search)
-   */
   async getContracts(params = {}) {
     const query = new URLSearchParams();
     if (params.employeeId) query.append('employeeId', params.employeeId);
@@ -124,9 +100,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Thêm mới hợp đồng lao động
-   */
   async createContract(contractData) {
     try {
       const res = await ApiClient.post('/contracts', contractData);
@@ -137,9 +110,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Cập nhật hợp đồng lao động
-   */
   async updateContract(id, contractData) {
     try {
       const res = await ApiClient.put(`/contracts/${id}`, contractData);
@@ -150,9 +120,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Xóa hợp đồng lao động
-   */
   async deleteContract(id) {
     try {
       const res = await ApiClient.delete(`/contracts/${id}`);
@@ -163,9 +130,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy danh sách phòng ban
-   */
   async getDepartments() {
     try {
       const res = await ApiClient.get('/departments');
@@ -180,9 +144,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy danh sách chức vụ
-   */
   async getPositions() {
     try {
       const res = await ApiClient.get('/positions');

@@ -42,7 +42,6 @@ app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
 app.use('/api/org', OrgRoutes);
 
-// Direct CRUD endpoints for US-02
 app.use('/api/employees', EmployeeRoutes);
 app.use('/api/contracts', ContractRoutes);
 app.get(

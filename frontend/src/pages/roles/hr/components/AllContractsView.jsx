@@ -42,7 +42,6 @@ export default function AllContractsView({
     loadContracts();
   }, [loadContracts]);
 
-  // Thống kê nhanh
   const activeCount = contracts.filter(c => c.Status === 'Hiệu lực').length;
   const expiringCount = contracts.filter(c => c.Status === 'Sắp hết hạn').length;
   const expiredCount = contracts.filter(c => c.Status === 'Hết hạn' || c.Status === 'Đã chấm dứt').length;
@@ -103,7 +102,6 @@ export default function AllContractsView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* HEADER SECTION */}
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
@@ -130,7 +128,6 @@ export default function AllContractsView({
         </div>
       </div>
 
-      {/* STAT CARDS SUMMARY */}
       <div className="grid c4" style={{ marginBottom: '2px' }}>
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -181,7 +178,6 @@ export default function AllContractsView({
         </div>
       </div>
 
-      {/* FILTER & DATA TABLE */}
       <div className="tbl-card">
         <div className="tbl-tools" style={{ flexWrap: 'wrap', gap: '10px' }}>
           <div className="search" style={{ minWidth: '280px' }}>
@@ -358,7 +354,6 @@ export default function AllContractsView({
         </div>
       </div>
 
-      {/* MODAL THÊM / SỬA HỢP ĐỒNG */}
       <ContractModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

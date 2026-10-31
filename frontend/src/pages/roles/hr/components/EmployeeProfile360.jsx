@@ -18,7 +18,7 @@ export default function EmployeeProfile360({
   onDeleteContract,
   onNavigateFaceRegistration
 }) {
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'contracts' | 'account'
+  const [activeTab, setActiveTab] = useState('details');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [togglingFace, setTogglingFace] = useState(false);
 
@@ -59,7 +59,6 @@ export default function EmployeeProfile360({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-      {/* HEADER PHẦN TRÊN CỦA PROFILE */}
       <div className="ph" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button className="btn" onClick={onBackToList} title="Quay lại danh sách nhân viên">
@@ -91,10 +90,8 @@ export default function EmployeeProfile360({
         </div>
       </div>
 
-      {/* HERO CARD HỒ SƠ 360° */}
       <div className="card" style={{ padding: '24px', background: 'linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)', border: '1px solid #ccfbf1' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center' }}>
-          {/* AVATAR */}
           <div style={{ position: 'relative' }}>
             {employee.AvatarUrl ? (
               <img
@@ -147,7 +144,6 @@ export default function EmployeeProfile360({
             </div>
           </div>
 
-          {/* MAIN INFO */}
           <div style={{ flex: 1, minWidth: '240px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#042f2e' }}>
@@ -196,7 +192,6 @@ export default function EmployeeProfile360({
         </div>
       </div>
 
-      {/* TABS NAVIGATION */}
       <div className="attendance-tabs-header" style={{ margin: '4px 0' }}>
         <button
           className={`attendance-tab-btn ${activeTab === 'details' ? 'active' : ''}`}
@@ -224,10 +219,8 @@ export default function EmployeeProfile360({
         </button>
       </div>
 
-      {/* TAB 1: THÔNG TIN CHI TIẾT CÁ NHÂN */}
       {activeTab === 'details' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Nhóm 1: Lý lịch & Định danh */}
           <div className="card">
             <div className="card-h" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '15px', color: '#042f2e' }}>
@@ -282,7 +275,6 @@ export default function EmployeeProfile360({
             </div>
           </div>
 
-          {/* Nhóm 2: Chế độ Lương, Thuế & Ngân hàng */}
           <div className="card">
             <div className="card-h">
               <h3 style={{ margin: 0, fontSize: '15px', color: '#042f2e' }}>
@@ -327,7 +319,6 @@ export default function EmployeeProfile360({
         </div>
       )}
 
-      {/* TAB 2: HỢP ĐỒNG LAO ĐỘNG */}
       {activeTab === 'contracts' && (
         <ContractTab
           employee={employee}
@@ -338,10 +329,8 @@ export default function EmployeeProfile360({
         />
       )}
 
-      {/* TAB 3: TÀI KHOẢN HỆ THỐNG & FACE ID */}
       {activeTab === 'account' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
-          {/* Card Tài khoản hệ thống */}
           <div className="card">
             <div className="card-h">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -389,7 +378,6 @@ export default function EmployeeProfile360({
             </div>
           </div>
 
-          {/* Card Sinh trắc khuôn mặt Face ID OpenCV */}
           <div className="card">
             <div className="card-h">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -449,7 +437,6 @@ export default function EmployeeProfile360({
         </div>
       )}
 
-      {/* MODAL EDIT EMPLOYEE */}
       <EmployeeModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

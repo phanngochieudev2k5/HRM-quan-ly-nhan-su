@@ -228,7 +228,13 @@ export default function App() {
               />
 
               <div className="main-wrapper">
-                <Header currentRole={currentRole} currentUser={currentUser} onLogout={handleLogout} onNavigate={handleNavigate} onUserUpdate={(updated) => setCurrentUser(prev => ({ ...prev, ...updated }))} />
+                <Header
+                  currentRole={currentRole}
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  onNavigate={handleNavigate}
+                  onUserUpdate={(updated) => setCurrentUser(prev => ({ ...prev, ...updated }))}
+                />
 
                 <main className="content-area">
                   <Outlet />
@@ -240,22 +246,20 @@ export default function App() {
       >
         <Route path="/" element={<Navigate to={getDefaultPathForRole(currentRole)} replace />} />
 
-        {/* Admin Routes */}
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<AdminDashboard onNavigate={handleNavigate} />} />
         <Route path="/admin/accounts" element={<UserAccountsView />} />
         <Route path="/admin/logs" element={<SystemAuditLogs />} />
         <Route path="/admin/settings" element={<SystemSettingsView />} />
 
-        {/* Manager Routes */}
         <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
         <Route path="/manager/dashboard" element={<ManagerDashboard onNavigate={handleNavigate} />} />
         <Route path="/manager/team" element={<TeamMembersView />} />
         <Route path="/manager/leaves" element={<TeamLeaveApprovals />} />
         <Route path="/manager/overtime" element={<TeamOvertimeApprovals />} />
         <Route path="/manager/performance" element={<TeamPerformanceKpi />} />
+        <Route path="/manager/payslip" element={<MyPayslipView role="Manager" user={currentUser} />} />
 
-        {/* Employee Routes */}
         <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />
         <Route path="/employee/dashboard" element={<EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
         <Route path="/employee/profile" element={<MyProfileView user={currentUser} />} />
@@ -263,17 +267,16 @@ export default function App() {
         <Route path="/employee/attendance" element={<MyAttendanceView />} />
         <Route path="/employee/leave" element={<MyLeaveView />} />
         <Route path="/employee/overtime" element={<MyOvertimeView />} />
-        <Route path="/employee/payslip" element={<MyPayslipView />} />
+        <Route path="/employee/payslip" element={<MyPayslipView role="Employee" user={currentUser} />} />
         <Route path="/employee/training" element={<MyTrainingView />} />
 
-        {/* Finance Routes */}
         <Route path="/finance" element={<Navigate to="/finance/dashboard" replace />} />
         <Route path="/finance/dashboard" element={<FinanceDashboard onNavigate={handleNavigate} />} />
         <Route path="/finance/components" element={<SalaryComponentsView />} />
         <Route path="/finance/calc" element={<PayrollCalculationView />} />
         <Route path="/finance/reports" element={<PayrollReportsView />} />
+        <Route path="/finance/payslip" element={<MyPayslipView role="Finance" user={currentUser} />} />
 
-        {/* HR Routes */}
         <Route path="/hr" element={<Navigate to="/hr/dashboard" replace />} />
         <Route path="/hr/dashboard" element={<HrDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
         <Route
@@ -348,11 +351,10 @@ export default function App() {
         <Route path="/hr/overtime" element={<HrOvertimeView />} />
         <Route path="/hr/assets" element={<HrAssetsView />} />
         <Route path="/hr/reports" element={<HrReportsView />} />
+        <Route path="/hr/payslip" element={<MyPayslipView role="HR" user={currentUser} />} />
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to={getDefaultPathForRole(currentRole)} replace />} />
       </Route>
     </Routes>
   );
 }
-
