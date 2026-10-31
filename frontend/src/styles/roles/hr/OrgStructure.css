@@ -425,6 +425,10 @@
   animation: fadeIn 0.18s ease-out;
 }
 
+.org-modal-overlay.modal-top-layer {
+  z-index: 1200;
+}
+
 .org-modal-content {
   background: var(--white);
   border-radius: var(--radius-lg);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building2, Users, Briefcase, Plus, Edit2, Trash2, ChevronDown, ChevronRight,
-  UserCheck, ArrowRightLeft, Search, RefreshCw, Printer, AlertCircle, CheckCircle2,
+  UserCheck, ArrowRightLeft, Search, RefreshCw, AlertCircle, CheckCircle2,
   X, ShieldCheck, Mail, Phone, Layers, Info
 } from 'lucide-react';
 import OrgService from '../../../../services/OrgService';
@@ -58,7 +58,7 @@ export default function OrgStructureManagement() {
   const [selectedDeptDetail, setSelectedDeptDetail] = useState(null);
 
   // Load all initial data from database
-  const loadData = async () => {
+  const loadData = async (deptIdToRefresh = null) => {
     try {
       setLoading(true);
       const [treeRes, posRes, empRes] = await Promise.all([
@@ -85,6 +85,25 @@ export default function OrgStructureManagement() {
         exp[d.DepartmentId] = true;
       });
       setExpandedNodes(exp);
+
+      // Refresh selected dept detail if requested or currently open
+      const targetDeptId = deptIdToRefresh || selectedDeptDetail?.DepartmentId;
+      if (targetDeptId) {
+        const findNode = (nodes) => {
+          for (const n of nodes) {
+            if (n.DepartmentId === targetDeptId) return n;
+            if (n.children && n.children.length > 0) {
+              const f = findNode(n.children);
+              if (f) return f;
+            }
+          }
+          return null;
+        };
+        const freshNode = findNode(tree);
+        if (freshNode) {
+          setSelectedDeptDetail(freshNode);
+        }
+      }
     } catch (error) {
       showAlert('error', 'Không thể tải dữ liệu cơ cấu tổ chức: ' + error.message);
     } finally {
@@ -272,12 +291,7 @@ export default function OrgStructureManagement() {
       await OrgService.assignEmployee(transferData.employeeId, transferData);
       showAlert('success', 'Điều chuyển nhân sự thành công!');
       setIsTransferModalOpen(false);
-      await loadData();
-      if (selectedDeptDetail) {
-        // Refresh selected department view
-        const updated = departments.find(d => d.DepartmentId === selectedDeptDetail.DepartmentId);
-        setSelectedDeptDetail(updated || null);
-      }
+      await loadData(selectedDeptDetail?.DepartmentId);
     } catch (error) {
       showAlert('error', error.message);
     }
@@ -502,10 +516,6 @@ export default function OrgStructureManagement() {
           <button className="btn pri" onClick={() => handleOpenAddDept()}>
             <Plus size={15} />
             <span>Thêm phòng ban mới</span>
-          </button>
-          <button className="btn" onClick={() => window.print()}>
-            <Printer size={15} />
-            <span>In sơ đồ</span>
           </button>
         </div>
       </div>
@@ -913,126 +923,6 @@ export default function OrgStructureManagement() {
         </div>
       )}
 
-      {/* ================= MODAL 3: ĐIỀU CHUYỂN / GÁN NHÂN SỰ ================= */}
-      {isTransferModalOpen && (
-        <div className="org-modal-overlay">
-          <div className="org-modal-content">
-            <div className="org-modal-header">
-              <h2>
-                <ArrowRightLeft size={20} color="#0f766e" />
-                <span>Gán & Điều chuyển nhân sự vào phòng ban</span>
-              </h2>
-              <button
-                type="button"
-                className="org-modal-close-btn"
-                onClick={() => setIsTransferModalOpen(false)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveTransfer}>
-              <div className="org-modal-body">
-                <div className="org-form-group">
-                  <label>Chọn nhân viên cần điều chuyển <span className="req">*</span></label>
-                  <select
-                    className="org-form-select"
-                    value={transferData.employeeId}
-                    onChange={(e) => {
-                      const empId = e.target.value;
-                      const emp = employees.find(em => String(em.EmployeeId) === empId);
-                      setTransferData({
-                        ...transferData,
-                        employeeId: empId,
-                        targetDepartmentId: emp?.DepartmentId ? String(emp.DepartmentId) : transferData.targetDepartmentId,
-                        targetPositionId: emp?.PositionId ? String(emp.PositionId) : transferData.targetPositionId
-                      });
-                    }}
-                    required
-                  >
-                    <option value="">-- Chọn nhân viên trong doanh nghiệp --</option>
-                    {employees.map(emp => (
-                      <option key={emp.EmployeeId} value={emp.EmployeeId}>
-                        {emp.FullName} ({emp.EmployeeCode}) - Hiện tại: {emp.DepartmentName || 'Chưa gán phòng'} / {emp.PositionName || 'Chưa gán chức vụ'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="org-form-row">
-                  <div className="org-form-group">
-                    <label>Phòng ban chuyển tới <span className="req">*</span></label>
-                    <select
-                      className="org-form-select"
-                      value={transferData.targetDepartmentId}
-                      onChange={(e) => setTransferData({ ...transferData, targetDepartmentId: e.target.value })}
-                      required
-                    >
-                      <option value="">-- Chọn phòng ban mới --</option>
-                      {departments.map(d => (
-                        <option key={d.DepartmentId} value={d.DepartmentId}>
-                          {d.DepartmentName} ({d.DepartmentCode})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="org-form-group">
-                    <label>Chức vụ mới</label>
-                    <select
-                      className="org-form-select"
-                      value={transferData.targetPositionId}
-                      onChange={(e) => setTransferData({ ...transferData, targetPositionId: e.target.value })}
-                    >
-                      <option value="">-- Giữ nguyên hoặc chọn chức vụ --</option>
-                      {positions.map(p => (
-                        <option key={p.PositionId} value={p.PositionId}>
-                          {p.PositionName} ({p.PositionCode})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="org-form-group">
-                  <label>Số quyết định bổ nhiệm / điều chuyển</label>
-                  <input
-                    type="text"
-                    className="org-form-input"
-                    placeholder="VD: QĐ-2026/01-BOD"
-                    value={transferData.decisionNumber}
-                    onChange={(e) => setTransferData({ ...transferData, decisionNumber: e.target.value })}
-                  />
-                </div>
-
-                <div className="org-form-group">
-                  <label>Lý do & Ghi chú điều chuyển</label>
-                  <textarea
-                    className="org-form-textarea"
-                    placeholder="Ghi chú lý do chuyển phòng ban, căn cứ quyết định..."
-                    value={transferData.note}
-                    onChange={(e) => setTransferData({ ...transferData, note: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="org-modal-footer">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setIsTransferModalOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button type="submit" className="btn pri">
-                  Xác nhận điều chuyển
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* ================= MODAL 4: CHI TIẾT PHÒNG BAN & DANH SÁCH NHÂN SỰ ================= */}
       {selectedDeptDetail && (
         <div className="org-modal-overlay">
@@ -1190,6 +1080,126 @@ export default function OrgStructureManagement() {
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 3: ĐIỀU CHUYỂN / GÁN NHÂN SỰ (HIỂN THỊ PHÍA TRƯỚC VỚI Z-INDEX CAO HƠN) ================= */}
+      {isTransferModalOpen && (
+        <div className="org-modal-overlay modal-top-layer">
+          <div className="org-modal-content">
+            <div className="org-modal-header">
+              <h2>
+                <ArrowRightLeft size={20} color="#0f766e" />
+                <span>Gán & Điều chuyển nhân sự vào phòng ban</span>
+              </h2>
+              <button
+                type="button"
+                className="org-modal-close-btn"
+                onClick={() => setIsTransferModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTransfer}>
+              <div className="org-modal-body">
+                <div className="org-form-group">
+                  <label>Chọn nhân viên cần điều chuyển <span className="req">*</span></label>
+                  <select
+                    className="org-form-select"
+                    value={transferData.employeeId}
+                    onChange={(e) => {
+                      const empId = e.target.value;
+                      const emp = employees.find(em => String(em.EmployeeId) === empId);
+                      setTransferData({
+                        ...transferData,
+                        employeeId: empId,
+                        targetDepartmentId: emp?.DepartmentId ? String(emp.DepartmentId) : transferData.targetDepartmentId,
+                        targetPositionId: emp?.PositionId ? String(emp.PositionId) : transferData.targetPositionId
+                      });
+                    }}
+                    required
+                  >
+                    <option value="">-- Chọn nhân viên trong doanh nghiệp --</option>
+                    {employees.map(emp => (
+                      <option key={emp.EmployeeId} value={emp.EmployeeId}>
+                        {emp.FullName} ({emp.EmployeeCode}) - Hiện tại: {emp.DepartmentName || 'Chưa gán phòng'} / {emp.PositionName || 'Chưa gán chức vụ'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="org-form-row">
+                  <div className="org-form-group">
+                    <label>Phòng ban chuyển tới <span className="req">*</span></label>
+                    <select
+                      className="org-form-select"
+                      value={transferData.targetDepartmentId}
+                      onChange={(e) => setTransferData({ ...transferData, targetDepartmentId: e.target.value })}
+                      required
+                    >
+                      <option value="">-- Chọn phòng ban mới --</option>
+                      {departments.map(d => (
+                        <option key={d.DepartmentId} value={d.DepartmentId}>
+                          {d.DepartmentName} ({d.DepartmentCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="org-form-group">
+                    <label>Chức vụ mới</label>
+                    <select
+                      className="org-form-select"
+                      value={transferData.targetPositionId}
+                      onChange={(e) => setTransferData({ ...transferData, targetPositionId: e.target.value })}
+                    >
+                      <option value="">-- Giữ nguyên hoặc chọn chức vụ --</option>
+                      {positions.map(p => (
+                        <option key={p.PositionId} value={p.PositionId}>
+                          {p.PositionName} ({p.PositionCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="org-form-group">
+                  <label>Số quyết định bổ nhiệm / điều chuyển</label>
+                  <input
+                    type="text"
+                    className="org-form-input"
+                    placeholder="VD: QĐ-2026/01-BOD"
+                    value={transferData.decisionNumber}
+                    onChange={(e) => setTransferData({ ...transferData, decisionNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="org-form-group">
+                  <label>Lý do & Ghi chú điều chuyển</label>
+                  <textarea
+                    className="org-form-textarea"
+                    placeholder="Ghi chú lý do chuyển phòng ban, căn cứ quyết định..."
+                    value={transferData.note}
+                    onChange={(e) => setTransferData({ ...transferData, note: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="org-modal-footer">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setIsTransferModalOpen(false)}
+                >
+                  Hủy
+                </button>
+                <button type="submit" className="btn pri">
+                  Xác nhận điều chuyển
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
