@@ -134,11 +134,18 @@ export default function OrgStructureManagement() {
 
   const handleOpenAddDept = (parentDeptId = null) => {
     setDeptFormMode('create');
+    // Default to Ban Giám Đốc (BOD) if parentDeptId is not specified
+    const defaultParent = parentDeptId 
+      ? String(parentDeptId) 
+      : (departments.find(d => d.DepartmentId === 1 || d.DepartmentCode === 'BOD')?.DepartmentId 
+         || departments[0]?.DepartmentId 
+         || '');
+
     setCurrentDept({
       DepartmentId: null,
       DepartmentCode: '',
       DepartmentName: '',
-      ParentDepartmentId: parentDeptId ? String(parentDeptId) : '',
+      ParentDepartmentId: defaultParent ? String(defaultParent) : '',
       ManagerEmployeeId: '',
       HeadCount: 10,
       Description: ''
@@ -163,11 +170,33 @@ export default function OrgStructureManagement() {
   const handleSaveDept = async (e) => {
     e.preventDefault();
     try {
+      const code = (currentDept.DepartmentCode || '').trim();
+      const name = (currentDept.DepartmentName || '').trim();
+      if (!code || !name) {
+        showAlert('error', 'Vui lòng nhập đầy đủ Mã phòng ban và Tên phòng ban!');
+        return;
+      }
+
+      const payload = {
+        departmentCode: code,
+        departmentName: name,
+        DepartmentCode: code,
+        DepartmentName: name,
+        parentDepartmentId: currentDept.ParentDepartmentId ? parseInt(currentDept.ParentDepartmentId, 10) : null,
+        ParentDepartmentId: currentDept.ParentDepartmentId ? parseInt(currentDept.ParentDepartmentId, 10) : null,
+        managerEmployeeId: currentDept.ManagerEmployeeId ? parseInt(currentDept.ManagerEmployeeId, 10) : null,
+        ManagerEmployeeId: currentDept.ManagerEmployeeId ? parseInt(currentDept.ManagerEmployeeId, 10) : null,
+        headCount: currentDept.HeadCount ? parseInt(currentDept.HeadCount, 10) : 0,
+        HeadCount: currentDept.HeadCount ? parseInt(currentDept.HeadCount, 10) : 0,
+        description: (currentDept.Description || '').trim(),
+        Description: (currentDept.Description || '').trim()
+      };
+
       if (deptFormMode === 'create') {
-        await OrgService.createDepartment(currentDept);
+        await OrgService.createDepartment(payload);
         showAlert('success', 'Thêm phòng ban mới thành công!');
       } else {
-        await OrgService.updateDepartment(currentDept.DepartmentId, currentDept);
+        await OrgService.updateDepartment(currentDept.DepartmentId, payload);
         showAlert('success', 'Cập nhật phòng ban thành công!');
       }
       setIsDeptModalOpen(false);
@@ -219,11 +248,29 @@ export default function OrgStructureManagement() {
   const handleSavePos = async (e) => {
     e.preventDefault();
     try {
+      const code = (currentPos.PositionCode || '').trim();
+      const name = (currentPos.PositionName || '').trim();
+      if (!code || !name) {
+        showAlert('error', 'Vui lòng nhập đầy đủ Mã chức vụ và Tên chức vụ!');
+        return;
+      }
+
+      const payload = {
+        positionCode: code,
+        positionName: name,
+        PositionCode: code,
+        PositionName: name,
+        baseSalaryMin: currentPos.BaseSalaryMin ? parseFloat(currentPos.BaseSalaryMin) : 0,
+        BaseSalaryMin: currentPos.BaseSalaryMin ? parseFloat(currentPos.BaseSalaryMin) : 0,
+        baseSalaryMax: currentPos.BaseSalaryMax ? parseFloat(currentPos.BaseSalaryMax) : 0,
+        BaseSalaryMax: currentPos.BaseSalaryMax ? parseFloat(currentPos.BaseSalaryMax) : 0
+      };
+
       if (posFormMode === 'create') {
-        await OrgService.createPosition(currentPos);
+        await OrgService.createPosition(payload);
         showAlert('success', 'Thêm chức vụ mới thành công!');
       } else {
-        await OrgService.updatePosition(currentPos.PositionId, currentPos);
+        await OrgService.updatePosition(currentPos.PositionId, payload);
         showAlert('success', 'Cập nhật chức vụ thành công!');
       }
       setPosFormMode('create');
@@ -329,10 +376,12 @@ export default function OrgStructureManagement() {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = !!expandedNodes[node.DepartmentId];
     const isOverQuota = (node.ActualEmployeeCount || 0) > (node.HeadCount || 0);
+    const isMainRoot = node.DepartmentId === 1 || node.DepartmentCode === 'BOD';
+    const cardLevel = isMainRoot ? 0 : Math.max(1, Math.min(level, 3));
 
     return (
       <div key={node.DepartmentId} style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className={`org-card-node level-${Math.min(level, 3)}`}>
+        <div className={`org-card-node level-${cardLevel}`}>
           <div className="org-card-main">
             <div className="org-card-left">
               {hasChildren ? (
@@ -364,7 +413,7 @@ export default function OrgStructureManagement() {
                 <div className="org-card-dept-name">
                   <span>{node.DepartmentName}</span>
                   <span className="org-code-badge">{node.DepartmentCode}</span>
-                  {level === 0 && (
+                  {isMainRoot && (
                     <span className="badge b-p" style={{ fontSize: '10.5px', padding: '1px 6px' }}>Cấp cao nhất</span>
                   )}
                 </div>
@@ -431,7 +480,7 @@ export default function OrgStructureManagement() {
                   <Edit2 size={14} />
                 </button>
 
-                {level > 0 && (
+                {!isMainRoot && (
                   <button
                     type="button"
                     className="org-action-icon-btn danger"
@@ -827,7 +876,7 @@ export default function OrgStructureManagement() {
                       value={currentDept.ParentDepartmentId}
                       onChange={(e) => setCurrentDept({ ...currentDept, ParentDepartmentId: e.target.value })}
                     >
-                      <option value="">-- Là phòng ban cấp cao nhất (Root) --</option>
+                      <option value="">-- Là phòng ban cấp cao nhất (Độc lập) --</option>
                       {departments
                         .filter(d => d.DepartmentId !== currentDept.DepartmentId)
                         .map(d => (
