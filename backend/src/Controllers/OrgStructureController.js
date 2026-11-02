@@ -100,7 +100,12 @@ export class OrgStructureController {
   
   static async createDepartment(req, res) {
     try {
-      const { departmentCode, departmentName, parentDepartmentId, managerEmployeeId, headCount, description } = req.body;
+      const departmentCode = (req.body.departmentCode || req.body.DepartmentCode || '').trim();
+      const departmentName = (req.body.departmentName || req.body.DepartmentName || '').trim();
+      const parentDepartmentId = req.body.parentDepartmentId !== undefined ? req.body.parentDepartmentId : req.body.ParentDepartmentId;
+      const managerEmployeeId = req.body.managerEmployeeId !== undefined ? req.body.managerEmployeeId : req.body.ManagerEmployeeId;
+      const headCount = req.body.headCount !== undefined ? req.body.headCount : req.body.HeadCount;
+      const description = (req.body.description !== undefined ? req.body.description : req.body.Description) || '';
 
       if (!departmentCode || !departmentName) {
         return sendError(res, 'Mã phòng ban và Tên phòng ban là bắt buộc!', 400);
@@ -143,7 +148,12 @@ export class OrgStructureController {
   static async updateDepartment(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
-      const { departmentCode, departmentName, parentDepartmentId, managerEmployeeId, headCount, description } = req.body;
+      const departmentCode = (req.body.departmentCode || req.body.DepartmentCode || '').trim();
+      const departmentName = (req.body.departmentName || req.body.DepartmentName || '').trim();
+      const parentDepartmentId = req.body.parentDepartmentId !== undefined ? req.body.parentDepartmentId : req.body.ParentDepartmentId;
+      const managerEmployeeId = req.body.managerEmployeeId !== undefined ? req.body.managerEmployeeId : req.body.ManagerEmployeeId;
+      const headCount = req.body.headCount !== undefined ? req.body.headCount : req.body.HeadCount;
+      const description = (req.body.description !== undefined ? req.body.description : req.body.Description) || '';
 
       if (!id || isNaN(id)) {
         return sendError(res, 'ID phòng ban không hợp lệ!', 400);
@@ -271,7 +281,10 @@ export class OrgStructureController {
   
   static async createPosition(req, res) {
     try {
-      const { positionCode, positionName, baseSalaryMin, baseSalaryMax } = req.body;
+      const positionCode = (req.body.positionCode || req.body.PositionCode || '').trim();
+      const positionName = (req.body.positionName || req.body.PositionName || '').trim();
+      const baseSalaryMin = req.body.baseSalaryMin !== undefined ? req.body.baseSalaryMin : req.body.BaseSalaryMin;
+      const baseSalaryMax = req.body.baseSalaryMax !== undefined ? req.body.baseSalaryMax : req.body.BaseSalaryMax;
 
       if (!positionCode || !positionName) {
         return sendError(res, 'Mã chức vụ và Tên chức vụ là bắt buộc!', 400);
@@ -311,7 +324,10 @@ export class OrgStructureController {
   static async updatePosition(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
-      const { positionCode, positionName, baseSalaryMin, baseSalaryMax } = req.body;
+      const positionCode = (req.body.positionCode || req.body.PositionCode || '').trim();
+      const positionName = (req.body.positionName || req.body.PositionName || '').trim();
+      const baseSalaryMin = req.body.baseSalaryMin !== undefined ? req.body.baseSalaryMin : req.body.BaseSalaryMin;
+      const baseSalaryMax = req.body.baseSalaryMax !== undefined ? req.body.baseSalaryMax : req.body.BaseSalaryMax;
 
       if (!id || isNaN(id)) {
         return sendError(res, 'ID chức vụ không hợp lệ!', 400);
