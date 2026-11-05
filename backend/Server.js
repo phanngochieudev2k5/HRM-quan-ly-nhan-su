@@ -9,6 +9,8 @@ import HrRoutes from './src/Routes/HrRoutes.js';
 import EmployeeRoutes from './src/Routes/EmployeeRoutes.js';
 import ContractRoutes from './src/Routes/ContractRoutes.js';
 import OrgRoutes from './src/Routes/OrgRoutes.js';
+import RecruitmentRoutes from './src/Routes/RecruitmentRoutes.js';
+import CandidateRoutes from './src/Routes/CandidateRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -42,8 +44,12 @@ app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
 app.use('/api/org', OrgRoutes);
 
+// Direct CRUD endpoints for US-02 & US-04 & US-05
 app.use('/api/employees', EmployeeRoutes);
 app.use('/api/contracts', ContractRoutes);
+app.use('/api/recruitment-jobs', RecruitmentRoutes);
+app.use('/api/candidates', CandidateRoutes);
+
 app.get(
     '/api/departments',
     verifyToken,
@@ -65,16 +71,16 @@ const startServer = async () => {
                 `🚀 Máy chủ HRM Backend đang hoạt động tại: http://localhost:${PORT}`,
             );
             console.log(
-                `📡 API Đăng nhập: POST http://localhost:${PORT}/api/auth/login`,
+                `📡 API Đăng nhập:        POST http://localhost:${PORT}/api/auth/login`,
             );
             console.log(
-                `📡 API Đăng ký:   POST http://localhost:${PORT}/api/auth/register`,
+                `📡 API Employees:       GET/POST http://localhost:${PORT}/api/employees`,
             );
             console.log(
-                `📡 API Employees: GET/POST http://localhost:${PORT}/api/employees`,
+                `📡 API Recruitment:     GET/POST http://localhost:${PORT}/api/recruitment-jobs`,
             );
             console.log(
-                `📡 API Contracts: GET/POST http://localhost:${PORT}/api/contracts`,
+                `📡 API Candidates:      GET/POST http://localhost:${PORT}/api/candidates`,
             );
         });
     } catch (error) {
