@@ -13,6 +13,7 @@ import EmptyState from '../../../components/common/EmptyState';
 import { onboardingList, orgHierarchyData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrEmployeesView.css';
 import OrgStructureManagement from './components/OrgStructureManagement';
+import LaborContractManagement from './components/LaborContractManagement';
 
 export default function HrEmployeesView({
   employees: initialEmployees = [],
@@ -290,10 +291,10 @@ export default function HrEmployeesView({
       <div className="hr-employees-container">
         {renderTabsHeader()}
 
-        <AllContractsView
+        <LaborContractManagement
           employees={employees}
-          onViewEmployee={handleViewProfile}
-          showToast={showToast}
+          onViewProfile={handleViewProfile}
+          onNavigate={onNavigate}
         />
 
         <Toast toast={toast} onClose={() => setToast(null)} />

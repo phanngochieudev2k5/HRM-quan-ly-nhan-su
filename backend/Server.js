@@ -9,6 +9,7 @@ import HrRoutes from './src/Routes/HrRoutes.js';
 import EmployeeRoutes from './src/Routes/EmployeeRoutes.js';
 import ContractRoutes from './src/Routes/ContractRoutes.js';
 import OrgRoutes from './src/Routes/OrgRoutes.js';
+import LaborContractRoutes from './src/Routes/LaborContractRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -41,6 +42,7 @@ app.use('/api/auth', AuthRoutes);
 app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
 app.use('/api/org', OrgRoutes);
+app.use('/api/labor-contracts', LaborContractRoutes);
 
 app.use('/api/employees', EmployeeRoutes);
 app.use('/api/contracts', ContractRoutes);
