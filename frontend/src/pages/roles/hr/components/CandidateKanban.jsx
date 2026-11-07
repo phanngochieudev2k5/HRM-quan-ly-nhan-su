@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, Search, Plus, RefreshCw, Star, Phone, Mail, FileText,
-  Calendar, ExternalLink, ArrowRight, UserCheck, XCircle, MoreVertical, Trash2, Edit2
+  Calendar, ExternalLink, ArrowRight, UserCheck, XCircle, MoreVertical, Trash2, Edit2, CheckCircle2,
+  Clock, MapPin, Download
 } from 'lucide-react';
 import HrService from '../../../../services/HrService';
 import CandidateModal from './CandidateModal';
+import PdfViewerModal from '../../../../components/common/PdfViewerModal';
 import EmptyState from '../../../../components/common/EmptyState';
+
+const isPdfUrl = (url) => {
+  if (!url) return false;
+  const lower = String(url).toLowerCase();
+  return lower.endsWith('.pdf') || lower.includes('/uploads/cv/') || lower.includes('.pdf?');
+};
 
 export default function CandidateKanban({
   jobs = [],
@@ -20,18 +28,18 @@ export default function CandidateKanban({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState({ isOpen: false, url: '', name: '' });
 
-  // Kéo thả Kanban state
   const [draggedCandidateId, setDraggedCandidateId] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
 
-  // 5 cột Pipeline chuẩn theo yêu cầu US-05
   const stages = [
     { key: 'Applied', label: '1. Ứng tuyển mới', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
     { key: 'Screening', label: '2. Lọc hồ sơ', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
     { key: 'Interviewing', label: '3. Phỏng vấn', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
     { key: 'Offered', label: '4. Đề nghị nhận việc', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
-    { key: 'Rejected', label: '5. Từ chối / Loại', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' }
+    { key: 'Hired', label: '5. Trúng tuyển & Onboarding', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+    { key: 'Rejected', label: '6. Từ chối / Loại', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' }
   ];
 
   const loadCandidates = useCallback(async () => {
@@ -43,7 +51,7 @@ export default function CandidateKanban({
       });
       setCandidates(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Lỗi khi tải danh sách ứng viên:', err);
+      console.error(err);
       if (showToast) showToast('Lỗi khi tải danh sách ứng viên!', 'error');
     } finally {
       setLoading(false);
@@ -54,7 +62,6 @@ export default function CandidateKanban({
     loadCandidates();
   }, [loadCandidates]);
 
-  // Kéo thả xử lý HTML5
   const handleDragStart = (candidateId, e) => {
     e.dataTransfer.setData('text/plain', String(candidateId));
     setDraggedCandidateId(candidateId);
@@ -79,33 +86,25 @@ export default function CandidateKanban({
     const targetCandidate = candidates.find(c => c.CandidateId === candidateId);
     if (!targetCandidate || targetCandidate.Stage === targetStage) return;
 
-    // Cập nhật Optimistic UI ngay lập tức
+    if (['Interviewing', 'Offered', 'Hired', 'Rejected'].includes(targetStage)) {
+      setEditingCandidate({ ...targetCandidate, Stage: targetStage });
+      setIsModalOpen(true);
+      return;
+    }
+
     setCandidates(prev => prev.map(c => c.CandidateId === candidateId ? { ...c, Stage: targetStage } : c));
 
     try {
       await HrService.updateCandidateStage(candidateId, targetStage);
-      if (showToast) showToast(`Đã chuyển ứng viên ${targetCandidate.FullName} sang "${targetStage}"`, 'success');
+      if (showToast) {
+        showToast(`Đã chuyển ứng viên ${targetCandidate.FullName} sang "${targetStage}"`, 'success');
+      }
+      loadCandidates();
     } catch (err) {
       if (showToast) showToast(err.message || 'Lỗi khi cập nhật trạng thái ứng viên!', 'error');
-      loadCandidates(); // rollback nếu lỗi
+      loadCandidates();
     } finally {
       setDraggedCandidateId(null);
-    }
-  };
-
-  // Nút chuyển cột nhanh không cần kéo thả
-  const handleQuickMoveStage = async (candidate, targetStage, e) => {
-    e.stopPropagation();
-    if (candidate.Stage === targetStage) return;
-
-    setCandidates(prev => prev.map(c => c.CandidateId === candidate.CandidateId ? { ...c, Stage: targetStage } : c));
-
-    try {
-      await HrService.updateCandidateStage(candidate.CandidateId, targetStage);
-      if (showToast) showToast(`Chuyển ứng viên ${candidate.FullName} sang "${targetStage}"`, 'success');
-    } catch (err) {
-      if (showToast) showToast(err.message || 'Lỗi cập nhật trạng thái!', 'error');
-      loadCandidates();
     }
   };
 
@@ -151,14 +150,13 @@ export default function CandidateKanban({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* HEADER SECTION */}
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
-            Quy trình tuyển dụng ứng viên - Pipeline Kanban (tblCandidate)
+            Quy trình tuyển dụng ứng viên - Pipeline Kanban
           </h1>
           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Kéo thả ứng viên qua từng giai đoạn tuyển dụng từ tiếp nhận hồ sơ, sàng lọc, phỏng vấn đến gửi Offer
+            Theo dõi ứng viên qua từng giai đoạn tuyển dụng: Sàng lọc, Phỏng vấn, Đề xuất mức lương và Trúng tuyển Onboarding
           </p>
         </div>
 
@@ -174,22 +172,19 @@ export default function CandidateKanban({
         </div>
       </div>
 
-      {/* FILTER BAR */}
       <div className="tbl-card" style={{ padding: '12px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          {/* TÌM KIẾM */}
           <div className="search" style={{ minWidth: '260px' }}>
             <Search size={15} />
             <input
               className="inp"
-              placeholder="Tìm theo tên ứng viên, mã UV, SĐT..."
+              placeholder="Tìm theo tên ứng viên, mã UV, SĐT, Email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: '100%' }}
             />
           </div>
 
-          {/* LỌC THEO JOB */}
           <select
             className="inp"
             value={selectedJobId}
@@ -212,11 +207,10 @@ export default function CandidateKanban({
         </div>
       </div>
 
-      {/* KANBAN BOARD 5 CỘT GIAI ĐOẠN */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(250px, 1fr))',
+          gridTemplateColumns: 'repeat(6, minmax(260px, 1fr))',
           gap: '14px',
           alignItems: 'start',
           overflowX: 'auto',
@@ -245,7 +239,6 @@ export default function CandidateKanban({
                 transition: 'all 0.15s ease'
               }}
             >
-              {/* HEADER CỘT */}
               <div
                 style={{
                   display: 'flex',
@@ -273,7 +266,6 @@ export default function CandidateKanban({
                 </span>
               </div>
 
-              {/* DANH SÁCH THẺ ỨNG VIÊN */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {stageCandidates.length === 0 ? (
                   <div
@@ -320,7 +312,6 @@ export default function CandidateKanban({
                         e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.05)';
                       }}
                     >
-                      {/* TIÊU ĐỀ CARD */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <b style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>
@@ -331,7 +322,6 @@ export default function CandidateKanban({
                           </code>
                         </div>
 
-                        {/* RATING SCORE */}
                         {c.RatingScore ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#f59e0b' }} title={`Đánh giá: ${c.RatingScore}/5 sao`}>
                             <Star size={13} fill="#f59e0b" />
@@ -340,12 +330,10 @@ export default function CandidateKanban({
                         ) : null}
                       </div>
 
-                      {/* VỊ TRÍ ỨNG TUYỂN */}
                       <div style={{ fontSize: '12.5px', color: '#0f766e', fontWeight: 600 }}>
                         {c.JobTitle || 'Vị trí chuyên môn'}
                       </div>
 
-                      {/* LIÊN HỆ */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: '#64748b' }}>
                         {c.Phone && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -367,21 +355,55 @@ export default function CandidateKanban({
                         )}
                       </div>
 
-                      {/* NGƯỜI PHỎNG VẤN */}
-                      {c.InterviewerName && (
-                        <div style={{ fontSize: '11.5px', color: '#0284c7', background: '#e0f2fe', padding: '3px 6px', borderRadius: '4px' }}>
-                          Phỏng vấn: <strong>{c.InterviewerName}</strong>
+                      {c.Stage === 'Interviewing' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {c.InterviewerName && (
+                            <div style={{ fontSize: '11.5px', color: '#0284c7', background: '#e0f2fe', padding: '3px 6px', borderRadius: '4px' }}>
+                              Phỏng vấn: <strong>{c.InterviewerName}</strong>
+                            </div>
+                          )}
+                          {c.InterviewDateTime && (
+                            <div style={{ fontSize: '11px', color: '#0f766e', background: '#ccfbf1', padding: '3px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={11} />
+                              <span>{new Date(c.InterviewDateTime).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            </div>
+                          )}
+                          {c.InterviewLocation && (
+                            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <MapPin size={11} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.InterviewLocation}</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {/* GHI CHÚ */}
+                      {c.Stage === 'Offered' && c.OfferedSalary && (
+                        <div style={{ fontSize: '11.5px', color: '#059669', background: '#d1fae5', padding: '3px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                          💰 Lương đề xuất: {Number(c.OfferedSalary).toLocaleString('vi-VN')} VNĐ
+                        </div>
+                      )}
+
+                      {c.Stage === 'Hired' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {c.StartDate && (
+                            <div style={{ fontSize: '11.5px', color: '#16a34a', background: '#dcfce7', padding: '3px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                              📅 Đi làm: {c.StartDate}
+                            </div>
+                          )}
+                          {c.OfferedSalary && (
+                            <div style={{ fontSize: '11px', color: '#15803d', background: '#f0fdf4', padding: '2px 6px', borderRadius: '4px' }}>
+                              💰 Lương: {Number(c.OfferedSalary).toLocaleString('vi-VN')} VNĐ
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {c.Note && (
                         <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#475569', fontStyle: 'italic', background: '#f8fafc', padding: '4px 6px', borderRadius: '4px' }}>
                           "{c.Note}"
                         </p>
                       )}
 
-                      {/* FOOTER ACTIONS TRÊN CARD */}
                       <div
                         style={{
                           display: 'flex',
@@ -394,27 +416,82 @@ export default function CandidateKanban({
                         onClick={(e) => e.stopPropagation()}
                       >
                         {c.CvUrl ? (
-                          <a
-                            href={c.CvUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '11.5px',
-                              color: '#0f766e',
-                              fontWeight: 600
-                            }}
-                          >
-                            <ExternalLink size={12} />
-                            <span>Xem CV</span>
-                          </a>
+                          isPdfUrl(c.CvUrl) ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <button
+                                type="button"
+                                className="btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPdfPreview({ isOpen: true, url: c.CvUrl, name: c.FullName });
+                                }}
+                                style={{
+                                  padding: '2px 8px',
+                                  fontSize: '11px',
+                                  color: '#0f766e',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  border: '1px solid #99f6e4',
+                                  background: '#f0fdfa'
+                                }}
+                                title="Xem trực tiếp file PDF không cần tải về"
+                              >
+                                <FileText size={11} />
+                                <span>Xem PDF</span>
+                              </button>
+                              <a
+                                href={c.CvUrl}
+                                download={`CV_${c.FullName.replace(/\s+/g, '_')}.pdf`}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ color: '#64748b', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
+                                title="Tải file PDF về máy"
+                              >
+                                <Download size={12} />
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={c.CvUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '11.5px',
+                                color: '#0f766e',
+                                fontWeight: 600
+                              }}
+                              title="Mở link hồ sơ trực tuyến"
+                            >
+                              <ExternalLink size={12} />
+                              <span>Mở link CV</span>
+                            </a>
+                          )
                         ) : (
                           <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Chưa có link CV</span>
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {['Interviewing', 'Offered', 'Hired', 'Rejected'].includes(c.Stage) && (
+                            <button
+                              className="ibtn"
+                              title={
+                                c.Stage === 'Interviewing' ? 'Gửi thư mời phỏng vấn qua Gmail' :
+                                c.Stage === 'Offered' ? 'Gửi thư mời nhận việc (Offer) qua Gmail' :
+                                c.Stage === 'Hired' ? 'Gửi thư chúc mừng trúng tuyển qua Gmail' :
+                                'Gửi thư cảm ơn & từ chối qua Gmail'
+                              }
+                              onClick={(e) => handleOpenEdit(c, e)}
+                            >
+                              <Mail size={13} style={{ color: stage.color }} />
+                            </button>
+                          )}
                           <button
                             className="ibtn"
                             title="Chỉnh sửa / Đánh giá ứng viên"
@@ -449,7 +526,13 @@ export default function CandidateKanban({
         employees={employees}
         stages={stages}
       />
+
+      <PdfViewerModal
+        isOpen={pdfPreview.isOpen}
+        onClose={() => setPdfPreview({ isOpen: false, url: '', name: '' })}
+        pdfUrl={pdfPreview.url}
+        candidateName={pdfPreview.name}
+      />
     </div>
   );
 }
-

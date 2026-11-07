@@ -96,7 +96,7 @@ export default function ContractModal({
                 ? `Cập nhật hợp đồng: ${formData.ContractNumber || 'HD'}`
                 : employeeName
                 ? `Thêm hợp đồng mới cho ${employeeName}`
-                : 'Thêm mới hợp đồng lao động (tblContract)'}
+                : 'Thêm mới hợp đồng lao động'}
             </h3>
           </div>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
@@ -219,7 +219,7 @@ export default function ContractModal({
                 <input
                   name="ContractFileUrl"
                   className="inp"
-                  placeholder="https://drive... hoặc link pdf"
+                  placeholder="VD: Liên kết lưu trữ tài liệu hợp đồng..."
                   value={formData.ContractFileUrl}
                   onChange={handleChange}
                 />

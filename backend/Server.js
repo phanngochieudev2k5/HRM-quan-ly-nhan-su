@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDb } from './src/Config/DbConfig.js';
 
 import AuthRoutes from './src/Routes/AuthRoutes.js';
@@ -11,6 +13,9 @@ import ContractRoutes from './src/Routes/ContractRoutes.js';
 import OrgRoutes from './src/Routes/OrgRoutes.js';
 import RecruitmentRoutes from './src/Routes/RecruitmentRoutes.js';
 import CandidateRoutes from './src/Routes/CandidateRoutes.js';
+import CareersRoutes from './src/Routes/CareersRoutes.js';
+import OnboardingRoutes from './src/Routes/OnboardingRoutes.js';
+import AssetRoutes from './src/Routes/AssetRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -19,6 +24,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(
     cors({
@@ -28,6 +35,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
     res.json({
@@ -44,11 +52,13 @@ app.use('/api/admin', AdminRoutes);
 app.use('/api/hr', HrRoutes);
 app.use('/api/org', OrgRoutes);
 
-// Direct CRUD endpoints for US-02 & US-04 & US-05
 app.use('/api/employees', EmployeeRoutes);
 app.use('/api/contracts', ContractRoutes);
 app.use('/api/recruitment-jobs', RecruitmentRoutes);
 app.use('/api/candidates', CandidateRoutes);
+app.use('/api/careers', CareersRoutes);
+app.use('/api/onboarding', OnboardingRoutes);
+app.use('/api/assets', AssetRoutes);
 
 app.get(
     '/api/departments',

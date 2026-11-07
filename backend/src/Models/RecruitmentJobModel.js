@@ -1,9 +1,6 @@
 import { connectDb, sql } from '../Config/DbConfig.js';
 
 export class RecruitmentJobModel {
-  /**
-   * Lấy danh sách các vị trí tuyển dụng kèm tên phòng ban và số lượng ứng viên
-   */
   static async getAll({ departmentId, status, search } = {}) {
     const pool = await connectDb();
     const request = pool.request();
@@ -48,9 +45,6 @@ export class RecruitmentJobModel {
     return result.recordset;
   }
 
-  /**
-   * Lấy thông tin chi tiết một vị trí tuyển dụng
-   */
   static async getById(jobId) {
     const pool = await connectDb();
     const request = pool.request();
@@ -78,10 +72,7 @@ export class RecruitmentJobModel {
     return result.recordset[0] || null;
   }
 
-  /**
-   * Thêm mới đề xuất tuyển dụng vào tblRecruitmentJob
-   */
-  static async create({ JobTitle, DepartmentId, TargetQuantity, SalaryRange, Deadline, JobDescription, Status = 'Pending' }) {
+  static async create({ JobTitle, DepartmentId, TargetQuantity, SalaryRange, Deadline, JobDescription, Status = 'Approved' }) {
     const pool = await connectDb();
     const request = pool.request();
 
@@ -93,7 +84,7 @@ export class RecruitmentJobModel {
     request.input('SalaryRange', sql.NVarChar(50), SalaryRange || 'Thỏa thuận');
     request.input('Deadline', sql.Date, safeDeadline);
     request.input('JobDescription', sql.NVarChar(sql.MAX), JobDescription || '');
-    request.input('Status', sql.NVarChar(50), Status || 'Pending');
+    request.input('Status', sql.NVarChar(50), Status || 'Approved');
 
     const result = await request.query(`
       INSERT INTO tblRecruitmentJob (
@@ -108,9 +99,6 @@ export class RecruitmentJobModel {
     return result.recordset[0];
   }
 
-  /**
-   * Cập nhật trạng thái duyệt/từ chối đề xuất (Approved, Rejected, Pending)
-   */
   static async updateStatus(jobId, status) {
     const pool = await connectDb();
     const request = pool.request();
@@ -127,9 +115,6 @@ export class RecruitmentJobModel {
     return { JobId: parseInt(jobId), Status: status };
   }
 
-  /**
-   * Cập nhật đầy đủ thông tin vị trí tuyển dụng
-   */
   static async update(jobId, { JobTitle, DepartmentId, TargetQuantity, SalaryRange, Deadline, JobDescription, Status }) {
     const pool = await connectDb();
     const request = pool.request();
@@ -160,9 +145,6 @@ export class RecruitmentJobModel {
     return { JobId: parseInt(jobId) };
   }
 
-  /**
-   * Xóa vị trí tuyển dụng
-   */
   static async delete(jobId) {
     const pool = await connectDb();
     const request = pool.request();
@@ -174,9 +156,6 @@ export class RecruitmentJobModel {
     return { JobId: parseInt(jobId) };
   }
 
-  /**
-   * Đếm số lượng record hiện có
-   */
   static async count() {
     const pool = await connectDb();
     const res = await pool.request().query('SELECT COUNT(*) as total FROM tblRecruitmentJob');

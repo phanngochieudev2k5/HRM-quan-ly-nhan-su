@@ -15,6 +15,8 @@
     "hrm-enterprise-project": "file:..",
     "jsonwebtoken": "^9.0.2",
     "msnodesqlv8": "^4.2.2",
-    "mssql": "^11.0.1"
+    "mssql": "^11.0.1",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.3.1"
   }
 }
