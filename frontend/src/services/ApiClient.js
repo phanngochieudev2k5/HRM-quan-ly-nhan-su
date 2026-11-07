@@ -5,21 +5,28 @@ class ApiClient {
     return localStorage.getItem('hrm_token');
   }
 
-  static getHeaders(customHeaders = {}) {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...customHeaders
-    };
+  static getHeaders(customHeaders = {}, isFormData = false) {
+    const headers = {};
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
     const token = this.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (customHeaders) {
+      Object.assign(headers, customHeaders);
+    }
+    if (isFormData && headers['Content-Type']) {
+      delete headers['Content-Type'];
     }
     return headers;
   }
 
   static async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
-    const headers = this.getHeaders(options.headers);
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const headers = this.getHeaders(options.headers, isFormData);
 
     try {
       const response = await fetch(url, {
@@ -53,18 +60,20 @@ class ApiClient {
   }
 
   static post(endpoint, body, options = {}) {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(body)
+      body: isFormData ? body : JSON.stringify(body)
     });
   }
 
   static put(endpoint, body, options = {}) {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(body)
+      body: isFormData ? body : JSON.stringify(body)
     });
   }
 

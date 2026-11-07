@@ -183,7 +183,7 @@ export default function UserAccountsView() {
                   isTable
                   colSpan={8}
                   title="Chưa có dữ liệu tài khoản từ máy chủ"
-                  description="Bấm 'Làm mới dữ liệu' để tải danh sách người dùng từ SQL Server hoặc 'Tạo tài khoản mới'."
+                  description="Bấm 'Làm mới dữ liệu' hoặc 'Tạo tài khoản mới' để bắt đầu."
                   actionLabel="Tạo tài khoản mới"
                   onAction={() => setModalOpen(true)}
                   onRefresh={fetchAccounts}
@@ -301,11 +301,11 @@ export default function UserAccountsView() {
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     >
-                      <option value="Employee">Nhân viên (Employee)</option>
-                      <option value="Manager">Trưởng bộ phận (Manager)</option>
-                      <option value="Finance">Kế toán lương (Finance)</option>
-                      <option value="HR">Quản trị nhân sự (HR)</option>
-                      <option value="Admin">Quản trị hệ thống (Admin)</option>
+                      <option value="Employee">Nhân viên</option>
+                      <option value="Manager">Trưởng bộ phận</option>
+                      <option value="Finance">Kế toán lương</option>
+                      <option value="HR">Quản trị nhân sự</option>
+                      <option value="Admin">Quản trị hệ thống</option>
                     </select>
                   </label>
                   <label className="field full">

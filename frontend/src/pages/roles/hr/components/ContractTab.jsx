@@ -92,7 +92,7 @@ export default function ContractTab({
                   isTable
                   colSpan={9}
                   title="Chưa có hợp đồng nào cho nhân viên này"
-                  description="Bấm 'Thêm hợp đồng mới' để lưu trữ thông tin hợp đồng lao động (tblContract)."
+                  description="Bấm 'Thêm hợp đồng mới' để tạo hợp đồng lao động cho nhân viên."
                   actionLabel="Thêm hợp đồng mới"
                   onAction={handleOpenCreate}
                 />

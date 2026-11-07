@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Briefcase, Search, Plus, RefreshCw, CheckCircle2, XCircle, Clock,
-  Edit2, Trash2, Users, Calendar, DollarSign, Building2, Eye, AlertCircle
+  Edit2, Trash2, Users, Calendar, DollarSign, Building2, Eye, AlertCircle, Archive
 } from 'lucide-react';
 import HrService from '../../../../services/HrService';
 import JobModal from './JobModal';
@@ -31,7 +31,7 @@ export default function RecruitmentJobs({
       });
       setJobs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Lỗi khi tải danh sách vị trí tuyển dụng:', err);
+      console.error(err);
       if (showToast) showToast('Lỗi khi tải danh sách vị trí tuyển dụng!', 'error');
     } finally {
       setLoading(false);
@@ -42,20 +42,22 @@ export default function RecruitmentJobs({
     loadJobs();
   }, [loadJobs]);
 
-  // Thống kê nhanh
   const approvedCount = jobs.filter(j => j.Status === 'Approved').length;
   const pendingCount = jobs.filter(j => j.Status === 'Pending').length;
   const rejectedCount = jobs.filter(j => j.Status === 'Rejected').length;
+  const closedCount = jobs.filter(j => j.Status === 'Closed').length;
   const totalTargetQuantity = jobs.reduce((sum, j) => sum + (j.TargetQuantity || 0), 0);
 
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Approved':
-        return <span className="badge b-green">Approved (Đã duyệt)</span>;
+        return <span className="badge b-green">Approved (Đang mở tuyển)</span>;
       case 'Pending':
         return <span className="badge b-amber">Pending (Chờ duyệt)</span>;
       case 'Rejected':
         return <span className="badge b-red">Rejected (Từ chối)</span>;
+      case 'Closed':
+        return <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>Closed (Đủ chỉ tiêu)</span>;
       default:
         return <span className="badge">{status || 'Pending'}</span>;
     }
@@ -88,7 +90,6 @@ export default function RecruitmentJobs({
     }
   };
 
-  // Duyệt hoặc từ chối đề xuất nhanh
   const handleUpdateStatus = async (jobId, newStatus, jobTitle, e) => {
     e.stopPropagation();
     const actionLabel = newStatus === 'Approved' ? 'Duyệt' : 'Từ chối';
@@ -118,11 +119,10 @@ export default function RecruitmentJobs({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* HEADER SECTION */}
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
-            Quản lý nhu cầu & đề xuất tuyển dụng (tblRecruitmentJob)
+            Quản lý nhu cầu & đề xuất tuyển dụng
           </h1>
           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
             Lập kế hoạch định biên nhân sự theo phòng ban, phê duyệt chỉ tiêu và theo dõi tiến độ tuyển dụng
@@ -130,7 +130,7 @@ export default function RecruitmentJobs({
         </div>
 
         <div className="ph-tools">
-          <button className="btn" onClick={() => loadJobs()} title="Làm mới danh sách từ CSDL">
+          <button className="btn" onClick={() => loadJobs()} title="Làm mới danh sách">
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             <span>Làm mới</span>
           </button>
@@ -141,7 +141,6 @@ export default function RecruitmentJobs({
         </div>
       </div>
 
-      {/* STAT CARDS */}
       <div className="grid c4" style={{ marginBottom: '2px' }}>
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -196,15 +195,14 @@ export default function RecruitmentJobs({
             <XCircle size={18} style={{ color: '#dc2626' }} />
           </div>
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#dc2626', marginTop: '8px' }}>
-            {rejectedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>vị trí</small>
+            {rejectedCount + closedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>vị trí</small>
           </div>
           <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-            Không đạt tiêu chí hoặc tạm dừng
+            Không đạt hoặc đã hoàn tất tuyển
           </div>
         </div>
       </div>
 
-      {/* FILTER & DATA TABLE */}
       <div className="tbl-card">
         <div className="tbl-tools" style={{ flexWrap: 'wrap', gap: '10px' }}>
           <div className="search" style={{ minWidth: '260px' }}>
@@ -242,6 +240,7 @@ export default function RecruitmentJobs({
             <option value="Approved">Approved (Đã duyệt)</option>
             <option value="Pending">Pending (Chờ duyệt)</option>
             <option value="Rejected">Rejected (Từ chối)</option>
+            <option value="Closed">Closed (Đã đủ chỉ tiêu)</option>
           </select>
 
           <span className="grow"></span>
@@ -271,7 +270,7 @@ export default function RecruitmentJobs({
                   <td colSpan={8} style={{ textAlign: 'center', padding: '40px 16px', color: '#64748b' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                       <div className="status-dot-pulse" style={{ background: '#0f766e' }}></div>
-                      <span>Đang nạp dữ liệu vị trí tuyển dụng từ SQL Server...</span>
+                      <span>Đang tải danh sách vị trí tuyển dụng...</span>
                     </div>
                   </td>
                 </tr>
@@ -330,47 +329,6 @@ export default function RecruitmentJobs({
                     <td>{getStatusBadge(job.Status)}</td>
                     <td className="act" onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
-                        {/* NÚT DUYỆT NHANH (APPROVED) */}
-                        {job.Status !== 'Approved' && (
-                          <button
-                            className="btn sm"
-                            style={{
-                              background: '#ecfdf5',
-                              color: '#059669',
-                              borderColor: '#a7f3d0',
-                              padding: '4px 8px',
-                              fontSize: '11.5px',
-                              fontWeight: 700
-                            }}
-                            title="Phê duyệt đề xuất này"
-                            onClick={(e) => handleUpdateStatus(job.JobId, 'Approved', job.JobTitle, e)}
-                          >
-                            <CheckCircle2 size={13} />
-                            <span>Duyệt</span>
-                          </button>
-                        )}
-
-                        {/* NÚT TỪ CHỐI NHANH (REJECTED) */}
-                        {job.Status !== 'Rejected' && (
-                          <button
-                            className="btn sm"
-                            style={{
-                              background: '#fef2f2',
-                              color: '#dc2626',
-                              borderColor: '#fecaca',
-                              padding: '4px 8px',
-                              fontSize: '11.5px',
-                              fontWeight: 700
-                            }}
-                            title="Từ chối đề xuất này"
-                            onClick={(e) => handleUpdateStatus(job.JobId, 'Rejected', job.JobTitle, e)}
-                          >
-                            <XCircle size={13} />
-                            <span>Từ chối</span>
-                          </button>
-                        )}
-
-                        {/* SỬA */}
                         <button
                           className="ibtn"
                           title="Chỉnh sửa vị trí"
@@ -379,7 +337,6 @@ export default function RecruitmentJobs({
                           <Edit2 size={14} />
                         </button>
 
-                        {/* XÓA */}
                         <button
                           className="ibtn del"
                           title="Xóa đề xuất"
@@ -407,4 +364,3 @@ export default function RecruitmentJobs({
     </div>
   );
 }
-

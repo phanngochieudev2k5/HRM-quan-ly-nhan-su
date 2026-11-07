@@ -32,7 +32,7 @@ export default function AllContractsView({
       setContracts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Lỗi khi tải danh sách hợp đồng:', err);
-      if (showToast) showToast('Không thể tải danh sách hợp đồng từ CSDL!', 'error');
+      if (showToast) showToast('Không thể tải danh sách hợp đồng!', 'error');
     } finally {
       setLoading(false);
     }
@@ -105,15 +105,15 @@ export default function AllContractsView({
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
-            Quản lý Hợp đồng lao động toàn doanh nghiệp (tblContract)
+            Quản lý Hợp đồng lao động toàn doanh nghiệp
           </h1>
           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Dữ liệu động kết nối trực tiếp CSDL SQL Server (HRM_Enterprise_DB) qua API Backend Node.js
+            Theo dõi và quản lý hồ sơ hợp đồng lao động của cán bộ nhân viên
           </p>
         </div>
 
         <div className="ph-tools">
-          <button className="btn" onClick={() => loadContracts()} title="Làm mới dữ liệu từ CSDL">
+          <button className="btn" onClick={() => loadContracts()} title="Làm mới danh sách">
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             <span>Làm mới</span>
           </button>
@@ -207,7 +207,7 @@ export default function AllContractsView({
           <span className="grow"></span>
 
           <span className="small muted">
-            Hiển thị <strong>{contracts.length}</strong> hợp đồng từ SQL Server
+            Hiển thị <strong>{contracts.length}</strong> hợp đồng
           </span>
         </div>
 
@@ -233,7 +233,7 @@ export default function AllContractsView({
                   <td colSpan={10} style={{ textAlign: 'center', padding: '40px 16px', color: '#64748b' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                       <div className="status-dot-pulse" style={{ background: '#0f766e' }}></div>
-                      <span>Đang tải danh sách hợp đồng từ CSDL SQL Server...</span>
+                      <span>Đang tải danh sách hợp đồng...</span>
                     </div>
                   </td>
                 </tr>
@@ -242,7 +242,7 @@ export default function AllContractsView({
                   isTable
                   colSpan={10}
                   title="Không tìm thấy hợp đồng lao động nào"
-                  description="Bấm 'Tạo hợp đồng mới' để thêm hợp đồng mới vào CSDL SQL Server (tblContract)."
+                  description="Bấm 'Tạo hợp đồng mới' để thêm hợp đồng mới cho nhân viên."
                   actionLabel="Tạo hợp đồng mới"
                   onAction={handleOpenCreate}
                 />

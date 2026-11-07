@@ -17,7 +17,7 @@ export default function JobModal({
     SalaryRange: '15.000.000 - 25.000.000 VNĐ',
     Deadline: '',
     JobDescription: '',
-    Status: 'Pending'
+    Status: 'Approved'
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +32,7 @@ export default function JobModal({
         SalaryRange: job.SalaryRange || '',
         Deadline: job.Deadline || '',
         JobDescription: job.JobDescription || '',
-        Status: job.Status || 'Pending'
+        Status: job.Status || 'Approved'
       });
     } else {
       setFormData({
@@ -42,7 +42,7 @@ export default function JobModal({
         SalaryRange: '15.000.000 - 25.000.000 VNĐ',
         Deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
         JobDescription: '',
-        Status: 'Pending'
+        Status: 'Approved'
       });
     }
     setErrorMsg('');
@@ -88,7 +88,7 @@ export default function JobModal({
         <div className="modal-h" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Briefcase size={18} style={{ color: '#0f766e' }} />
-            <h3>{isEdit ? `Cập nhật vị trí tuyển dụng: ${formData.JobTitle}` : 'Tạo đề xuất tuyển dụng mới (tblRecruitmentJob)'}</h3>
+            <h3>{isEdit ? `Cập nhật vị trí tuyển dụng: ${formData.JobTitle}` : 'Tạo đề xuất tuyển dụng mới'}</h3>
           </div>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
             <X size={18} />
@@ -111,7 +111,7 @@ export default function JobModal({
                   name="JobTitle"
                   className="inp"
                   required
-                  placeholder="VD: Senior Backend Developer (Node.js & SQL Server)"
+                  placeholder="VD: Senior Backend Developer (Node.js & Database)"
                   value={formData.JobTitle}
                   onChange={handleChange}
                 />
@@ -175,8 +175,9 @@ export default function JobModal({
                   <span>Trạng thái đề xuất:</span>
                   <select name="Status" className="inp" value={formData.Status} onChange={handleChange}>
                     <option value="Pending">Pending (Chờ duyệt)</option>
-                    <option value="Approved">Approved (Đã duyệt)</option>
+                    <option value="Approved">Approved (Đang mở tuyển)</option>
                     <option value="Rejected">Rejected (Từ chối)</option>
+                    <option value="Closed">Closed (Đã đủ chỉ tiêu)</option>
                   </select>
                 </label>
               )}
@@ -201,7 +202,7 @@ export default function JobModal({
               Hủy
             </button>
             <button type="submit" className="btn pri" disabled={submitting}>
-              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Gửi đề xuất tuyển dụng'}
+              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Tạo & Duyệt mở tuyển dụng'}
             </button>
           </div>
         </form>
@@ -209,4 +210,3 @@ export default function JobModal({
     </div>
   );
 }
-

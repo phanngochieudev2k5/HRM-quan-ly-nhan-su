@@ -268,4 +268,82 @@ export class ContractController {
             return sendError(res, error.message, 500, error);
         }
     }
+
+    static async getMyContracts(req, res) {
+        try {
+            const employeeId = req.user?.employeeId;
+            if (!employeeId) {
+                return sendSuccess(res, [], 'Chưa có thông tin nhân viên!');
+            }
+            const pool = await connectDb();
+            const request = pool.request();
+            request.input('empId', sql.Int, employeeId);
+            const query = `
+                SELECT 
+                  c.ContractId,
+                  c.ContractNumber,
+                  c.EmployeeId,
+                  e.EmployeeCode,
+                  e.FullName as EmployeeName,
+                  c.ContractType,
+                  CONVERT(varchar, c.SignDate, 23) as SignDate,
+                  CONVERT(varchar, c.StartDate, 23) as StartDate,
+                  CONVERT(varchar, c.EndDate, 23) as EndDate,
+                  c.AgreedSalary,
+                  c.Status,
+                  c.ContractFileUrl,
+                  c.CreatedAt
+                FROM tblContract c
+                JOIN tblEmployee e ON c.EmployeeId = e.EmployeeId
+                WHERE c.EmployeeId = @empId
+                ORDER BY c.ContractId DESC
+            `;
+            const result = await request.query(query);
+            return sendSuccess(res, result.recordset, 'Lấy danh sách hợp đồng của bạn thành công!');
+        } catch (error) {
+            console.error('[ContractController.getMyContracts] Error:', error);
+            return sendError(res, error.message, 500, error);
+        }
+    }
+
+    static async signContract(req, res) {
+        try {
+            const { id } = req.params;
+            const employeeId = req.user?.employeeId;
+            const pool = await connectDb();
+
+            const checkReq = pool.request();
+            checkReq.input('id', sql.Int, parseInt(id));
+            const checkRes = await checkReq.query('SELECT ContractId, EmployeeId, Status FROM tblContract WHERE ContractId = @id');
+            const contract = checkRes.recordset[0];
+            if (!contract) {
+                return sendError(res, 'Không tìm thấy hợp đồng lao động!', 404);
+            }
+
+            if (employeeId && contract.EmployeeId !== employeeId && req.user?.role === 'Employee') {
+                return sendError(res, 'Bạn không có quyền ký hợp đồng của nhân sự khác!', 403);
+            }
+
+            const signReq = pool.request();
+            signReq.input('id', sql.Int, parseInt(id));
+            signReq.input('signDate', sql.Date, new Date().toISOString().slice(0, 10));
+            await signReq.query(`
+                UPDATE tblContract SET
+                  Status = N'Hiệu lực',
+                  SignDate = @signDate
+                WHERE ContractId = @id
+            `);
+
+            if (contract.EmployeeId) {
+                await pool.request()
+                    .input('empId', sql.Int, contract.EmployeeId)
+                    .query('UPDATE tblOnboarding SET ContractSigned = 1 WHERE EmployeeId = @empId');
+            }
+
+            return sendSuccess(res, { ContractId: parseInt(id), Status: 'Hiệu lực' }, 'Ký hợp đồng lao động điện tử thành công!');
+        } catch (error) {
+            console.error('[ContractController.signContract] Error:', error);
+            return sendError(res, error.message, 500, error);
+        }
+    }
 }

@@ -55,6 +55,8 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
         return [
           { id: 'employee-dashboard', label: 'Không gian cá nhân', icon: LayoutDashboard },
           { id: 'employee-profile', label: 'Hồ sơ của tôi', icon: UserCheck },
+          { id: 'employee-contracts', label: 'Hợp đồng lao động', icon: FileText },
+          { id: 'employee-assets', label: 'Trang thiết bị được cấp', icon: Laptop },
           { id: 'employee-checkin', label: 'Chấm công khuôn mặt', icon: ScanFace, badge: 'OpenCV' },
           { id: 'employee-attendance', label: 'Lịch sử công của tôi', icon: Clock },
           { id: 'employee-leave', label: 'Nghỉ phép của tôi', icon: CalendarDays },

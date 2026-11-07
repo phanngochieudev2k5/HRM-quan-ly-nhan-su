@@ -2,15 +2,8 @@ import { RecruitmentService } from '../../Services/RecruitmentService.js';
 import { sendSuccess, sendError } from '../../Utils/ResponseHelper.js';
 
 export class RecruitmentController {
-    // ==================== US-04: QUẢN LÝ NHU CẦU & ĐỀ XUẤT TUYỂN DỤNG ====================
-
-    /**
-     * GET /api/recruitment-jobs
-     * Lấy danh sách vị trí / đề xuất tuyển dụng
-     */
     static async getJobs(req, res) {
         try {
-            // Tự động kiểm tra và khởi tạo dữ liệu mẫu nếu bảng trống
             await RecruitmentService.seedInitialDataIfEmpty();
 
             const { departmentId, status, search, q } = req.query;
@@ -25,7 +18,7 @@ export class RecruitmentController {
                 'Lấy danh sách vị trí tuyển dụng thành công!',
             );
         } catch (error) {
-            console.error('[RecruitmentController.getJobs] Error:', error);
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -35,10 +28,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * GET /api/recruitment-jobs/:id
-     * Chi tiết vị trí tuyển dụng
-     */
     static async getJobById(req, res) {
         try {
             const { id } = req.params;
@@ -49,7 +38,7 @@ export class RecruitmentController {
                 'Lấy thông tin vị trí tuyển dụng thành công!',
             );
         } catch (error) {
-            console.error('[RecruitmentController.getJobById] Error:', error);
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -59,10 +48,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * POST /api/recruitment-jobs
-     * Tạo đề xuất tuyển dụng mới
-     */
     static async createJob(req, res) {
         try {
             const job = await RecruitmentService.createJob(req.body);
@@ -73,7 +58,7 @@ export class RecruitmentController {
                 201,
             );
         } catch (error) {
-            console.error('[RecruitmentController.createJob] Error:', error);
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -83,10 +68,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * PUT /api/recruitment-jobs/:id/status
-     * Duyệt (Approved) hoặc Từ chối (Rejected) đề xuất tuyển dụng
-     */
     static async updateJobStatus(req, res) {
         try {
             const { id } = req.params;
@@ -94,28 +75,19 @@ export class RecruitmentController {
             if (!status) {
                 return sendError(
                     res,
-                    'Vui lòng cung cấp trạng thái status (Approved, Rejected, Pending)!',
+                    'Vui lòng cung cấp trạng thái status (Approved, Rejected, Pending, Closed)!',
                     400,
                 );
             }
 
             const result = await RecruitmentService.updateJobStatus(id, status);
-            const actionText =
-                status === 'Approved'
-                    ? 'Duyệt'
-                    : status === 'Rejected'
-                      ? 'Từ chối'
-                      : 'Cập nhật';
             return sendSuccess(
                 res,
                 result,
-                `${actionText} đề xuất tuyển dụng thành công!`,
+                'Cập nhật trạng thái đề xuất tuyển dụng thành công!',
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.updateJobStatus] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -125,10 +97,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * PUT /api/recruitment-jobs/:id
-     * Cập nhật thông tin vị trí tuyển dụng
-     */
     static async updateJob(req, res) {
         try {
             const { id } = req.params;
@@ -139,7 +107,7 @@ export class RecruitmentController {
                 'Cập nhật vị trí tuyển dụng thành công!',
             );
         } catch (error) {
-            console.error('[RecruitmentController.updateJob] Error:', error);
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -149,10 +117,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * DELETE /api/recruitment-jobs/:id
-     * Xóa vị trí tuyển dụng
-     */
     static async deleteJob(req, res) {
         try {
             const { id } = req.params;
@@ -163,7 +127,7 @@ export class RecruitmentController {
                 'Xóa vị trí tuyển dụng thành công!',
             );
         } catch (error) {
-            console.error('[RecruitmentController.deleteJob] Error:', error);
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -173,15 +137,8 @@ export class RecruitmentController {
         }
     }
 
-    // ==================== US-05: QUẢN LÝ ỨNG VIÊN & PIPELINE KANBAN ====================
-
-    /**
-     * GET /api/candidates
-     * Lấy danh sách ứng viên theo Job hoặc theo trạng thái Stage
-     */
     static async getCandidates(req, res) {
         try {
-            // Đảm bảo dữ liệu mẫu sẵn sàng nếu CSDL trống
             await RecruitmentService.seedInitialDataIfEmpty();
 
             const { jobId, stage, search, q } = req.query;
@@ -196,10 +153,7 @@ export class RecruitmentController {
                 'Lấy danh sách ứng viên thành công!',
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.getCandidates] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -209,10 +163,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * GET /api/candidates/:id
-     * Chi tiết hồ sơ ứng viên
-     */
     static async getCandidateById(req, res) {
         try {
             const { id } = req.params;
@@ -223,10 +173,7 @@ export class RecruitmentController {
                 'Lấy thông tin ứng viên thành công!',
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.getCandidateById] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -236,10 +183,6 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * POST /api/candidates
-     * Thêm mới ứng viên ứng tuyển
-     */
     static async createCandidate(req, res) {
         try {
             const candidate = await RecruitmentService.createCandidate(
@@ -252,10 +195,7 @@ export class RecruitmentController {
                 201,
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.createCandidate] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -265,14 +205,10 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * PUT /api/candidates/:id/stage
-     * Cập nhật trạng thái ứng viên qua các cột Kanban (Applied, Screening, Interviewing, Offered, Rejected)
-     */
     static async updateCandidateStage(req, res) {
         try {
             const { id } = req.params;
-            const { stage } = req.body;
+            const { stage, additionalData, sendEmail, ...rest } = req.body;
             if (!stage) {
                 return sendError(
                     res,
@@ -281,9 +217,12 @@ export class RecruitmentController {
                 );
             }
 
+            const dataToPass = additionalData || rest;
             const result = await RecruitmentService.updateCandidateStage(
                 id,
                 stage,
+                dataToPass,
+                sendEmail
             );
             return sendSuccess(
                 res,
@@ -291,10 +230,7 @@ export class RecruitmentController {
                 `Chuyển giai đoạn ứng viên sang "${stage}" thành công!`,
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.updateCandidateStage] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -304,10 +240,22 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * PUT /api/candidates/:id
-     * Cập nhật thông tin chi tiết ứng viên (điểm đánh giá, ghi chú, phỏng vấn)
-     */
+    static async sendCandidateEmail(req, res) {
+        try {
+            const { id } = req.params;
+            const result = await RecruitmentService.sendCandidateEmail(id, req.body);
+            return sendSuccess(res, result, result.message || 'Gửi email cho ứng viên thành công!');
+        } catch (error) {
+            console.error(error);
+            return sendError(
+                res,
+                error.message,
+                error.statusCode || 500,
+                error
+            );
+        }
+    }
+
     static async updateCandidate(req, res) {
         try {
             const { id } = req.params;
@@ -321,10 +269,7 @@ export class RecruitmentController {
                 'Cập nhật thông tin ứng viên thành công!',
             );
         } catch (error) {
-            console.error(
-                '[RecruitmentController.updateCandidate] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
@@ -334,20 +279,13 @@ export class RecruitmentController {
         }
     }
 
-    /**
-     * DELETE /api/candidates/:id
-     * Xóa ứng viên
-     */
     static async deleteCandidate(req, res) {
         try {
             const { id } = req.params;
             const result = await RecruitmentService.deleteCandidate(id);
             return sendSuccess(res, result, 'Xóa ứng viên thành công!');
         } catch (error) {
-            console.error(
-                '[RecruitmentController.deleteCandidate] Error:',
-                error,
-            );
+            console.error(error);
             return sendError(
                 res,
                 error.message,
