@@ -5,6 +5,9 @@ import { ContractController } from '../Controllers/Hr/ContractController.js';
 
 const router = express.Router();
 
+router.get('/my-contracts', verifyToken, ContractController.getMyContracts);
+router.post('/:id/sign', verifyToken, ContractController.signContract);
+
 router.use(verifyToken, requireRole('HR', 'Admin'));
 
 router.get('/', ContractController.getContracts);

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDb } from './src/Config/DbConfig.js';
 
 import AuthRoutes from './src/Routes/AuthRoutes.js';
@@ -18,6 +20,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(
     cors({
@@ -27,6 +31,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
     res.json({
@@ -46,6 +51,12 @@ app.use('/api/labor-contracts', LaborContractRoutes);
 
 app.use('/api/employees', EmployeeRoutes);
 app.use('/api/contracts', ContractRoutes);
+app.use('/api/recruitment-jobs', RecruitmentRoutes);
+app.use('/api/candidates', CandidateRoutes);
+app.use('/api/careers', CareersRoutes);
+app.use('/api/onboarding', OnboardingRoutes);
+app.use('/api/assets', AssetRoutes);
+
 app.get(
     '/api/departments',
     verifyToken,
@@ -67,16 +78,16 @@ const startServer = async () => {
                 `🚀 Máy chủ HRM Backend đang hoạt động tại: http://localhost:${PORT}`,
             );
             console.log(
-                `📡 API Đăng nhập: POST http://localhost:${PORT}/api/auth/login`,
+                `📡 API Đăng nhập:        POST http://localhost:${PORT}/api/auth/login`,
             );
             console.log(
-                `📡 API Đăng ký:   POST http://localhost:${PORT}/api/auth/register`,
+                `📡 API Employees:       GET/POST http://localhost:${PORT}/api/employees`,
             );
             console.log(
-                `📡 API Employees: GET/POST http://localhost:${PORT}/api/employees`,
+                `📡 API Recruitment:     GET/POST http://localhost:${PORT}/api/recruitment-jobs`,
             );
             console.log(
-                `📡 API Contracts: GET/POST http://localhost:${PORT}/api/contracts`,
+                `📡 API Candidates:      GET/POST http://localhost:${PORT}/api/candidates`,
             );
         });
     } catch (error) {

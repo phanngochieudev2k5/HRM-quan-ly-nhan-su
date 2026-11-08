@@ -18,9 +18,9 @@ export default function Header({ currentRole, currentUser, onLogout, onNavigate,
   };
 
   const notifications = [
-    { id: 1, title: 'Hệ thống xác thực JWT', desc: 'Phiên đăng nhập phân quyền bảo mật đang hoạt động', time: 'Vừa xong' },
-    { id: 2, title: 'Đồng bộ cơ sở dữ liệu', desc: 'Kết nối thành công SQL Server HRM_Enterprise_DB', time: '10 phút trước' },
-    { id: 3, title: 'Chấm công OpenCV', desc: 'Nhân diện khuôn mặt và chấm công sẵn sàng', time: '1 giờ trước' }
+    { id: 1, title: 'Hệ thống bảo mật', desc: 'Phiên làm việc bảo mật đang hoạt động', time: 'Vừa xong' },
+    { id: 2, title: 'Đồng bộ hệ thống', desc: 'Dữ liệu được cập nhật mới nhất', time: '10 phút trước' },
+    { id: 3, title: 'Chấm công nhận diện', desc: 'Hệ thống điểm danh sẵn sàng hoạt động', time: '1 giờ trước' }
   ];
 
   const getRoleBadgeInfo = (role) => {

@@ -23,7 +23,7 @@ export default function TeamMembersView() {
         <EmptyState
           icon={Users}
           title="Chưa có thành viên trực thuộc bộ phận"
-          description="Danh sách nhân sự thuộc phòng ban quản lý sẽ hiển thị tại đây khi kết nối dữ liệu từ CSDL."
+          description="Danh sách nhân sự thuộc phòng ban quản lý sẽ hiển thị tại đây."
         />
       ) : (
         <div className="team-grid">

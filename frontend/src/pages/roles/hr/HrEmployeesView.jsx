@@ -10,7 +10,7 @@ import EmployeeProfile360 from './components/EmployeeProfile360';
 import AllContractsView from './components/AllContractsView';
 import Toast from './components/Toast';
 import EmptyState from '../../../components/common/EmptyState';
-import { onboardingList, orgHierarchyData } from '../../../data/mockData';
+import { orgHierarchyData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrEmployeesView.css';
 import OrgStructureManagement from './components/OrgStructureManagement';
 import LaborContractManagement from './components/LaborContractManagement';
@@ -49,8 +49,8 @@ export default function HrEmployeesView({
   const [toast, setToast] = useState(null);
 
   const [totalContractsCount, setTotalContractsCount] = useState(0);
+  const [onboardingCount, setOnboardingCount] = useState(0);
 
-  const [onboardings, setOnboardings] = useState(onboardingList);
   const [expandedDept, setExpandedDept] = useState({
     ORG_HR: true,
     ORG_TECH: true,
@@ -65,14 +65,16 @@ export default function HrEmployeesView({
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const [depts, pos, contractsList] = await Promise.all([
+        const [depts, pos, contractsList, onbList] = await Promise.all([
           HrService.getDepartments(),
           HrService.getPositions(),
-          HrService.getContracts().catch(() => [])
+          HrService.getContracts().catch(() => []),
+          HrService.getOnboardings().catch(() => [])
         ]);
         if (depts && depts.length > 0) setDepartments(depts);
         if (pos && pos.length > 0) setPositions(pos);
         if (Array.isArray(contractsList)) setTotalContractsCount(contractsList.length);
+        if (Array.isArray(onbList)) setOnboardingCount(onbList.length);
       } catch (err) {
         console.warn('Lỗi tải danh mục phòng ban/chức vụ:', err.message);
       }
@@ -269,7 +271,7 @@ export default function HrEmployeesView({
         <CheckCircle2 size={16} />
         <span>Tiếp nhận Onboarding</span>
         <span className="badge b-blue" style={{ marginLeft: '4px' }}>
-          {onboardings.length}
+          {onboardingCount}
         </span>
       </button>
 
@@ -310,7 +312,7 @@ export default function HrEmployeesView({
         {loadingProfile ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
             <div className="status-dot-pulse" style={{ background: '#0f766e', margin: '0 auto 12px' }}></div>
-            <div>Đang tải thông tin hồ sơ 360° từ SQL Server...</div>
+            <div>Đang tải thông tin hồ sơ nhân sự 360°...</div>
           </div>
         ) : (
           <EmployeeProfile360
@@ -335,43 +337,7 @@ export default function HrEmployeesView({
     return (
       <div className="hr-employees-container">
         {renderTabsHeader()}
-
-        <div className="ph">
-          <div>
-            <h1>Quy trình tiếp nhận nhân sự mới (Onboarding)</h1>
-            <p>Theo dõi tiến trình hội nhập, chuẩn bị tài khoản, hợp đồng và cấp phát trang thiết bị</p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {onboardings.map(item => {
-            const stepsCount = Object.values(item.steps).filter(Boolean).length;
-            const isCompleted = stepsCount === 4;
-            return (
-              <div key={item.id} className="onboarding-card">
-                <div className="onboarding-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div className="avatar" style={{ width: '42px', height: '42px', fontSize: '16px' }}>
-                      {item.name ? item.name.split(' ').slice(-1)[0][0] : 'N'}
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <b style={{ fontSize: '15px', color: '#042f2e' }}>{item.name}</b>
-                        <span className={`badge ${isCompleted ? 'b-green' : 'b-blue'}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px' }}>
-                        {item.role} · Ngày nhận việc: <strong>{item.joinDate}</strong> · Người hướng dẫn: {item.mentor}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
+        <OnboardingManagement showToast={showToast} onNavigate={onNavigate} />
         <Toast toast={toast} onClose={() => setToast(null)} />
       </div>
     );
