@@ -118,6 +118,27 @@ export const connectDb = async () => {
                     BEGIN
                         CREATE UNIQUE NONCLUSTERED INDEX UQ_tblEmployee_UserId_Filtered ON tblEmployee(UserId) WHERE UserId IS NOT NULL;
                     END;
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationType')
+                        ALTER TABLE tblContract ADD TerminationType NVARCHAR(100) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationStatus')
+                        ALTER TABLE tblContract ADD TerminationStatus NVARCHAR(50) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationRequestedBy')
+                        ALTER TABLE tblContract ADD TerminationRequestedBy NVARCHAR(50) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationDate')
+                        ALTER TABLE tblContract ADD TerminationDate DATE NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationReason')
+                        ALTER TABLE tblContract ADD TerminationReason NVARCHAR(255) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationNote')
+                        ALTER TABLE tblContract ADD TerminationNote NVARCHAR(MAX) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationDecisionNumber')
+                        ALTER TABLE tblContract ADD TerminationDecisionNumber NVARCHAR(100) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationEvaluationMeeting')
+                        ALTER TABLE tblContract ADD TerminationEvaluationMeeting NVARCHAR(100) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationDecisionFileUrl')
+                        ALTER TABLE tblContract ADD TerminationDecisionFileUrl NVARCHAR(500) NULL;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationMeetingFileUrl')
+                        ALTER TABLE tblContract ADD TerminationMeetingFileUrl NVARCHAR(500) NULL;
                 `);
             } catch (migrationErr) {
                 console.warn(

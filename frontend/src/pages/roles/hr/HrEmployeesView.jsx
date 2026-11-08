@@ -13,6 +13,7 @@ import EmptyState from '../../../components/common/EmptyState';
 import { orgHierarchyData } from '../../../data/mockData';
 import '../../../styles/roles/hr/HrEmployeesView.css';
 import OrgStructureManagement from './components/OrgStructureManagement';
+import OnboardingManagement from './components/OnboardingManagement';
 import LaborContractManagement from './components/LaborContractManagement';
 
 export default function HrEmployeesView({

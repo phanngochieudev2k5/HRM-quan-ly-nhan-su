@@ -145,7 +145,10 @@ export default function AccountManagementModal({ isOpen, onClose, currentUser, o
         onClose();
       }, 1200);
     } catch (err) {
-      const errMsg = err.message || 'Lỗi khi cập nhật thông tin cá nhân!';
+      let errMsg = err.message || 'Lỗi khi cập nhật thông tin cá nhân!';
+      if (errMsg.includes('UNIQUE KEY') || errMsg.includes('duplicate key') || errMsg.includes('ODBC Driver')) {
+        errMsg = 'Địa chỉ email này đã được sử dụng bởi một tài khoản khác trong hệ thống. Vui lòng chọn địa chỉ email khác!';
+      }
       setProfileMsg({ type: 'error', text: errMsg });
       if (onToast) {
         onToast(errMsg, 'error');

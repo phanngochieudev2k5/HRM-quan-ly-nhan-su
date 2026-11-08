@@ -1,12 +1,10 @@
 import { connectDb, sql } from '../Config/DbConfig.js';
 import { sendSuccess, sendError } from '../Utils/ResponseHelper.js';
+import { EmailService } from '../Services/EmailService.js';
 
 export class LaborContractController {
   
-  /**
-   * Lấy danh sách hợp đồng lao động toàn doanh nghiệp
-   * Hỗ trợ tìm kiếm, lọc theo trạng thái, loại hợp đồng, phòng ban, cảnh báo hết hạn
-   */
+  
   static async getContracts(req, res) {
     try {
       const pool = await connectDb();
@@ -49,14 +47,14 @@ export class LaborContractController {
         whereConditions.push('c.EmployeeId = @employeeId');
       }
 
-      // Lọc theo số ngày sắp hết hạn (ví dụ: 15, 30, 60 ngày)
+      
       if (expiringDays && parseInt(expiringDays)) {
         request.input('expiringDays', sql.Int, parseInt(expiringDays));
         whereConditions.push(`(
           c.EndDate IS NOT NULL 
           AND c.EndDate >= CAST(GETDATE() AS DATE) 
           AND DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= @expiringDays
-          AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn')
+          AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn', N'Chờ nhân viên ký')
         )`);
       }
 
@@ -71,6 +69,14 @@ export class LaborContractController {
           e.Phone AS EmployeePhone,
           e.AvatarUrl AS EmployeeAvatar,
           e.WorkStatus AS EmployeeWorkStatus,
+          e.Gender AS EmployeeGender,
+          CONVERT(varchar, e.BirthDate, 23) AS EmployeeBirthDate,
+          e.Address AS EmployeeAddress,
+          e.IdCardNumber AS EmployeeIdCard,
+          e.TaxCode AS EmployeeTaxCode,
+          e.BankAccountNumber AS EmployeeBankAccount,
+          e.BankName AS EmployeeBankName,
+          CONVERT(varchar, e.JoinDate, 23) AS EmployeeJoinDate,
           d.DepartmentId,
           d.DepartmentName,
           p.PositionId,
@@ -82,12 +88,24 @@ export class LaborContractController {
           c.AgreedSalary,
           c.Status,
           c.ContractFileUrl,
+          c.TerminationType,
+          c.TerminationStatus,
+          c.TerminationRequestedBy,
+          CONVERT(varchar, c.TerminationDate, 23) AS TerminationDate,
+          c.TerminationReason,
+          c.TerminationNote,
+          c.TerminationDecisionNumber,
+          c.TerminationEvaluationMeeting,
+          c.TerminationDecisionFileUrl,
+          c.TerminationMeetingFileUrl,
           c.CreatedAt,
           CASE 
             WHEN c.EndDate IS NOT NULL THEN DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate)
             ELSE NULL 
           END AS DaysRemaining,
           CASE 
+            WHEN c.Status = N'Đã chấm dứt' OR c.Status = N'Hết hạn' THEN 'EXPIRED'
+            WHEN c.Status = N'Chờ nhân viên ký' THEN 'PENDING_SIGN'
             WHEN c.EndDate IS NULL THEN 'PERMANENT'
             WHEN c.EndDate < CAST(GETDATE() AS DATE) THEN 'EXPIRED'
             WHEN DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= 15 THEN 'EXPIRING_URGENT'
@@ -120,9 +138,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Thống kê KPI hợp đồng và cảnh báo thời hạn
-   */
+  
   static async getContractStats(req, res) {
     try {
       const pool = await connectDb();
@@ -130,39 +146,40 @@ export class LaborContractController {
         SELECT 
           COUNT(*) AS totalContracts,
           COUNT(DISTINCT c.EmployeeId) AS totalEmployeesWithContract,
-          SUM(CASE WHEN c.Status = N'Hiệu lực' AND (c.EndDate IS NULL OR c.EndDate >= CAST(GETDATE() AS DATE)) THEN 1 ELSE 0 END) AS activeContracts,
-          SUM(CASE 
+          COALESCE(SUM(CASE WHEN c.Status = N'Hiệu lực' AND (c.EndDate IS NULL OR c.EndDate >= CAST(GETDATE() AS DATE)) THEN 1 ELSE 0 END), 0) AS activeContracts,
+          COALESCE(SUM(CASE 
             WHEN c.EndDate IS NOT NULL 
               AND c.EndDate >= CAST(GETDATE() AS DATE) 
               AND DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= 30 
-              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn') 
+              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn', N'Chờ nhân viên ký') 
             THEN 1 ELSE 0 
-          END) AS expiringSoon30,
-          SUM(CASE 
+          END), 0) AS expiringSoon30,
+          COALESCE(SUM(CASE 
             WHEN c.EndDate IS NOT NULL 
               AND c.EndDate >= CAST(GETDATE() AS DATE) 
               AND DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= 15 
-              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn') 
+              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn', N'Chờ nhân viên ký') 
             THEN 1 ELSE 0 
-          END) AS expiringSoon15,
-          SUM(CASE 
+          END), 0) AS expiringSoon15,
+          COALESCE(SUM(CASE 
             WHEN c.EndDate IS NOT NULL 
               AND c.EndDate >= CAST(GETDATE() AS DATE) 
               AND DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= 60 
-              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn') 
+              AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn', N'Chờ nhân viên ký') 
             THEN 1 ELSE 0 
-          END) AS expiringSoon60,
-          SUM(CASE 
+          END), 0) AS expiringSoon60,
+          COALESCE(SUM(CASE 
             WHEN (c.EndDate IS NOT NULL AND c.EndDate < CAST(GETDATE() AS DATE)) 
               OR c.Status IN (N'Hết hạn', N'Đã chấm dứt') 
             THEN 1 ELSE 0 
-          END) AS expiredContracts,
-          SUM(CASE 
+          END), 0) AS expiredContracts,
+          COALESCE(SUM(CASE 
             WHEN c.EndDate IS NULL 
               OR c.ContractType LIKE N'%vô thời hạn%' 
               OR c.ContractType LIKE N'%không xác định%' 
             THEN 1 ELSE 0 
-          END) AS permanentContracts,
+          END), 0) AS permanentContracts,
+          COALESCE(SUM(CASE WHEN c.Status = N'Chờ nhân viên ký' THEN 1 ELSE 0 END), 0) AS pendingSignContracts,
           (SELECT COUNT(*) FROM tblEmployee) AS totalEmployees
         FROM tblContract c
       `;
@@ -175,9 +192,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Lấy danh sách hợp đồng cảnh báo sắp hết hạn (trong vòng N ngày, mặc định 30 ngày)
-   */
+  
   static async getExpiringAlerts(req, res) {
     try {
       const pool = await connectDb();
@@ -219,7 +234,7 @@ export class LaborContractController {
         WHERE c.EndDate IS NOT NULL 
           AND c.EndDate >= CAST(GETDATE() AS DATE)
           AND DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= @days
-          AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn')
+          AND c.Status NOT IN (N'Đã chấm dứt', N'Hết hạn', N'Chờ nhân viên ký')
         ORDER BY c.EndDate ASC
       `;
 
@@ -231,15 +246,13 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Tra cứu toàn bộ lịch sử hợp đồng của 1 nhân viên cụ thể qua các giai đoạn làm việc
-   */
+  
   static async getEmployeeContractHistory(req, res) {
     try {
       const { employeeId } = req.params;
       const pool = await connectDb();
 
-      // 1. Lấy thông tin nhân viên
+      
       const empReq = pool.request();
       empReq.input('empId', sql.Int, parseInt(employeeId));
       const empRes = await empReq.query(`
@@ -260,7 +273,7 @@ export class LaborContractController {
 
       const employee = empRes.recordset[0];
 
-      // 2. Lấy danh sách hợp đồng theo tiến trình thời gian
+      
       const contractReq = pool.request();
       contractReq.input('empId', sql.Int, parseInt(employeeId));
       const contractRes = await contractReq.query(`
@@ -274,12 +287,24 @@ export class LaborContractController {
           c.AgreedSalary,
           c.Status,
           c.ContractFileUrl,
+          c.TerminationType,
+          c.TerminationStatus,
+          c.TerminationRequestedBy,
+          CONVERT(varchar, c.TerminationDate, 23) AS TerminationDate,
+          c.TerminationReason,
+          c.TerminationNote,
+          c.TerminationDecisionNumber,
+          c.TerminationEvaluationMeeting,
+          c.TerminationDecisionFileUrl,
+          c.TerminationMeetingFileUrl,
           c.CreatedAt,
           CASE 
             WHEN c.EndDate IS NOT NULL THEN DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate)
             ELSE NULL 
           END AS DaysRemaining,
           CASE 
+            WHEN c.Status = N'Đã chấm dứt' OR c.Status = N'Hết hạn' THEN 'EXPIRED'
+            WHEN c.Status = N'Chờ nhân viên ký' THEN 'PENDING_SIGN'
             WHEN c.EndDate IS NULL THEN 'PERMANENT'
             WHEN c.EndDate < CAST(GETDATE() AS DATE) THEN 'EXPIRED'
             WHEN DATEDIFF(day, CAST(GETDATE() AS DATE), c.EndDate) <= 15 THEN 'EXPIRING_URGENT'
@@ -291,7 +316,7 @@ export class LaborContractController {
         ORDER BY c.StartDate ASC, c.ContractId ASC
       `);
 
-      // Tính toán giai đoạn (Stage 1, Stage 2,...)
+      
       const history = (contractRes.recordset || []).map((contract, index) => ({
         ...contract,
         stageNumber: index + 1,
@@ -309,9 +334,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Lấy chi tiết một hợp đồng
-   */
+  
   static async getContractById(req, res) {
     try {
       const { id } = req.params;
@@ -330,6 +353,15 @@ export class LaborContractController {
           e.Email AS EmployeeEmail,
           e.Phone AS EmployeePhone,
           e.AvatarUrl AS EmployeeAvatar,
+          e.WorkStatus AS EmployeeWorkStatus,
+          e.Gender AS EmployeeGender,
+          CONVERT(varchar, e.BirthDate, 23) AS EmployeeBirthDate,
+          e.Address AS EmployeeAddress,
+          e.IdCardNumber AS EmployeeIdCard,
+          e.TaxCode AS EmployeeTaxCode,
+          e.BankAccountNumber AS EmployeeBankAccount,
+          e.BankName AS EmployeeBankName,
+          CONVERT(varchar, e.JoinDate, 23) AS EmployeeJoinDate,
           d.DepartmentId,
           d.DepartmentName,
           p.PositionId,
@@ -341,6 +373,16 @@ export class LaborContractController {
           c.AgreedSalary,
           c.Status,
           c.ContractFileUrl,
+          c.TerminationType,
+          c.TerminationStatus,
+          c.TerminationRequestedBy,
+          CONVERT(varchar, c.TerminationDate, 23) AS TerminationDate,
+          c.TerminationReason,
+          c.TerminationNote,
+          c.TerminationDecisionNumber,
+          c.TerminationEvaluationMeeting,
+          c.TerminationDecisionFileUrl,
+          c.TerminationMeetingFileUrl,
           c.CreatedAt
         FROM tblContract c
         JOIN tblEmployee e ON c.EmployeeId = e.EmployeeId
@@ -360,9 +402,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Tạo mới hợp đồng lao động
-   */
+  
   static async createContract(req, res) {
     try {
       const pool = await connectDb();
@@ -381,7 +421,7 @@ export class LaborContractController {
       const status = (body.status || body.Status || 'Hiệu lực').trim();
       const contractFileUrl = (body.contractFileUrl || body.ContractFileUrl || '').trim() || null;
 
-      // Sinh mã hợp đồng tự động nếu không nhập: HD-YYYY-XXX
+      
       let contractNumber = (body.contractNumber || body.ContractNumber || '').trim();
       if (!contractNumber) {
         const year = new Date().getFullYear();
@@ -389,7 +429,7 @@ export class LaborContractController {
         const nextNum = (countRes.recordset[0]?.total || 0) + 1;
         contractNumber = `HD-${year}-${String(nextNum).padStart(3, '0')}`;
       } else {
-        // Kiểm tra trùng số hợp đồng
+        
         const checkReq = pool.request();
         checkReq.input('cNum', sql.VarChar(50), contractNumber);
         const checkRes = await checkReq.query('SELECT ContractId FROM tblContract WHERE ContractNumber = @cNum');
@@ -398,7 +438,7 @@ export class LaborContractController {
         }
       }
 
-      // Nếu tạo hợp đồng mới có hiệu lực, tự động cập nhật các hợp đồng cũ đang "Hiệu lực" của nhân viên này sang "Hết hạn"
+      
       if (status === 'Hiệu lực') {
         const updateOldReq = pool.request();
         updateOldReq.input('empId', sql.Int, parseInt(employeeId));
@@ -432,7 +472,7 @@ export class LaborContractController {
         )
       `);
 
-      // Đồng bộ mức lương thỏa thuận sang BaseSalary của tblEmployee
+      
       if (status === 'Hiệu lực' || status === 'Sắp hết hạn') {
         const syncEmpSalary = pool.request();
         syncEmpSalary.input('empId', sql.Int, parseInt(employeeId));
@@ -453,9 +493,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Cập nhật thông tin hợp đồng lao động
-   */
+  
   static async updateContract(req, res) {
     try {
       const { id } = req.params;
@@ -471,7 +509,7 @@ export class LaborContractController {
       const status = body.status || body.Status || null;
       const contractFileUrl = body.contractFileUrl !== undefined ? body.contractFileUrl : body.ContractFileUrl;
 
-      // Kiểm tra trùng số hợp đồng nếu thay đổi
+      
       if (contractNumber) {
         const checkReq = pool.request();
         checkReq.input('cNum', sql.VarChar(50), contractNumber);
@@ -516,7 +554,7 @@ export class LaborContractController {
 
       await request.query(updateQuery);
 
-      // Đồng bộ mức lương sang tblEmployee nếu cập nhật lương cho hợp đồng đang áp dụng
+      
       if (agreedSalary !== undefined && agreedSalary !== null) {
         const syncReq = pool.request();
         syncReq.input('cId', sql.Int, parseInt(id));
@@ -538,9 +576,7 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Xóa hợp đồng lao động
-   */
+  
   static async deleteContract(req, res) {
     try {
       const { id } = req.params;
@@ -557,17 +593,14 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Gia hạn / Ký tiếp hợp đồng mới (Renew Contract)
-   * Chuyển trạng thái hợp đồng cũ sang 'Đã gia hạn' và tạo hợp đồng mới tiếp nối
-   */
+  
   static async renewContract(req, res) {
     try {
       const { id } = req.params;
       const pool = await connectDb();
       const body = req.body;
 
-      // 1. Lấy thông tin hợp đồng cũ
+      
       const oldReq = pool.request();
       oldReq.input('id', sql.Int, parseInt(id));
       const oldRes = await oldReq.query('SELECT * FROM tblContract WHERE ContractId = @id');
@@ -579,7 +612,15 @@ export class LaborContractController {
       const oldContract = oldRes.recordset[0];
       const employeeId = oldContract.EmployeeId;
 
-      // 2. Chuẩn bị thông tin hợp đồng mới
+      if (oldContract.Status === 'Đã chấm dứt') {
+        return sendError(res, 'Hợp đồng này đã chấm dứt hiệu lực do nhân sự thôi việc, không thể thực hiện gia hạn!', 400);
+      }
+
+      if (!oldContract.EndDate || oldContract.ContractType?.toLowerCase().includes('vô thời hạn') || oldContract.ContractType?.toLowerCase().includes('không xác định')) {
+        return sendError(res, 'Hợp đồng vô thời hạn không có thời điểm kết thúc, không cần và không thể gia hạn thời gian!', 400);
+      }
+
+      
       const year = new Date().getFullYear();
       const countRes = await pool.request().query('SELECT COUNT(*) AS total FROM tblContract');
       const nextNum = (countRes.recordset[0]?.total || 0) + 1;
@@ -588,7 +629,7 @@ export class LaborContractController {
       const newContractType = (body.contractType || body.ContractType || 'Hợp đồng xác định thời hạn 3 năm').trim();
       const newSignDate = body.signDate || body.SignDate || new Date().toISOString().slice(0, 10);
       
-      // Ngày bắt đầu hợp đồng mới: nếu không truyền thì bắt đầu ngay sau ngày kết thúc hợp đồng cũ (hoặc hôm nay)
+      
       let defaultStart = new Date();
       if (oldContract.EndDate) {
         defaultStart = new Date(oldContract.EndDate);
@@ -599,7 +640,7 @@ export class LaborContractController {
       const newSalary = parseFloat(body.agreedSalary || body.AgreedSalary) || parseFloat(oldContract.AgreedSalary) || 0;
       const newFileUrl = body.contractFileUrl || body.ContractFileUrl || null;
 
-      // 3. Cập nhật hợp đồng cũ sang trạng thái "Đã gia hạn"
+      
       const updateOldReq = pool.request();
       updateOldReq.input('oldId', sql.Int, parseInt(id));
       await updateOldReq.query(`
@@ -608,7 +649,7 @@ export class LaborContractController {
         WHERE ContractId = @oldId
       `);
 
-      // 4. Tạo hợp đồng mới
+      
       const insertReq = pool.request();
       insertReq.input('ContractNumber', sql.VarChar(50), newContractNumber);
       insertReq.input('EmployeeId', sql.Int, employeeId);
@@ -632,7 +673,7 @@ export class LaborContractController {
         )
       `);
 
-      // Đồng bộ mức lương mới sang tblEmployee
+      
       const syncRenewEmp = pool.request();
       syncRenewEmp.input('empId', sql.Int, employeeId);
       syncRenewEmp.input('newSal', sql.Decimal(18, 2), newSalary);
@@ -654,9 +695,259 @@ export class LaborContractController {
     }
   }
 
-  /**
-   * Lấy danh sách nhân viên kèm trạng thái hợp đồng hiện tại để phục vụ dropdown / chọn lựa
-   */
+  
+  static async terminateContract(req, res) {
+    try {
+      const { id } = req.params;
+      const pool = await connectDb();
+      const {
+        terminationType = 'Thỏa thuận hai bên',
+        terminateDate,
+        reason,
+        note,
+        decisionNumber,
+        evaluationMeetingNumber
+      } = req.body;
+
+      const checkReq = pool.request();
+      checkReq.input('id', sql.Int, parseInt(id));
+      const checkRes = await checkReq.query(`
+        SELECT c.*, e.FullName, e.Email, e.UserId, e.PositionId, e.DepartmentId, p.PositionName, d.DepartmentName
+        FROM tblContract c
+        JOIN tblEmployee e ON c.EmployeeId = e.EmployeeId
+        LEFT JOIN tblPosition p ON e.PositionId = p.PositionId
+        LEFT JOIN tblDepartment d ON e.DepartmentId = d.DepartmentId
+        WHERE c.ContractId = @id
+      `);
+
+      if (!checkRes.recordset || checkRes.recordset.length === 0) {
+        return sendError(res, 'Không tìm thấy hợp đồng cần chấm dứt!', 404);
+      }
+
+      const contract = checkRes.recordset[0];
+      if (contract.Status === 'Đã chấm dứt') {
+        return sendError(res, 'Hợp đồng này đã ở trạng thái chấm dứt từ trước!', 400);
+      }
+
+      const termDate = terminateDate || new Date().toISOString().slice(0, 10);
+      const termReason = reason || (terminationType === 'Doanh nghiệp cho thôi việc' ? 'Doanh nghiệp đơn phương chấm dứt hợp đồng lao động' : 'Hai bên thỏa thuận chấm dứt hợp đồng lao động');
+      const termNote = note ? `${termReason}: ${note}` : termReason;
+
+      let decisionFileUrl = null;
+      let meetingFileUrl = null;
+      const attachments = [];
+
+      if (req.files) {
+        if (req.files.decisionFile && req.files.decisionFile[0]) {
+          const file = req.files.decisionFile[0];
+          decisionFileUrl = `/uploads/contracts/${file.filename}`;
+          attachments.push({
+            filename: file.originalname || 'Quyet_dinh_thoi_viec.pdf',
+            path: file.path
+          });
+        }
+        if (req.files.meetingFile && req.files.meetingFile[0]) {
+          const file = req.files.meetingFile[0];
+          meetingFileUrl = `/uploads/contracts/${file.filename}`;
+          attachments.push({
+            filename: file.originalname || 'Bien_ban_hop_ky_luat.pdf',
+            path: file.path
+          });
+        }
+      }
+
+      if (terminationType === 'Doanh nghiệp cho thôi việc') {
+        if (!decisionNumber || !evaluationMeetingNumber) {
+          return sendError(res, 'Trường hợp Doanh nghiệp cho thôi việc / Sa thải bắt buộc phải nhập Số quyết định và Biên bản họp kỷ luật / đánh giá theo luật!', 400);
+        }
+
+        const termReq = pool.request();
+        termReq.input('id', sql.Int, parseInt(id));
+        termReq.input('termDate', sql.Date, termDate);
+        termReq.input('termType', sql.NVarChar(100), terminationType);
+        termReq.input('reason', sql.NVarChar(255), termReason);
+        termReq.input('note', sql.NVarChar(sql.MAX), termNote);
+        termReq.input('decNum', sql.NVarChar(100), decisionNumber);
+        termReq.input('evalMeet', sql.NVarChar(100), evaluationMeetingNumber);
+        termReq.input('decFile', sql.NVarChar(500), decisionFileUrl);
+        termReq.input('meetFile', sql.NVarChar(500), meetingFileUrl);
+        await termReq.query(`
+          UPDATE tblContract SET
+            Status = N'Đã chấm dứt',
+            EndDate = @termDate,
+            TerminationType = @termType,
+            TerminationStatus = N'Đã chấp thuận',
+            TerminationRequestedBy = 'HR',
+            TerminationDate = @termDate,
+            TerminationReason = @reason,
+            TerminationNote = @note,
+            TerminationDecisionNumber = @decNum,
+            TerminationEvaluationMeeting = @evalMeet,
+            TerminationDecisionFileUrl = COALESCE(@decFile, TerminationDecisionFileUrl),
+            TerminationMeetingFileUrl = COALESCE(@meetFile, TerminationMeetingFileUrl)
+          WHERE ContractId = @id
+        `);
+
+        const empReq = pool.request();
+        empReq.input('empId', sql.Int, contract.EmployeeId);
+        await empReq.query(`
+          UPDATE tblEmployee SET WorkStatus = N'Đã thôi việc', UpdatedAt = SYSDATETIME() WHERE EmployeeId = @empId;
+          UPDATE tblUser SET IsLocked = 1, UpdatedAt = SYSDATETIME() WHERE UserId = (SELECT UserId FROM tblEmployee WHERE EmployeeId = @empId);
+        `);
+
+        try {
+          const histReq = pool.request();
+          histReq.input('empId', sql.Int, contract.EmployeeId);
+          histReq.input('eventDate', sql.Date, termDate);
+          histReq.input('eventName', sql.NVarChar(100), 'Chấm dứt hợp đồng lao động (Kỷ luật / Doanh nghiệp cho thôi việc)');
+          histReq.input('oldPos', sql.NVarChar(100), contract.PositionName || '');
+          histReq.input('newPos', sql.NVarChar(100), 'Đã thôi việc');
+          histReq.input('oldDept', sql.NVarChar(100), contract.DepartmentName || '');
+          histReq.input('newDept', sql.NVarChar(100), contract.DepartmentName || '');
+          histReq.input('note', sql.NVarChar(255), `QĐ: ${decisionNumber} | BB: ${evaluationMeetingNumber} | ${termNote}`.slice(0, 255));
+          await histReq.query(`
+            INSERT INTO tblCareerHistory (EmployeeId, EventDate, EventName, OldPosition, NewPosition, OldDepartment, NewDepartment, Note)
+            VALUES (@empId, @eventDate, @eventName, @oldPos, @newPos, @oldDept, @newDept, @note)
+          `);
+        } catch (hErr) {}
+
+        try {
+          if (contract.Email) {
+            await EmailService.sendDismissalEmail({
+              employeeEmail: contract.Email,
+              employeeName: contract.FullName,
+              jobTitle: contract.PositionName || 'Nhân sự',
+              terminationDate: termDate,
+              decisionNumber,
+              evaluationMeetingNumber,
+              reason: termReason,
+              contractNumber: contract.ContractNumber,
+              attachments
+            });
+          }
+        } catch (mErr) {
+          console.error('Lỗi gửi email:', mErr);
+        }
+
+        return sendSuccess(res, { ContractId: parseInt(id), Status: 'Đã chấm dứt', EmployeeWorkStatus: 'Đã thôi việc' }, 'Đã ban hành quyết định chấm dứt hợp đồng lao động, thu hồi tài khoản và gửi email thông báo đến nhân sự!');
+      } else {
+        const propReq = pool.request();
+        propReq.input('id', sql.Int, parseInt(id));
+        propReq.input('termDate', sql.Date, termDate);
+        propReq.input('termType', sql.NVarChar(100), 'Thỏa thuận hai bên');
+        propReq.input('reason', sql.NVarChar(255), termReason);
+        propReq.input('note', sql.NVarChar(sql.MAX), termNote);
+        await propReq.query(`
+          UPDATE tblContract SET
+            TerminationType = @termType,
+            TerminationStatus = N'Chờ nhân viên duyệt',
+            TerminationRequestedBy = 'HR',
+            TerminationDate = @termDate,
+            TerminationReason = @reason,
+            TerminationNote = @note
+          WHERE ContractId = @id
+        `);
+
+        return sendSuccess(res, { ContractId: parseInt(id), TerminationStatus: 'Chờ nhân viên duyệt' }, 'Đã tạo đề xuất thỏa thuận chấm dứt hợp đồng! Yêu cầu đã chuyển đến tài khoản của nhân viên để duyệt xác nhận.');
+      }
+    } catch (error) {
+      console.error('[LaborContractController.terminateContract] Error:', error);
+      return sendError(res, error.message, 500, error);
+    }
+  }
+
+  static async respondResignation(req, res) {
+    try {
+      const { id } = req.params;
+      const pool = await connectDb();
+      const { approved, hrNote } = req.body;
+
+      const checkReq = pool.request();
+      checkReq.input('id', sql.Int, parseInt(id));
+      const checkRes = await checkReq.query(`
+        SELECT c.*, e.FullName, e.Email, e.UserId, p.PositionName, d.DepartmentName
+        FROM tblContract c
+        JOIN tblEmployee e ON c.EmployeeId = e.EmployeeId
+        LEFT JOIN tblPosition p ON e.PositionId = p.PositionId
+        LEFT JOIN tblDepartment d ON e.DepartmentId = d.DepartmentId
+        WHERE c.ContractId = @id
+      `);
+
+      const contract = checkRes.recordset[0];
+      if (!contract) {
+        return sendError(res, 'Không tìm thấy hợp đồng lao động!', 404);
+      }
+
+      if (contract.TerminationStatus !== 'Chờ HR duyệt') {
+        return sendError(res, 'Hợp đồng này không có đơn xin thôi việc nào đang chờ duyệt!', 400);
+      }
+
+      if (approved) {
+        const termDate = contract.TerminationDate || new Date().toISOString().slice(0, 10);
+        const confirmReq = pool.request();
+        confirmReq.input('id', sql.Int, parseInt(id));
+        confirmReq.input('tDate', sql.Date, termDate);
+        confirmReq.input('hrNote', sql.NVarChar(sql.MAX), hrNote ? ` | Phản hồi HR: ${hrNote}` : '');
+        await confirmReq.query(`
+          UPDATE tblContract SET
+            Status = N'Đã chấm dứt',
+            EndDate = @tDate,
+            TerminationStatus = N'Đã chấp thuận',
+            TerminationNote = COALESCE(TerminationNote, '') + @hrNote
+          WHERE ContractId = @id
+        `);
+
+        const empReq = pool.request();
+        empReq.input('empId', sql.Int, contract.EmployeeId);
+        await empReq.query(`
+          UPDATE tblEmployee SET WorkStatus = N'Đã thôi việc', UpdatedAt = SYSDATETIME() WHERE EmployeeId = @empId;
+          UPDATE tblUser SET IsLocked = 1, UpdatedAt = SYSDATETIME() WHERE UserId = (SELECT UserId FROM tblEmployee WHERE EmployeeId = @empId);
+        `);
+
+        try {
+          const histReq = pool.request();
+          histReq.input('empId', sql.Int, contract.EmployeeId);
+          histReq.input('eDate', sql.Date, termDate);
+          histReq.input('note', sql.NVarChar(255), `Nhân viên xin thôi việc hợp lệ: ${contract.TerminationReason || 'Nguyện vọng cá nhân'}`.slice(0, 255));
+          await histReq.query(`
+            INSERT INTO tblCareerHistory (EmployeeId, EventDate, EventName, OldPosition, NewPosition, OldDepartment, NewDepartment, Note)
+            VALUES (@empId, @eDate, N'Chấm dứt hợp đồng lao động (Nhân viên xin thôi việc)', N'Nhân viên', N'Đã thôi việc', N'Công ty', N'Công ty', @note)
+          `);
+        } catch (hErr) {}
+
+        try {
+          if (contract.Email) {
+            await EmailService.sendTerminationApproveEmail({
+              employeeEmail: contract.Email,
+              employeeName: contract.FullName,
+              jobTitle: contract.PositionName || 'Nhân sự',
+              terminationDate: termDate,
+              contractNumber: contract.ContractNumber
+            });
+          }
+        } catch (mErr) {
+          console.error('Lỗi gửi email:', mErr);
+        }
+
+        return sendSuccess(res, { ContractId: parseInt(id), Status: 'Đã chấm dứt' }, 'Đã chấp thuận đơn xin thôi việc của nhân sự, thu hồi tài khoản và gửi email xác nhận!');
+      } else {
+        const rejectReq = pool.request();
+        rejectReq.input('id', sql.Int, parseInt(id));
+        rejectReq.input('hrNote', sql.NVarChar(sql.MAX), hrNote ? ` | HR từ chối: ${hrNote}` : '');
+        await rejectReq.query(`
+          UPDATE tblContract SET
+            TerminationStatus = N'Từ chối',
+            TerminationNote = COALESCE(TerminationNote, '') + @hrNote
+          WHERE ContractId = @id
+        `);
+        return sendSuccess(res, { ContractId: parseInt(id), TerminationStatus: 'Từ chối' }, 'Đã từ chối đơn xin thôi việc của nhân sự.');
+      }
+    } catch (error) {
+      console.error('[LaborContractController.respondResignation] Error:', error);
+      return sendError(res, error.message, 500, error);
+    }
+  }
+
   static async getEmployeeContractOverview(req, res) {
     try {
       const pool = await connectDb();

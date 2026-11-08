@@ -91,50 +91,78 @@ export class UserModel {
   static async updateProfile(userId, { fullName, phone, email, gender, birthDate, address, idCardNumber, bankName, bankAccountNumber }) {
     const pool = await connectDb();
 
-    const userReq = pool.request();
-    userReq.input('userId', sql.Int, userId);
-    userReq.input('fullName', sql.NVarChar(100), fullName || null);
-    userReq.input('phone', sql.VarChar(20), phone || null);
-    userReq.input('email', sql.VarChar(100), email || null);
-    await userReq.query(`
-      UPDATE tblUser SET
-        FullName = COALESCE(@fullName, FullName),
-        Phone = COALESCE(@phone, Phone),
-        Email = COALESCE(@email, Email)
-      WHERE UserId = @userId
-    `);
+    if (email && email.trim()) {
+      const trimmedEmail = email.trim();
+      const existingUser = await pool.request()
+        .input('email', sql.VarChar(100), trimmedEmail)
+        .input('userId', sql.Int, userId)
+        .query('SELECT UserId FROM tblUser WHERE Email = @email AND UserId != @userId');
 
-    const empCheck = await pool.request()
-      .input('userId', sql.Int, userId)
-      .query('SELECT EmployeeId FROM tblEmployee WHERE UserId = @userId');
+      if (existingUser.recordset && existingUser.recordset.length > 0) {
+        throw new Error(`Địa chỉ email "${trimmedEmail}" đã được sử dụng bởi một tài khoản khác trong hệ thống! Vui lòng chọn email khác.`);
+      }
 
-    if (empCheck.recordset.length > 0) {
-      const empReq = pool.request();
-      empReq.input('userId', sql.Int, userId);
-      empReq.input('fullName', sql.NVarChar(100), fullName || null);
-      empReq.input('phone', sql.VarChar(20), phone || null);
-      empReq.input('email', sql.VarChar(100), email || null);
-      empReq.input('gender', sql.NVarChar(10), gender || null);
-      empReq.input('birthDate', sql.Date, birthDate || null);
-      empReq.input('address', sql.NVarChar(255), address || null);
-      empReq.input('idCardNumber', sql.VarChar(20), idCardNumber || null);
-      empReq.input('bankName', sql.NVarChar(100), bankName || null);
-      empReq.input('bankAccountNumber', sql.VarChar(30), bankAccountNumber || null);
+      const existingEmp = await pool.request()
+        .input('email', sql.VarChar(100), trimmedEmail)
+        .input('userId', sql.Int, userId)
+        .query('SELECT EmployeeId FROM tblEmployee WHERE Email = @email AND (UserId IS NULL OR UserId != @userId)');
 
-      await empReq.query(`
-        UPDATE tblEmployee SET
+      if (existingEmp.recordset && existingEmp.recordset.length > 0) {
+        throw new Error(`Địa chỉ email "${trimmedEmail}" đã được sử dụng bởi một hồ sơ nhân sự khác! Vui lòng chọn email khác.`);
+      }
+    }
+
+    try {
+      const userReq = pool.request();
+      userReq.input('userId', sql.Int, userId);
+      userReq.input('fullName', sql.NVarChar(100), fullName || null);
+      userReq.input('phone', sql.VarChar(20), phone || null);
+      userReq.input('email', sql.VarChar(100), email ? email.trim() : null);
+      await userReq.query(`
+        UPDATE tblUser SET
           FullName = COALESCE(@fullName, FullName),
           Phone = COALESCE(@phone, Phone),
-          Email = COALESCE(@email, Email),
-          Gender = COALESCE(@gender, Gender),
-          BirthDate = @birthDate,
-          Address = COALESCE(@address, Address),
-          IdCardNumber = COALESCE(@idCardNumber, IdCardNumber),
-          BankName = COALESCE(@bankName, BankName),
-          BankAccountNumber = COALESCE(@bankAccountNumber, BankAccountNumber),
-          UpdatedAt = SYSDATETIME()
+          Email = COALESCE(@email, Email)
         WHERE UserId = @userId
       `);
+
+      const empCheck = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT EmployeeId FROM tblEmployee WHERE UserId = @userId');
+
+      if (empCheck.recordset.length > 0) {
+        const empReq = pool.request();
+        empReq.input('userId', sql.Int, userId);
+        empReq.input('fullName', sql.NVarChar(100), fullName || null);
+        empReq.input('phone', sql.VarChar(20), phone || null);
+        empReq.input('email', sql.VarChar(100), email ? email.trim() : null);
+        empReq.input('gender', sql.NVarChar(10), gender || null);
+        empReq.input('birthDate', sql.Date, birthDate || null);
+        empReq.input('address', sql.NVarChar(255), address || null);
+        empReq.input('idCardNumber', sql.VarChar(20), idCardNumber || null);
+        empReq.input('bankName', sql.NVarChar(100), bankName || null);
+        empReq.input('bankAccountNumber', sql.VarChar(30), bankAccountNumber || null);
+
+        await empReq.query(`
+          UPDATE tblEmployee SET
+            FullName = COALESCE(@fullName, FullName),
+            Phone = COALESCE(@phone, Phone),
+            Email = COALESCE(@email, Email),
+            Gender = COALESCE(@gender, Gender),
+            BirthDate = @birthDate,
+            Address = COALESCE(@address, Address),
+            IdCardNumber = COALESCE(@idCardNumber, IdCardNumber),
+            BankName = COALESCE(@bankName, BankName),
+            BankAccountNumber = COALESCE(@bankAccountNumber, BankAccountNumber),
+            UpdatedAt = SYSDATETIME()
+          WHERE UserId = @userId
+        `);
+      }
+    } catch (err) {
+      if (err.message && (err.message.includes('Violation of UNIQUE KEY constraint') || err.message.includes('duplicate key'))) {
+        throw new Error(`Địa chỉ email "${email}" đã tồn tại trong hệ thống. Vui lòng chọn địa chỉ email khác!`);
+      }
+      throw err;
     }
   }
 

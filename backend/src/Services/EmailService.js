@@ -21,7 +21,7 @@ export class EmailService {
     return null;
   }
 
-  static async sendMail({ to, subject, html, text }) {
+  static async sendMail({ to, subject, html, text, attachments = [] }) {
     if (!to || !to.includes('@')) {
       throw new Error('Địa chỉ email người nhận không hợp lệ!');
     }
@@ -34,6 +34,9 @@ export class EmailService {
       console.log('To:', to);
       console.log('Subject:', subject);
       console.log('Content preview:', text || subject);
+      if (attachments && attachments.length > 0) {
+        console.log('Attachments count:', attachments.length);
+      }
       console.log('Notice: Configure SMTP_USER and SMTP_PASS in backend/.env to send via live Gmail.');
       console.log('---------------------------------');
       return {
@@ -49,7 +52,8 @@ export class EmailService {
         to,
         subject,
         text: text || '',
-        html
+        html,
+        attachments
       });
       return {
         success: true,
@@ -294,6 +298,144 @@ export class EmailService {
       subject,
       html,
       text: `Kính gửi ${candidateName}, cảm ơn bạn đã ứng tuyển vị trí ${jobTitle}. Rất tiếc hiện tại công ty chưa thể đồng hành cùng bạn và hy vọng có cơ hội hợp tác trong tương lai.`
+    });
+  }
+
+  static async sendTerminationApproveEmail({
+    employeeEmail,
+    employeeName,
+    jobTitle = 'Nhân sự',
+    terminationDate,
+    contractNumber = ''
+  }) {
+    const subject = `[Enterprise HRM] XÁC NHẬN HOÀN TẤT THỦ TỤC THÔI VIỆC & THƯ CẢM ƠN`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; color: #1e293b;">
+        <div style="background: #0f766e; padding: 24px; color: #ffffff; text-align: center;">
+          <h2 style="margin: 0 0 6px; font-size: 20px;">ENTERPRISE HRM</h2>
+          <p style="margin: 0; font-size: 13px; color: #ccfbf1;">XÁC NHẬN CHẤM DỨT HỢP ĐỒNG LAO ĐỘNG & THƯ CẢM ƠN</p>
+        </div>
+
+        <div style="padding: 24px; background: #ffffff;">
+          <p style="font-size: 15px; margin-top: 0;">Kính gửi Anh/Chị <b>${employeeName}</b>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+            Phòng Quản trị Nhân sự xin thông báo thủ tục chấm dứt hợp đồng lao động số <b>${contractNumber}</b> của Anh/Chị (vị trí: <b>${jobTitle}</b>) đã được hai bên thống nhất và hoàn tất phê duyệt chính thức.
+          </p>
+
+          <div style="background: #f8fafc; border-left: 4px solid #0f766e; padding: 14px 18px; margin: 16px 0; border-radius: 4px; font-size: 13.5px;">
+            <div><strong>Họ và tên:</strong> ${employeeName}</div>
+            <div><strong>Vị trí / Chức danh:</strong> ${jobTitle}</div>
+            <div><strong>Số hợp đồng:</strong> ${contractNumber}</div>
+            <div><strong>Ngày làm việc cuối cùng:</strong> <span style="color: #0f766e; font-weight: bold;">${terminationDate}</span></div>
+          </div>
+
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+            Ban Lãnh đạo và toàn thể đồng nghiệp xin chân thành gửi lời cảm ơn sâu sắc vì những cống hiến, nỗ lực và đóng góp quý báu của Anh/Chị trong suốt thời gian đồng hành phát triển cùng công ty.
+          </p>
+
+          <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #92400e; margin: 16px 0;">
+            <strong>Lưu ý về quy trình bàn giao & bảo mật:</strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0;">
+              <li>Vui lòng hoàn tất bàn giao các trang thiết bị làm việc, tài liệu và công việc cho quản lý bộ phận trước ngày ${terminationDate}.</li>
+              <li>Bộ phận Kế toán - C&B sẽ thực hiện chốt sổ BHXH và quyết toán các chế độ tiền lương, trợ cấp theo đúng quy định.</li>
+              <li>Tài khoản đăng nhập hệ thống nội bộ sẽ được thu hồi sau khi hoàn tất thủ tục thôi việc.</li>
+            </ul>
+          </div>
+
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+            Kính chúc Anh/Chị luôn dồi dào sức khỏe, hạnh phúc và gặt hái được nhiều thành công rực rỡ trên chặng đường sự nghiệp tiếp theo!
+          </p>
+
+          <p style="font-size: 14px; margin-bottom: 0;">Trân trọng,<br><b>Phòng Quản trị Nhân sự & Đào tạo</b><br>Enterprise HRM</p>
+        </div>
+
+        <div style="background: #f1f5f9; padding: 14px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+          Email tự động từ Hệ thống Quản trị Doanh nghiệp Enterprise HRM.
+        </div>
+      </div>
+    `;
+
+    return await this.sendMail({
+      to: employeeEmail,
+      subject,
+      html,
+      text: `Kính gửi ${employeeName}, xác nhận hoàn tất thủ tục thôi việc theo hợp đồng số ${contractNumber}. Ngày làm việc cuối cùng: ${terminationDate}. Cảm ơn bạn vì những đóng góp trong suốt thời gian qua.`
+    });
+  }
+
+  static async sendDismissalEmail({
+    employeeEmail,
+    employeeName,
+    jobTitle = 'Nhân sự',
+    terminationDate,
+    decisionNumber = '',
+    evaluationMeetingNumber = '',
+    reason = '',
+    contractNumber = '',
+    attachments = []
+  }) {
+    const subject = `[Enterprise HRM] THÔNG BÁO QUYẾT ĐỊNH CHẤM DỨT HỢP ĐỒNG LAO ĐỘNG`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; color: #1e293b;">
+        <div style="background: #dc2626; padding: 24px; color: #ffffff; text-align: center;">
+          <h2 style="margin: 0 0 6px; font-size: 20px;">ENTERPRISE HRM</h2>
+          <p style="margin: 0; font-size: 13px; color: #fee2e2;">THÔNG BÁO QUYẾT ĐỊNH CHẤM DỨT HỢP ĐỒNG LAO ĐỘNG</p>
+        </div>
+
+        <div style="padding: 24px; background: #ffffff;">
+          <p style="font-size: 15px; margin-top: 0;">Kính gửi Anh/Chị <b>${employeeName}</b>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+            Phòng Quản trị Nhân sự thông báo về việc thực hiện Quyết định chấm dứt hợp đồng lao động số <b>${contractNumber}</b> đối với Anh/Chị (vị trí: <b>${jobTitle}</b>) theo quyết định của Ban Lãnh đạo công ty.
+          </p>
+
+          <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 14px 18px; margin: 16px 0; border-radius: 4px; font-size: 13.5px;">
+            <div><strong>Họ và tên:</strong> ${employeeName}</div>
+            <div><strong>Vị trí / Chức danh:</strong> ${jobTitle}</div>
+            <div><strong>Số hợp đồng:</strong> ${contractNumber}</div>
+            <div><strong>Số quyết định thôi việc / sa thải:</strong> <span style="font-weight: bold; color: #dc2626;">${decisionNumber || 'Theo văn bản ban hành'}</span></div>
+            ${evaluationMeetingNumber ? `<div><strong>Số biên bản họp kỷ luật / đánh giá:</strong> <span style="font-weight: bold; color: #dc2626;">${evaluationMeetingNumber}</span></div>` : ''}
+            <div><strong>Căn cứ / Lý do:</strong> ${reason}</div>
+            <div><strong>Ngày chấm dứt hiệu lực:</strong> <span style="font-weight: bold;">${terminationDate}</span></div>
+          </div>
+
+          ${attachments && attachments.length > 0 ? `
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 13px; color: #1e40af;">
+            <strong>Hồ sơ pháp lý đính kèm trực tiếp trong email này:</strong>
+            <ul style="margin: 8px 0 0 18px; padding: 0;">
+              ${attachments.map(att => `<li><b>${att.filename}</b></li>`).join('')}
+            </ul>
+            <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
+              <i>Vì tài khoản truy cập hệ thống đã được thu hồi, các tài liệu pháp lý chính thức trên được gửi đính kèm vào email cá nhân để phục vụ cho các thủ tục pháp lý, chốt sổ BHXH và hưởng trợ cấp bảo hiểm thất nghiệp.</i>
+            </div>
+          </div>
+          ` : ''}
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #334155; margin: 16px 0;">
+            <strong>Thủ tục bàn giao và quyền lợi:</strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0;">
+              <li>Đề nghị Anh/Chị bàn giao toàn bộ trang thiết bị làm việc, thẻ nhân viên và tài liệu liên quan cho phòng Hành chính - Nhân sự.</li>
+              <li>Bộ phận Tiền lương & Phúc lợi sẽ thực hiện chốt công nợ, chi trả tiền lương và trả sổ BHXH theo quy định của pháp luật.</li>
+              <li>Tài khoản người dùng trên hệ thống đã bị thu hồi quyền truy cập.</li>
+            </ul>
+          </div>
+
+          <p style="font-size: 14px; margin-bottom: 0;">Trân trọng,<br><b>Ban Tổng Giám Đốc & Phòng Nhân sự</b><br>Enterprise HRM</p>
+        </div>
+
+        <div style="background: #f1f5f9; padding: 14px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+          Email tự động từ Hệ thống Quản trị Doanh nghiệp Enterprise HRM.
+        </div>
+      </div>
+    `;
+
+    return await this.sendMail({
+      to: employeeEmail,
+      subject,
+      html,
+      text: `Kính gửi ${employeeName}, công ty thông báo quyết định chấm dứt hợp đồng lao động số ${contractNumber}. Quyết định số: ${decisionNumber}. Lý do: ${reason}. Ngày áp dụng: ${terminationDate}.`,
+      attachments
     });
   }
 }

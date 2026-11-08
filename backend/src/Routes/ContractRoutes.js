@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.get('/my-contracts', verifyToken, ContractController.getMyContracts);
 router.post('/:id/sign', verifyToken, ContractController.signContract);
+router.post('/:id/resignation-request', verifyToken, ContractController.requestResignation);
+router.post('/:id/employee-respond-termination', verifyToken, ContractController.respondTermination);
 
 router.use(verifyToken, requireRole('HR', 'Admin'));
 

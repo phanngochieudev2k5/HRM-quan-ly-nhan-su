@@ -399,6 +399,16 @@ export const HrService = {
   async signContract(id) {
     const res = await ApiClient.post(`/contracts/${id}/sign`, {});
     return res.data || res;
+  },
+
+  async requestResignation(id, data) {
+    const res = await ApiClient.post(`/contracts/${id}/resignation-request`, data);
+    return res.data || res;
+  },
+
+  async respondTermination(id, data) {
+    const res = await ApiClient.post(`/contracts/${id}/employee-respond-termination`, data);
+    return res.data || res;
   }
 };
 

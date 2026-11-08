@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   FileText, Search, Plus, FileSpreadsheet, RefreshCw, Eye, Edit2, Trash2,
   Calendar, DollarSign, CheckCircle2, Clock, AlertTriangle,
-  User, ArrowRight, History, AlertCircle, ShieldAlert, Award, ChevronRight, X
+  User, ArrowRight, History, AlertCircle, ShieldAlert, Award, ChevronRight, X,
+  Printer, XCircle, FileCheck, Building, Briefcase
 } from 'lucide-react';
 import LaborContractService from '../../../../services/LaborContractService';
 import '../../../../styles/roles/hr/LaborContract.css';
@@ -12,7 +13,7 @@ export default function LaborContractManagement({
   onViewProfile,
   onNavigate
 }) {
-  // Dữ liệu hợp đồng, thống kê & nhân viên từ CSDL
+  
   const [contracts, setContracts] = useState([]);
   const [stats, setStats] = useState({
     totalContracts: 0,
@@ -25,32 +26,44 @@ export default function LaborContractManagement({
   const [employeesList, setEmployeesList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Tab chế độ xem: 'list' (Danh sách), 'expiring' (Cảnh báo hết hạn), 'history' (Tra cứu lịch sử nhân viên)
+  
   const [activeTab, setActiveTab] = useState('list');
 
-  // Lọc theo thẻ KPI (Yêu cầu 1 & 5)
-  // 'ACTIVE_DEFAULT': Mặc định (hiện hợp đồng đang áp dụng, ẨN hợp đồng đã hết hạn / đã chấm dứt / đã tái ký)
-  // 'ACTIVE': Chỉ hợp đồng đang hiệu lực
-  // 'EXPIRING': Chỉ hợp đồng sắp hết hạn trong 30 ngày
-  // 'EXPIRED': CHỈ KHI BẤM VÀO CARD "HẾT HẠN / ĐÃ CHẤM DỨT" MỚI HIỆN RA
-  // 'PERMANENT': Hợp đồng vô thời hạn
-  // 'ALL': Xem tất cả hợp đồng đang quản lý
+  
+  
+  
+  
+  
+  
+  
   const [selectedKpiFilter, setSelectedKpiFilter] = useState('ACTIVE_DEFAULT');
 
-  // Bộ lọc danh sách
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('');
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [selectedActionContract, setSelectedActionContract] = useState(null);
 
-  // Tra cứu lịch sử hợp đồng nhân viên (Acceptance Criteria 2 & 3)
+  const handleOpenActionModal = (contract) => {
+    setSelectedActionContract(contract);
+    setIsActionModalOpen(true);
+  };
+
+  const handleCloseActionModal = () => {
+    setIsActionModalOpen(false);
+    setSelectedActionContract(null);
+  };
+
+  
   const [historyEmpId, setHistoryEmpId] = useState('');
   const [employeeHistoryData, setEmployeeHistoryData] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Modal Tạo / Sửa hợp đồng (Acceptance Criteria 1)
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+  const [modalMode, setModalMode] = useState('create'); 
   const [currentContract, setCurrentContract] = useState({
     ContractId: null,
     ContractNumber: '',
@@ -63,7 +76,7 @@ export default function LaborContractManagement({
     Status: 'Hiệu lực'
   });
 
-  // Modal Gia hạn / Ký tiếp hợp đồng mới (Acceptance Criteria 2 & 4)
+  
   const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState(null);
   const [renewForm, setRenewForm] = useState({
@@ -75,7 +88,33 @@ export default function LaborContractManagement({
     agreedSalary: 0
   });
 
-  // Thông báo Toast alert
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedContractDetail, setSelectedContractDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const [isTerminateModalOpen, setIsTerminateModalOpen] = useState(false);
+  const [terminateTarget, setTerminateTarget] = useState(null);
+  const [terminateForm, setTerminateForm] = useState({
+    terminationType: 'Thỏa thuận hai bên',
+    terminateDate: new Date().toISOString().slice(0, 10),
+    reason: 'Hai bên thỏa thuận chấm dứt hợp đồng lao động',
+    decisionNumber: '',
+    evaluationMeetingNumber: '',
+    note: ''
+  });
+  const [terminateFiles, setTerminateFiles] = useState({
+    decisionFile: null,
+    meetingFile: null
+  });
+  const [terminateSubmitting, setTerminateSubmitting] = useState(false);
+
+  const [isResignationModalOpen, setIsResignationModalOpen] = useState(false);
+  const [resignationTarget, setResignationTarget] = useState(null);
+  const [resignationAction, setResignationAction] = useState('approve');
+  const [resignationNote, setResignationNote] = useState('');
+  const [resignationSubmitting, setResignationSubmitting] = useState(false);
+
+  
   const [toastInfo, setToastInfo] = useState(null);
   const showToast = (type, message) => {
     setToastInfo({ type, message });
@@ -84,7 +123,7 @@ export default function LaborContractManagement({
 
   const formatVND = (num) => `${Math.round(+num || 0).toLocaleString('vi-VN')} đ`;
 
-  // Hàm chuẩn hóa tiếng Việt để tìm kiếm không dấu
+  
   const removeAccents = (str) => {
     return (str || '')
       .normalize('NFD')
@@ -95,7 +134,7 @@ export default function LaborContractManagement({
       .trim();
   };
 
-  // Tải toàn bộ dữ liệu từ CSDL qua API
+  
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -120,7 +159,7 @@ export default function LaborContractManagement({
     loadData();
   }, [loadData]);
 
-  // Xử lý khi nhấn vào các thẻ KPI (Yêu cầu 1 & 5)
+  
   const handleKpiCardClick = (filterType) => {
     if (selectedKpiFilter === filterType && filterType !== 'ACTIVE_DEFAULT') {
       setSelectedKpiFilter('ACTIVE_DEFAULT');
@@ -130,14 +169,14 @@ export default function LaborContractManagement({
     setActiveTab('list');
   };
 
-  // Tính toán danh sách hợp đồng hiển thị linh hoạt (Lọc tức thì + Tìm kiếm nhạy bén)
+  
   const displayedContracts = useMemo(() => {
     let list = [...contracts];
 
-    // 1. Áp dụng bộ lọc từ Thẻ KPI (Yêu cầu 1 & 5)
-    // "những hợp đồng hết hạn hoặc đã tái ký hãy ẩn đi , chỉ đến khi ấn vào mục hợp đồng đã chấm dứt mới hiện ra"
+    
+    
     if (selectedKpiFilter === 'EXPIRED') {
-      // CHỈ KHI BẤM VÀO CARD "HẾT HẠN / ĐÃ CHẤM DỨT" MỚI HIỆN RA
+      
       list = list.filter(c => 
         c.Status === 'Hết hạn' || 
         c.Status === 'Đã chấm dứt' || 
@@ -146,7 +185,7 @@ export default function LaborContractManagement({
         c.ExpirationCategory === 'EXPIRED'
       );
     } else {
-      // Ở TẤT CẢ CÁC MỤC KHÁC: MẶC ĐỊNH ẨN TOÀN BỘ HỢP ĐỒNG HẾT HẠN / ĐÃ TÁI KÝ / CHẤM DỨT
+      
       list = list.filter(c => 
         c.Status !== 'Hết hạn' && 
         c.Status !== 'Đã chấm dứt' && 
@@ -172,22 +211,22 @@ export default function LaborContractManagement({
       }
     }
 
-    // 2. Lọc dropdown Trạng thái
+    
     if (statusFilter && statusFilter !== 'all') {
       list = list.filter(c => c.Status === statusFilter);
     }
 
-    // 3. Lọc dropdown Loại hợp đồng
+    
     if (typeFilter && typeFilter !== 'all') {
       list = list.filter(c => c.ContractType === typeFilter);
     }
 
-    // 4. Lọc dropdown Phòng ban
+    
     if (selectedDeptFilter) {
       list = list.filter(c => String(c.DepartmentId) === String(selectedDeptFilter));
     }
 
-    // 5. Thanh tìm kiếm (Yêu cầu 4: Tìm kiếm nhạy bén, không dấu & có dấu tiếng Việt)
+    
     if (searchTerm && searchTerm.trim()) {
       const clean = removeAccents(searchTerm);
       list = list.filter(c => 
@@ -204,7 +243,7 @@ export default function LaborContractManagement({
     return list;
   }, [contracts, selectedKpiFilter, statusFilter, typeFilter, selectedDeptFilter, searchTerm]);
 
-  // Xuất danh sách hợp đồng ra file Excel (.xls) có chia cột hàng rõ ràng (Yêu cầu 3)
+  
   const handleExportExcel = () => {
     if (!displayedContracts || displayedContracts.length === 0) {
       showToast('error', 'Không có dữ liệu hợp đồng nào để xuất Excel!');
@@ -262,7 +301,7 @@ export default function LaborContractManagement({
       const daysText = c.EndDate 
         ? (c.DaysRemaining < 0 ? `Đã hết hạn (${Math.abs(c.DaysRemaining)} ngày)` : `Còn ${c.DaysRemaining} ngày`) 
         : 'Vô thời hạn';
-      const statusClass = c.Status === 'Hiệu lực' ? 'active' : (c.Status === 'Sắp hết hạn' ? 'urgent' : 'expired');
+      const statusClass = c.Status === 'Hiệu lực' ? 'active' : (c.Status === 'Sắp hết hạn' ? 'urgent' : (c.Status === 'Chờ nhân viên ký' ? 'urgent' : 'expired'));
 
       html += `
         <tr>
@@ -302,7 +341,7 @@ export default function LaborContractManagement({
     showToast('success', `Đã xuất ${displayedContracts.length} hợp đồng ra file Excel (.xls) thành công!`);
   };
 
-  // Tải lịch sử hợp đồng của 1 nhân viên
+  
   const loadEmployeeHistory = useCallback(async (empId) => {
     if (!empId) return;
     try {
@@ -322,13 +361,13 @@ export default function LaborContractManagement({
     }
   }, [activeTab, historyEmpId, loadEmployeeHistory]);
 
-  // Xử lý mở tra cứu lịch sử từ 1 dòng hợp đồng bất kỳ
+  
   const handleOpenHistoryForEmp = (empId) => {
     setHistoryEmpId(String(empId));
     setActiveTab('history');
   };
 
-  // Mở modal Thêm mới
+  
   const handleOpenCreateModal = (preselectedEmpId = '') => {
     setModalMode('create');
     const defaultEmp = preselectedEmpId || (employeesList[0]?.EmployeeId ? String(employeesList[0].EmployeeId) : '');
@@ -350,7 +389,7 @@ export default function LaborContractManagement({
     setIsModalOpen(true);
   };
 
-  // Mở modal Chỉnh sửa
+  
   const handleOpenEditModal = (c) => {
     setModalMode('edit');
     setCurrentContract({
@@ -367,8 +406,33 @@ export default function LaborContractManagement({
     setIsModalOpen(true);
   };
 
-  // Mở modal Gia hạn / Ký tiếp hợp đồng
+  
+  const handleOpenDetailModal = async (c) => {
+    setSelectedContractDetail(c);
+    setIsDetailModalOpen(true);
+    try {
+      setLoadingDetail(true);
+      const detail = await LaborContractService.getContractById(c.ContractId);
+      if (detail) {
+        setSelectedContractDetail(detail);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const handleOpenRenewModal = (c) => {
+    if (c.Status === 'Đã chấm dứt') {
+      showToast('error', 'Hợp đồng này đã chấm dứt hiệu lực do nhân sự thôi việc, không thể thực hiện gia hạn!');
+      return;
+    }
+    if (!c.EndDate || (c.ContractType && (c.ContractType.toLowerCase().includes('vô thời hạn') || c.ContractType.toLowerCase().includes('không xác định')))) {
+      showToast('error', 'Hợp đồng vô thời hạn không có thời điểm kết thúc, không cần và không thể gia hạn thời gian!');
+      return;
+    }
+
     setRenewTarget(c);
     let startD = new Date().toISOString().slice(0, 10);
     let endD = '';
@@ -392,7 +456,95 @@ export default function LaborContractManagement({
     setIsRenewModalOpen(true);
   };
 
-  // Lưu hợp đồng (Create / Update)
+  const handleOpenTerminateModal = (c) => {
+    if (c.Status === 'Đã chấm dứt') {
+      showToast('error', 'Hợp đồng này đã ở trạng thái chấm dứt từ trước!');
+      return;
+    }
+    setTerminateTarget(c);
+    setTerminateForm({
+      terminationType: 'Thỏa thuận hai bên',
+      terminateDate: new Date().toISOString().slice(0, 10),
+      reason: 'Hai bên thỏa thuận chấm dứt hợp đồng lao động',
+      decisionNumber: '',
+      evaluationMeetingNumber: '',
+      note: ''
+    });
+    setTerminateFiles({
+      decisionFile: null,
+      meetingFile: null
+    });
+    setIsTerminateModalOpen(true);
+  };
+
+  const handleConfirmTerminate = async (e) => {
+    e.preventDefault();
+    if (!terminateTarget) return;
+    try {
+      setTerminateSubmitting(true);
+      let payload;
+      if (terminateForm.terminationType === 'Doanh nghiệp cho thôi việc') {
+        const fd = new FormData();
+        fd.append('terminationType', terminateForm.terminationType);
+        fd.append('terminateDate', terminateForm.terminateDate);
+        fd.append('reason', terminateForm.reason);
+        fd.append('decisionNumber', terminateForm.decisionNumber || '');
+        fd.append('evaluationMeetingNumber', terminateForm.evaluationMeetingNumber || '');
+        fd.append('note', terminateForm.note || '');
+        if (terminateFiles.decisionFile) {
+          fd.append('decisionFile', terminateFiles.decisionFile);
+        }
+        if (terminateFiles.meetingFile) {
+          fd.append('meetingFile', terminateFiles.meetingFile);
+        }
+        payload = fd;
+      } else {
+        payload = terminateForm;
+      }
+      await LaborContractService.terminateContract(terminateTarget.ContractId, payload);
+      showToast('success', `Đã chấm dứt hợp đồng số ${terminateTarget.ContractNumber} của nhân sự ${terminateTarget.EmployeeName}!`);
+      setIsTerminateModalOpen(false);
+      setTerminateTarget(null);
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+      await loadData();
+    } catch (err) {
+      showToast('error', 'Lỗi khi chấm dứt hợp đồng: ' + (err.message || 'Không thể thực hiện'));
+    } finally {
+      setTerminateSubmitting(false);
+    }
+  };
+
+  const handleOpenResignationModal = (contract, action) => {
+    setResignationTarget(contract);
+    setResignationAction(action);
+    setResignationNote('');
+    setIsResignationModalOpen(true);
+  };
+
+  const handleConfirmResignation = async (e) => {
+    e.preventDefault();
+    if (!resignationTarget) return;
+    try {
+      setResignationSubmitting(true);
+      const isApprove = resignationAction === 'approve';
+      await LaborContractService.respondResignation(resignationTarget.ContractId, {
+        approved: isApprove,
+        hrNote: resignationNote
+      });
+      showToast('success', isApprove ? `Đã chấp thuận đơn xin thôi việc của nhân sự ${resignationTarget.EmployeeName}!` : `Đã từ chối đơn xin thôi việc.`);
+      setIsResignationModalOpen(false);
+      setResignationTarget(null);
+      await loadData();
+    } catch (err) {
+      showToast('error', 'Lỗi khi xử lý đơn: ' + (err.message || 'Không thể thực hiện'));
+    } finally {
+      setResignationSubmitting(false);
+    }
+  };
+
+  
   const handleSaveContract = async (e) => {
     e.preventDefault();
     if (!currentContract.EmployeeId) {
@@ -430,7 +582,7 @@ export default function LaborContractManagement({
     }
   };
 
-  // Thực hiện Gia hạn
+  
   const handleExecuteRenew = async (e) => {
     e.preventDefault();
     if (!renewTarget?.ContractId) return;
@@ -448,7 +600,7 @@ export default function LaborContractManagement({
     }
   };
 
-  // Xóa hợp đồng
+  
   const handleDeleteContract = async (c) => {
     if (!window.confirm(`Xác nhận xóa hợp đồng ${c.ContractNumber} của nhân sự "${c.EmployeeName}" khỏi CSDL?`)) {
       return;
@@ -465,10 +617,46 @@ export default function LaborContractManagement({
     }
   };
 
-  // Render Badge trạng thái hợp đồng kèm cảnh báo đếm ngày
+  
   const renderStatusBadge = (c) => {
     const days = c.DaysRemaining;
     const cat = c.ExpirationCategory;
+
+    if (c.TerminationStatus === 'Chờ HR duyệt') {
+      return (
+        <span className="lc-badge-urgent" style={{ background: '#fef2f2', color: '#dc2626', borderColor: '#fca5a5' }} title="Nhân viên đã nộp đơn xin thôi việc">
+          <AlertTriangle size={12} />
+          <span>Chờ HR duyệt thôi việc</span>
+        </span>
+      );
+    }
+
+    if (c.TerminationStatus === 'Chờ nhân viên duyệt') {
+      return (
+        <span className="lc-badge-warning" style={{ background: '#fffbeb', color: '#b45309', borderColor: '#fde68a' }} title="Đang chờ nhân sự ký duyệt biên bản thỏa thuận">
+          <Clock size={12} />
+          <span>Chờ NV duyệt thôi việc</span>
+        </span>
+      );
+    }
+
+    if (c.Status === 'Chờ nhân viên ký' || c.Status === 'Chờ ký' || cat === 'PENDING_SIGN') {
+      return (
+        <span className="lc-badge-warning" style={{ background: '#fef3c7', color: '#b45309', borderColor: '#fde68a' }}>
+          <Clock size={12} />
+          <span>Chờ nhân viên ký</span>
+        </span>
+      );
+    }
+
+    if (c.Status === 'Đã chấm dứt') {
+      return (
+        <span className="lc-badge-expired" style={{ background: '#f1f5f9', color: '#475569', borderColor: '#cbd5e1' }}>
+          <Clock size={12} />
+          <span>Đã chấm dứt</span>
+        </span>
+      );
+    }
 
     if (c.Status === 'Hết hạn' || cat === 'EXPIRED') {
       return (
@@ -514,7 +702,7 @@ export default function LaborContractManagement({
     );
   };
 
-  // Lọc danh sách cảnh báo
+  
   const expiringContractsList = useMemo(() => {
     return contracts.filter(c => 
       c.ExpirationCategory === 'EXPIRING_URGENT' || 
@@ -526,7 +714,7 @@ export default function LaborContractManagement({
 
   return (
     <div className="lc-container">
-      {/* Toast thông báo */}
+      {}
       {toastInfo && (
         <div
           className={`badge ${toastInfo.type === 'success' ? 'b-green' : 'b-red'}`}
@@ -544,12 +732,12 @@ export default function LaborContractManagement({
         </div>
       )}
 
-      {/* Header Phân hệ */}
+      {}
       <div className="lc-header">
         <div className="lc-title">
           <h1>
             <FileText size={22} color="#0f766e" />
-            <span>Quản lý Hợp đồng lao động & Cảnh báo hết hạn (US-07)</span>
+            <span>Quản lý Hợp đồng lao động & Cảnh báo hết hạn</span>
           </h1>
           <p>Theo dõi thời hạn, phân loại hợp đồng, tra cứu lịch sử ký kết và cảnh báo tự động từ CSDL</p>
         </div>
@@ -560,186 +748,16 @@ export default function LaborContractManagement({
             <span>Làm mới</span>
           </button>
           
-          {/* Nút Xuất Excel theo Yêu cầu 3 */}
+          {}
           <button className="btn" onClick={handleExportExcel} title="Xuất danh sách hợp đồng ra file Excel (.xls) có chia cột rõ ràng">
             <FileSpreadsheet size={16} color="#16a34a" />
             <span>Xuất Excel</span>
           </button>
-
-          <button className="btn pri" onClick={() => handleOpenCreateModal()}>
-            <Plus size={16} />
-            <span>+ Tạo hợp đồng mới</span>
-          </button>
         </div>
       </div>
 
-      {/* Banner Cảnh báo Hết hạn Nổi bật */}
-      {(stats.expiringSoon30 > 0 || stats.expiringSoon15 > 0) && (
-        <div className="lc-alert-banner">
-          <div className="lc-alert-content">
-            <div className="lc-alert-icon">
-              <AlertTriangle size={22} />
-            </div>
-            <div className="lc-alert-text">
-              <h4>
-                Cảnh báo: Có {stats.expiringSoon30 || 0} hợp đồng lao động sắp hết hạn trong 30 ngày tới!
-              </h4>
-              <p>
-                {stats.expiringSoon15 > 0 && (
-                  <strong>Trong đó có {stats.expiringSoon15} hợp đồng ở mức khẩn cấp (dưới 15 ngày). </strong>
-                )}
-                Vui lòng xem xét gia hạn hoặc thanh lý hợp đồng để đảm bảo tuân thủ Bộ luật Lao động.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="lc-alert-action-btn"
-            onClick={() => handleKpiCardClick('EXPIRING')}
-          >
-            <Clock size={15} />
-            <span>Xem {stats.expiringSoon30} hợp đồng sắp hết hạn</span>
-          </button>
-        </div>
-      )}
-
-      {/* KPI Thống kê Tổng quan (Yêu cầu 1 & 5: Bấm vào mở danh sách theo mục đó) */}
-      <div className="lc-stats-grid">
-        {/* Card 1: Tổng số hợp đồng */}
-        <div
-          className={`lc-stat-card ${selectedKpiFilter === 'ACTIVE_DEFAULT' ? 'active-total' : ''}`}
-          onClick={() => handleKpiCardClick('ACTIVE_DEFAULT')}
-          title="Bấm để xem tất cả hợp đồng đang áp dụng"
-        >
-          {selectedKpiFilter === 'ACTIVE_DEFAULT' && (
-            <span className="lc-card-active-indicator total">Đang lọc</span>
-          )}
-          <div className="lc-stat-icon primary">
-            <FileText size={22} />
-          </div>
-          <div className="lc-stat-info">
-            <span>TỔNG SỐ HỢP ĐỒNG</span>
-            <strong>{stats.totalContracts || contracts.length}</strong>
-            <small>hợp đồng</small>
-          </div>
-        </div>
-
-        {/* Card 2: Đang hiệu lực */}
-        <div
-          className={`lc-stat-card ${selectedKpiFilter === 'ACTIVE' ? 'active-active' : ''}`}
-          onClick={() => handleKpiCardClick('ACTIVE')}
-          title="Bấm để lọc các hợp đồng đang hiệu lực"
-        >
-          {selectedKpiFilter === 'ACTIVE' && (
-            <span className="lc-card-active-indicator active">Đang lọc</span>
-          )}
-          <div className="lc-stat-icon green">
-            <CheckCircle2 size={22} />
-          </div>
-          <div className="lc-stat-info">
-            <span>ĐANG HIỆU LỰC</span>
-            <strong>{stats.activeContracts || 0}</strong>
-            <small>hợp đồng</small>
-          </div>
-        </div>
-
-        {/* Card 3: Sắp hết hạn */}
-        <div
-          className={`lc-stat-card ${selectedKpiFilter === 'EXPIRING' ? 'active-expiring' : ''}`}
-          onClick={() => handleKpiCardClick('EXPIRING')}
-          title="Bấm để lọc các hợp đồng sắp hết hạn (≤ 30 ngày)"
-        >
-          {selectedKpiFilter === 'EXPIRING' && (
-            <span className="lc-card-active-indicator expiring">Đang lọc</span>
-          )}
-          <div className="lc-stat-icon amber">
-            <Clock size={22} />
-          </div>
-          <div className="lc-stat-info">
-            <span>SẮP HẾT HẠN (≤ 30 NGÀY)</span>
-            <strong style={{ color: '#d97706' }}>{stats.expiringSoon30 || 0}</strong>
-            <small>cần xử lý</small>
-          </div>
-        </div>
-
-        {/* Card 4: Hết hạn / Đã chấm dứt (Yêu cầu 5: Chỉ khi bấm vào đây mới hiện các hợp đồng hết hạn / tái ký) */}
-        <div
-          className={`lc-stat-card ${selectedKpiFilter === 'EXPIRED' ? 'active-expired' : ''}`}
-          onClick={() => handleKpiCardClick('EXPIRED')}
-          title="Bấm để mở danh sách hợp đồng đã hết hạn, đã chấm dứt hoặc đã tái ký"
-        >
-          {selectedKpiFilter === 'EXPIRED' && (
-            <span className="lc-card-active-indicator expired">Đang mở xem</span>
-          )}
-          <div className="lc-stat-icon red">
-            <AlertCircle size={22} />
-          </div>
-          <div className="lc-stat-info">
-            <span>HẾT HẠN / ĐÃ CHẤM DỨT</span>
-            <strong style={{ color: '#dc2626' }}>{stats.expiredContracts || 0}</strong>
-            <small>hợp đồng</small>
-          </div>
-        </div>
-
-        {/* Card 5: Vô thời hạn */}
-        <div
-          className={`lc-stat-card ${selectedKpiFilter === 'PERMANENT' ? 'active-permanent' : ''}`}
-          onClick={() => handleKpiCardClick('PERMANENT')}
-          title="Bấm để lọc các hợp đồng vô thời hạn"
-        >
-          {selectedKpiFilter === 'PERMANENT' && (
-            <span className="lc-card-active-indicator permanent">Đang lọc</span>
-          )}
-          <div className="lc-stat-icon blue">
-            <ShieldAlert size={22} />
-          </div>
-          <div className="lc-stat-info">
-            <span>VÔ THỜI HẠN</span>
-            <strong>{stats.permanentContracts || 0}</strong>
-            <small>dài hạn</small>
-          </div>
-        </div>
-      </div>
-
-      {/* Chuyển đổi chế độ xem (View Tabs) */}
-      <div className="lc-view-tabs">
-        <button
-          className={`lc-tab-btn ${activeTab === 'list' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list')}
-        >
-          <FileText size={16} />
-          <span>Danh sách hợp đồng ({displayedContracts.length})</span>
-        </button>
-
-        <button
-          className={`lc-tab-btn ${activeTab === 'expiring' ? 'active' : ''}`}
-          onClick={() => setActiveTab('expiring')}
-        >
-          <AlertTriangle size={16} color="#d97706" />
-          <span>Trung tâm cảnh báo hết hạn</span>
-          {stats.expiringSoon30 > 0 && (
-            <span className="lc-tab-badge amber">{stats.expiringSoon30}</span>
-          )}
-        </button>
-
-        <button
-          className={`lc-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('history');
-            if (!historyEmpId && employeesList.length > 0) {
-              setHistoryEmpId(String(employeesList[0].EmployeeId));
-            }
-          }}
-        >
-          <History size={16} color="#0f766e" />
-          <span>Tra cứu lịch sử hợp đồng theo nhân viên</span>
-        </button>
-      </div>
-
-      {/* ================= TAB 1: DANH SÁCH HỢP ĐỒNG ================= */}
-      {activeTab === 'list' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Banner thông báo bộ lọc KPI đang áp dụng */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {}
           {selectedKpiFilter === 'EXPIRED' && (
             <div className="lc-active-filter-banner banner-expired">
               <span>
@@ -784,9 +802,9 @@ export default function LaborContractManagement({
             </div>
           )}
 
-          {/* Thanh công cụ tìm kiếm và lọc */}
+          {}
           <div className="lc-filter-bar">
-            {/* Thanh tìm kiếm nhạy bén (Yêu cầu 4) */}
+            {}
             <div className="lc-search-box">
               <Search size={16} color="#94a3b8" />
               <input
@@ -815,6 +833,7 @@ export default function LaborContractManagement({
               >
                 <option value="">-- Tất cả trạng thái --</option>
                 <option value="Hiệu lực">Hiệu lực</option>
+                <option value="Chờ nhân viên ký">Chờ nhân viên ký</option>
                 <option value="Sắp hết hạn">Sắp hết hạn</option>
                 <option value="Hết hạn">Hết hạn</option>
                 <option value="Đã chấm dứt">Đã chấm dứt</option>
@@ -851,7 +870,7 @@ export default function LaborContractManagement({
             </div>
           </div>
 
-          {/* Bảng dữ liệu hợp đồng (ĐÃ XÓA CỘT FILE ĐÍNH KÈM THEO YÊU CẦU 2) */}
+          {}
           <div className="lc-table-card">
             <div className="tbl-wrap">
               <table className="tbl">
@@ -886,7 +905,11 @@ export default function LaborContractManagement({
                     </tr>
                   ) : (
                     displayedContracts.map((c) => (
-                      <tr key={c.ContractId}>
+                      <tr
+                        key={c.ContractId}
+                        className="lc-table-row"
+                        onClick={() => handleOpenActionModal(c)}
+                      >
                         <td>
                           <code style={{ fontWeight: 700, color: '#0f766e', fontSize: '13px' }}>
                             {c.ContractNumber}
@@ -924,45 +947,15 @@ export default function LaborContractManagement({
                           <strong style={{ color: '#0f766e' }}>{formatVND(c.AgreedSalary)}</strong>
                         </td>
                         <td>{renderStatusBadge(c)}</td>
-                        <td className="act">
-                          {/* Tra cứu lịch sử hợp đồng nhân viên */}
+                        <td className="act" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="ibtn"
-                            title="Tra cứu lịch sử hợp đồng nhân viên"
-                            onClick={() => handleOpenHistoryForEmp(c.EmployeeId)}
+                            className="lc-btn-select-row"
+                            onClick={() => handleOpenActionModal(c)}
+                            title="Chọn chức năng thao tác cho hợp đồng này"
                           >
-                            <History size={15} color="#0f766e" />
-                          </button>
-
-                          {/* Gia hạn hợp đồng */}
-                          <button
-                            type="button"
-                            className="ibtn"
-                            title="Gia hạn / Ký tiếp hợp đồng mới"
-                            onClick={() => handleOpenRenewModal(c)}
-                          >
-                            <Award size={15} color="#d97706" />
-                          </button>
-
-                          {/* Sửa hợp đồng */}
-                          <button
-                            type="button"
-                            className="ibtn"
-                            title="Chỉnh sửa thông tin hợp đồng"
-                            onClick={() => handleOpenEditModal(c)}
-                          >
-                            <Edit2 size={15} />
-                          </button>
-
-                          {/* Xóa hợp đồng */}
-                          <button
-                            type="button"
-                            className="ibtn del"
-                            title="Xóa hợp đồng"
-                            onClick={() => handleDeleteContract(c)}
-                          >
-                            <Trash2 size={15} />
+                            <span>Thao tác</span>
+                            <ChevronRight size={14} />
                           </button>
                         </td>
                       </tr>
@@ -973,235 +966,208 @@ export default function LaborContractManagement({
             </div>
           </div>
         </div>
-      )}
 
-      {/* ================= TAB 2: TRUNG TÂM CẢNH BÁO HẾT HẠN ================= */}
-      {activeTab === 'expiring' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 4px', fontSize: '15px', color: '#0f172a' }}>
-              Danh mục các hợp đồng lao động cần theo dõi & gia hạn
-            </h3>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              Bao gồm các hợp đồng có thời hạn kết thúc trong vòng 30 - 60 ngày cần được quyết định tái ký.
-            </p>
-          </div>
-
-          <div className="lc-table-card">
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>SỐ HỢP ĐỒNG</th>
-                    <th>NHÂN VIÊN CẦN XỬ LÝ</th>
-                    <th>LOẠI HỢP ĐỒNG HIỆN TẠI</th>
-                    <th>NGÀY HẾT HẠN</th>
-                    <th>THỜI GIAN CÒN LẠI</th>
-                    <th>MỨC LƯƠNG</th>
-                    <th className="act">HÀNH ĐỘNG KHUYẾN NGHỊ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expiringContractsList.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px 0', color: '#16a34a' }}>
-                        <CheckCircle2 size={36} style={{ margin: '0 auto 8px' }} />
-                        <p>Tuyệt vời! Không có hợp đồng nào đang ở tình trạng sắp hết hạn trong 30 ngày tới.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    expiringContractsList.map((c) => (
-                      <tr key={c.ContractId} style={{ background: c.ExpirationCategory === 'EXPIRING_URGENT' ? '#fffaf0' : 'transparent' }}>
-                        <td>
-                          <code style={{ fontWeight: 700, color: '#0f766e' }}>{c.ContractNumber}</code>
-                        </td>
-                        <td>
-                          <div className="who">
-                            <div className="avatar" style={{ width: '32px', height: '32px' }}>
-                              {c.EmployeeName ? c.EmployeeName.split(' ').slice(-1)[0][0] : 'N'}
-                            </div>
-                            <div>
-                              <b>{c.EmployeeName}</b>
-                              <small>{c.EmployeeCode} · {c.DepartmentName}</small>
-                            </div>
-                          </div>
-                        </td>
-                        <td>{c.ContractType}</td>
-                        <td>
-                          <strong style={{ color: '#dc2626' }}>{c.EndDate}</strong>
-                        </td>
-                        <td>{renderStatusBadge(c)}</td>
-                        <td>{formatVND(c.AgreedSalary)}</td>
-                        <td className="act">
-                          <button
-                            type="button"
-                            className="btn pri"
-                            style={{ padding: '5px 12px', fontSize: '12px' }}
-                            onClick={() => handleOpenRenewModal(c)}
-                          >
-                            <Award size={14} />
-                            <span>Gia hạn hợp đồng</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= TAB 3: TRA CỨU LỊCH SỬ THEO NHÂN VIÊN ================= */}
-      {activeTab === 'history' && (
-        <div className="lc-history-wrapper">
-          {/* Bộ chọn nhân viên */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-            <label style={{ fontSize: '13.5px', fontWeight: 600, color: '#0f172a' }}>
-              Chọn nhân viên tra cứu:
-            </label>
-            <select
-              className="lc-select"
-              style={{ minWidth: '320px' }}
-              value={historyEmpId}
-              onChange={(e) => setHistoryEmpId(e.target.value)}
-            >
-              <option value="">-- Chọn nhân viên cần xem tiến trình hợp đồng --</option>
-              {employeesList.map((emp) => (
-                <option key={emp.EmployeeId} value={emp.EmployeeId}>
-                  {emp.FullName} ({emp.EmployeeCode}) - {emp.DepartmentName || 'Chưa gán phòng'} [{emp.ContractCount || 0} hợp đồng]
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {loadingHistory ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-              <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px', color: '#0f766e' }} />
-              <p>Đang tải tiến trình lịch sử hợp đồng của nhân viên...</p>
-            </div>
-          ) : employeeHistoryData?.employee ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Header Nhân viên */}
-              <div className="lc-history-employee-header">
-                <div className="lc-history-emp-info">
-                  {employeeHistoryData.employee.AvatarUrl ? (
-                    <img
-                      src={employeeHistoryData.employee.AvatarUrl}
-                      alt={employeeHistoryData.employee.FullName}
-                      className="lc-history-avatar"
-                    />
-                  ) : (
-                    <div className="lc-history-avatar-placeholder">
-                      {employeeHistoryData.employee.FullName?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>
-                      {employeeHistoryData.employee.FullName}
-                    </h2>
-                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-                      Mã NV: <strong>{employeeHistoryData.employee.EmployeeCode}</strong> · Phòng: <strong>{employeeHistoryData.employee.DepartmentName || 'Chưa gán'}</strong> · Chức danh: <strong>{employeeHistoryData.employee.PositionName || 'Nhân viên'}</strong>
-                    </div>
+      {isActionModalOpen && selectedActionContract && (
+        <div className="lc-modal-overlay" onClick={handleCloseActionModal}>
+          <div className="lc-action-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="lc-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FileText size={20} color="#0f766e" />
+                <div>
+                  <h2 style={{ fontSize: '16px', margin: 0, color: '#0f172a' }}>
+                    Tùy chọn chức năng hợp đồng: {selectedActionContract.ContractNumber}
+                  </h2>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    {selectedActionContract.EmployeeName} ({selectedActionContract.EmployeeCode}) · {selectedActionContract.DepartmentName || 'Chưa gán phòng'}
                   </div>
                 </div>
+              </div>
+              <button
+                type="button"
+                className="lc-modal-close-btn"
+                onClick={handleCloseActionModal}
+                title="Đóng"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="btn pri"
-                    onClick={() => handleOpenCreateModal(employeeHistoryData.employee.EmployeeId)}
-                  >
-                    <Plus size={15} />
-                    <span>Ký thêm hợp đồng mới cho nhân viên này</span>
-                  </button>
+            <div className="lc-modal-body" style={{ overflowY: 'auto', flex: 1, padding: '16px 20px' }}>
+              <div className="lc-action-modal-summary">
+                <div className="lc-summary-item">
+                  <span className="lc-summary-label">Số hợp đồng:</span>
+                  <strong className="lc-summary-val" style={{ color: '#0f766e' }}>{selectedActionContract.ContractNumber}</strong>
+                </div>
+                <div className="lc-summary-item">
+                  <span className="lc-summary-label">Nhân viên:</span>
+                  <strong className="lc-summary-val">{selectedActionContract.EmployeeName}</strong>
+                </div>
+                <div className="lc-summary-item">
+                  <span className="lc-summary-label">Lương thỏa thuận:</span>
+                  <strong className="lc-summary-val" style={{ color: '#0f766e' }}>{formatVND(selectedActionContract.AgreedSalary)}</strong>
+                </div>
+                <div className="lc-summary-item">
+                  <span className="lc-summary-label">Loại hợp đồng:</span>
+                  <span className="lc-summary-val">{selectedActionContract.ContractType}</span>
                 </div>
               </div>
 
-              {/* Dòng thời gian các giai đoạn hợp đồng (Timeline) */}
-              <div>
-                <h3 style={{ fontSize: '15px', color: '#0f766e', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <History size={17} />
-                  <span>Tiến trình lịch sử ký kết các giai đoạn làm việc ({employeeHistoryData.totalContracts} hợp đồng)</span>
-                </h3>
-
-                {employeeHistoryData.history?.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '30px', background: '#f8fafc', borderRadius: '8px', color: '#64748b' }}>
-                    Nhân viên này chưa có bản ghi hợp đồng nào trong CSDL.
+              <div className="lc-action-grid">
+                <div
+                  className="lc-action-card"
+                  onClick={() => {
+                    const contract = selectedActionContract;
+                    handleCloseActionModal();
+                    handleOpenDetailModal(contract);
+                  }}
+                >
+                  <div className="lc-action-card-icon icon-teal">
+                    <Eye size={20} />
                   </div>
-                ) : (
-                  <div className="lc-timeline">
-                    {employeeHistoryData.history.map((stage) => {
-                      const isActive = stage.Status === 'Hiệu lực';
-                      return (
-                        <div key={stage.ContractId} className="lc-timeline-item">
-                          <div className={`lc-timeline-dot ${isActive ? 'active' : 'expired'}`} />
-                          
-                          <div className="lc-timeline-card">
-                            <div className="lc-timeline-card-header">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span className="lc-stage-badge">{stage.stageLabel}</span>
-                                <strong style={{ fontSize: '14.5px', color: '#0f172a' }}>{stage.ContractType}</strong>
-                                <code style={{ color: '#0f766e', fontSize: '12px' }}>({stage.ContractNumber})</code>
-                              </div>
-                              <div>{renderStatusBadge(stage)}</div>
-                            </div>
+                  <div className="lc-action-card-text">
+                    <span className="lc-action-card-title">Xem chi tiết hợp đồng</span>
+                    <span className="lc-action-card-desc">Xem toàn bộ thông tin chi tiết, điều khoản và mức lương</span>
+                  </div>
+                </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', fontSize: '13px', color: '#475569', marginTop: '4px' }}>
-                              <div>
-                                <span style={{ color: '#94a3b8', display: 'block', fontSize: '11.5px' }}>THỜI HẠN ÁP DỤNG:</span>
-                                <strong>{stage.StartDate}</strong> <ArrowRight size={12} style={{ display: 'inline', margin: '0 4px' }} /> <strong>{stage.EndDate || 'Vô thời hạn'}</strong>
-                              </div>
+                <div
+                  className="lc-action-card"
+                  onClick={() => {
+                    const empId = selectedActionContract.EmployeeId;
+                    handleCloseActionModal();
+                    handleOpenHistoryForEmp(empId);
+                  }}
+                >
+                  <div className="lc-action-card-icon icon-indigo">
+                    <History size={20} />
+                  </div>
+                  <div className="lc-action-card-text">
+                    <span className="lc-action-card-title">Tra cứu lịch sử hợp đồng</span>
+                    <span className="lc-action-card-desc">Xem tiến trình các hợp đồng đã ký của nhân viên này</span>
+                  </div>
+                </div>
 
-                              <div>
-                                <span style={{ color: '#94a3b8', display: 'block', fontSize: '11.5px' }}>MỨC LƯƠNG KÝ KẾT:</span>
-                                <strong style={{ color: '#0f766e' }}>{formatVND(stage.AgreedSalary)}</strong>
-                              </div>
+                <div
+                  className="lc-action-card warning"
+                  onClick={() => {
+                    const contract = selectedActionContract;
+                    handleCloseActionModal();
+                    handleOpenRenewModal(contract);
+                  }}
+                >
+                  <div className="lc-action-card-icon icon-amber">
+                    <Award size={20} />
+                  </div>
+                  <div className="lc-action-card-text">
+                    <span className="lc-action-card-title">Gia hạn / Ký tiếp hợp đồng</span>
+                    <span className="lc-action-card-desc">Tạo phụ lục hoặc ký hợp đồng mới kế thừa dữ liệu</span>
+                  </div>
+                </div>
 
-                              <div>
-                                <span style={{ color: '#94a3b8', display: 'block', fontSize: '11.5px' }}>NGÀY KÝ:</span>
-                                <span>{stage.SignDate || '-'}</span>
-                              </div>
-                            </div>
+                {selectedActionContract.TerminationStatus === 'Chờ HR duyệt' ? (
+                  <>
+                    <div
+                      className="lc-action-card"
+                      onClick={() => {
+                        const contract = selectedActionContract;
+                        handleCloseActionModal();
+                        handleOpenResignationModal(contract, 'approve');
+                      }}
+                    >
+                      <div className="lc-action-card-icon icon-green">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div className="lc-action-card-text">
+                        <span className="lc-action-card-title" style={{ color: '#15803d' }}>Duyệt đơn thôi việc</span>
+                        <span className="lc-action-card-desc">Chấp thuận nguyện vọng xin thôi việc của nhân viên</span>
+                      </div>
+                    </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '6px' }}>
-                              <button
-                                type="button"
-                                className="btn"
-                                style={{ padding: '4px 10px', fontSize: '12px' }}
-                                onClick={() => handleOpenEditModal(stage)}
-                              >
-                                <Edit2 size={13} />
-                                <span>Sửa</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn pri"
-                                style={{ padding: '4px 10px', fontSize: '12px' }}
-                                onClick={() => handleOpenRenewModal(stage)}
-                              >
-                                <Award size={13} />
-                                <span>Gia hạn tiếp</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <div
+                      className="lc-action-card danger"
+                      onClick={() => {
+                        const contract = selectedActionContract;
+                        handleCloseActionModal();
+                        handleOpenResignationModal(contract, 'reject');
+                      }}
+                    >
+                      <div className="lc-action-card-icon icon-red">
+                        <XCircle size={20} />
+                      </div>
+                      <div className="lc-action-card-text">
+                        <span className="lc-action-card-title" style={{ color: '#dc2626' }}>Từ chối đơn thôi việc</span>
+                        <span className="lc-action-card-desc">Không phê duyệt đơn thôi việc và tiếp tục công tác</span>
+                      </div>
+                    </div>
+                  </>
+                ) : selectedActionContract.Status !== 'Đã chấm dứt' && (
+                  <div
+                    className="lc-action-card danger"
+                    onClick={() => {
+                      const contract = selectedActionContract;
+                      handleCloseActionModal();
+                      handleOpenTerminateModal(contract);
+                    }}
+                  >
+                    <div className="lc-action-card-icon icon-red">
+                      <XCircle size={20} />
+                    </div>
+                    <div className="lc-action-card-text">
+                      <span className="lc-action-card-title" style={{ color: '#dc2626' }}>Chấm dứt hợp đồng</span>
+                      <span className="lc-action-card-desc">Thỏa thuận 2 bên hoặc công ty cho thôi việc / sa thải</span>
+                    </div>
                   </div>
                 )}
+
+                <div
+                  className="lc-action-card"
+                  onClick={() => {
+                    const contract = selectedActionContract;
+                    handleCloseActionModal();
+                    handleOpenEditModal(contract);
+                  }}
+                >
+                  <div className="lc-action-card-icon icon-blue">
+                    <Edit2 size={20} />
+                  </div>
+                  <div className="lc-action-card-text">
+                    <span className="lc-action-card-title">Chỉnh sửa hợp đồng</span>
+                    <span className="lc-action-card-desc">Cập nhật số hợp đồng, loại hợp đồng, lương, ngày ký</span>
+                  </div>
+                </div>
+
+                <div
+                  className="lc-action-card danger"
+                  onClick={() => {
+                    const contract = selectedActionContract;
+                    handleCloseActionModal();
+                    handleDeleteContract(contract);
+                  }}
+                >
+                  <div className="lc-action-card-icon icon-red">
+                    <Trash2 size={20} />
+                  </div>
+                  <div className="lc-action-card-text">
+                    <span className="lc-action-card-title" style={{ color: '#b91c1c' }}>Xóa hợp đồng</span>
+                    <span className="lc-action-card-desc">Xóa vĩnh viễn dữ liệu hợp đồng này khỏi hệ thống</span>
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
-              Vui lòng chọn nhân viên ở trên để tra cứu lịch sử hợp đồng.
+
+            <div className="lc-modal-footer">
+              <button
+                type="button"
+                className="btn"
+                onClick={handleCloseActionModal}
+              >
+                Đóng
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* ================= MODAL 1: THÊM MỚI / CHỈNH SỬA HỢP ĐỒNG (ĐÃ XÓA FILE ĐÍNH KÈM) ================= */}
       {isModalOpen && (
         <div className="lc-modal-overlay">
           <div className="lc-modal-content">
@@ -1223,7 +1189,7 @@ export default function LaborContractManagement({
 
             <form onSubmit={handleSaveContract}>
               <div className="lc-modal-body">
-                {/* Chọn nhân viên */}
+                {}
                 <div className="lc-form-group">
                   <label>Nhân viên áp dụng <span className="req">*</span></label>
                   <select
@@ -1242,7 +1208,7 @@ export default function LaborContractManagement({
                   </select>
                 </div>
 
-                {/* Số hợp đồng & Loại hợp đồng */}
+                {}
                 <div className="lc-form-row">
                   <div className="lc-form-group">
                     <label>Số hợp đồng</label>
@@ -1273,7 +1239,7 @@ export default function LaborContractManagement({
                   </div>
                 </div>
 
-                {/* Ngày ký & Ngày bắt đầu */}
+                {}
                 <div className="lc-form-row">
                   <div className="lc-form-group">
                     <label>Ngày ký hợp đồng</label>
@@ -1297,7 +1263,7 @@ export default function LaborContractManagement({
                   </div>
                 </div>
 
-                {/* Ngày kết thúc & Mức lương */}
+                {}
                 <div className="lc-form-row">
                   <div className="lc-form-group">
                     <label>Ngày kết thúc (Để trống nếu vô thời hạn)</label>
@@ -1324,7 +1290,7 @@ export default function LaborContractManagement({
                   </div>
                 </div>
 
-                {/* Trạng thái (ĐÃ XÓA TRƯỜNG FILE SCAN) */}
+                {}
                 <div className="lc-form-group">
                   <label>Trạng thái hợp đồng</label>
                   <select
@@ -1333,6 +1299,7 @@ export default function LaborContractManagement({
                     onChange={(e) => setCurrentContract({ ...currentContract, Status: e.target.value })}
                   >
                     <option value="Hiệu lực">Hiệu lực</option>
+                    <option value="Chờ nhân viên ký">Chờ nhân viên ký</option>
                     <option value="Sắp hết hạn">Sắp hết hạn</option>
                     <option value="Hết hạn">Hết hạn</option>
                     <option value="Đã chấm dứt">Đã chấm dứt</option>
@@ -1357,7 +1324,7 @@ export default function LaborContractManagement({
         </div>
       )}
 
-      {/* ================= MODAL 2: GIA HẠN / KÝ TIẾP HỢP ĐỒNG ================= */}
+      {}
       {isRenewModalOpen && renewTarget && (
         <div className="lc-modal-overlay">
           <div className="lc-modal-content">
@@ -1456,6 +1423,435 @@ export default function LaborContractManagement({
                 </button>
                 <button type="submit" className="btn pri">
                   Xác nhận ký kết & Kích hoạt giai đoạn mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {isDetailModalOpen && selectedContractDetail && (
+        <div className="lc-modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
+          <div className="lc-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '820px', maxHeight: '92vh' }}>
+            <div className="lc-modal-header" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <h2>
+                <FileText size={18} color="#0f766e" />
+                <span>Chi tiết Hợp đồng Lao động: {selectedContractDetail.ContractNumber}</span>
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ padding: '5px 10px', fontSize: '12px' }}
+                  onClick={() => window.print()}
+                  title="In hợp đồng lao động"
+                >
+                  <Printer size={14} />
+                  <span>In hợp đồng</span>
+                </button>
+                <button type="button" className="lc-modal-close-btn" onClick={() => setIsDetailModalOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="lc-modal-body" style={{ padding: '24px 28px', background: '#fff', overflowY: 'auto', flex: 1 }}>
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #0f766e', paddingBottom: '16px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#0f172a' }}>
+                  CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
+                  Độc lập - Tự do - Hạnh phúc
+                </div>
+                <div style={{ width: '120px', height: '1px', background: '#94a3b8', margin: '6px auto 14px' }}></div>
+                <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#042f2e', margin: '4px 0', textTransform: 'uppercase' }}>
+                  HỢP ĐỒNG LAO ĐỘNG
+                </h1>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+                  Số hợp đồng: <strong style={{ color: '#0f766e' }}>{selectedContractDetail.ContractNumber}</strong> · Ngày lập: {selectedContractDetail.SignDate || selectedContractDetail.StartDate || '---'}
+                </div>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                  {renderStatusBadge(selectedContractDetail)}
+                  <span className="badge b-p" style={{ fontSize: '12px', padding: '3px 10px' }}>
+                    {selectedContractDetail.ContractType}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#0f766e', fontSize: '13px', marginBottom: '10px', textTransform: 'uppercase' }}>
+                    <Building size={15} />
+                    <span>Bên A: Người sử dụng lao động</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
+                    <div><strong>Đơn vị:</strong> ENTERPRISE HRM VIỆT NAM</div>
+                    <div><strong>Đại diện:</strong> Ban Tổng Giám Đốc & Khối Quản trị Nhân sự</div>
+                    <div><strong>Địa chỉ:</strong> Trụ sở Công nghệ cao, TP. Hà Nội / TP. Hồ Chí Minh</div>
+                    <div><strong>Điện thoại:</strong> (+84) 024 3888 9999</div>
+                    <div><strong>Lĩnh vực:</strong> Công nghệ thông tin & Quản trị Doanh nghiệp</div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#0f766e', fontSize: '13px', marginBottom: '10px', textTransform: 'uppercase' }}>
+                    <User size={15} />
+                    <span>Bên B: Người lao động</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
+                    <div><strong>Họ và tên:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 700, color: '#0f172a' }}>{selectedContractDetail.EmployeeName}</span></div>
+                    <div><strong>Mã nhân viên:</strong> <code>{selectedContractDetail.EmployeeCode}</code> · Giới tính: {selectedContractDetail.EmployeeGender || 'Nam'}</div>
+                    <div><strong>CCCD / CMND:</strong> {selectedContractDetail.EmployeeIdCard || 'Đã đối soát'}</div>
+                    <div><strong>Số điện thoại:</strong> {selectedContractDetail.EmployeePhone || 'Theo hồ sơ'}</div>
+                    <div><strong>Email liên hệ:</strong> {selectedContractDetail.EmployeeEmail || 'Theo hồ sơ'}</div>
+                    <div><strong>Địa chỉ:</strong> {selectedContractDetail.EmployeeAddress || 'Theo hồ sơ nhân sự'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                <div style={{ fontWeight: 700, color: '#166534', fontSize: '13px', marginBottom: '10px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Briefcase size={15} />
+                  <span>Điều khoản công tác & Chế độ đãi ngộ</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '12.5px', color: '#1e293b' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Phòng ban trực thuộc:</span>
+                    <strong>{selectedContractDetail.DepartmentName || 'Khối Chuyên môn'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Chức danh / Vị trí:</span>
+                    <strong>{selectedContractDetail.PositionName || 'Nhân sự chính thức'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Ngày bắt đầu hiệu lực:</span>
+                    <strong>{selectedContractDetail.StartDate || '---'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Ngày kết thúc hiệu lực:</span>
+                    <strong style={{ color: selectedContractDetail.EndDate ? '#dc2626' : '#0369a1' }}>
+                      {selectedContractDetail.EndDate || 'Hợp đồng không thời hạn'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Mức lương thỏa thuận (Gross):</span>
+                    <strong style={{ fontSize: '15px', color: '#0f766e' }}>
+                      {formatVND(selectedContractDetail.AgreedSalary)} / tháng
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Tài khoản nhận lương:</span>
+                    <span>{selectedContractDetail.EmployeeBankAccount ? `${selectedContractDetail.EmployeeBankAccount} (${selectedContractDetail.EmployeeBankName || ''})` : 'Tài khoản công ty cấp'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px dashed #cbd5e1', paddingTop: '16px', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>ĐẠI DIỆN BÊN A</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>(Đã ký & đóng dấu điện tử)</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#0f766e', background: '#ccfbf1', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
+                    <CheckCircle2 size={14} />
+                    <span>Doanh nghiệp ENTERPRISE VN</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>NGƯỜI LAO ĐỘNG (BÊN B)</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>(Ký và ghi rõ họ tên)</div>
+                  {selectedContractDetail.Status === 'Chờ nhân viên ký' ? (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#b45309', background: '#fef3c7', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
+                      <Clock size={14} />
+                      <span>Chờ nhân viên đăng nhập ký điện tử</span>
+                    </div>
+                  ) : selectedContractDetail.Status === 'Đã chấm dứt' ? (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#64748b', background: '#f1f5f9', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
+                      <XCircle size={14} />
+                      <span>Hợp đồng đã chấm dứt hiệu lực</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#16a34a', background: '#dcfce7', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
+                      <FileCheck size={14} />
+                      <span>Đã ký điện tử: {selectedContractDetail.EmployeeName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {(selectedContractDetail.TerminationDecisionFileUrl || selectedContractDetail.TerminationMeetingFileUrl) && (
+                <div style={{ marginTop: '20px', padding: '14px 18px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FileText size={15} color="#dc2626" />
+                    <span>Hồ sơ & Biên bản pháp lý chấm dứt hợp đồng đã lưu trữ:</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {selectedContractDetail.TerminationDecisionFileUrl && (
+                      <a
+                        href={`http://localhost:5000${selectedContractDetail.TerminationDecisionFileUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn"
+                        style={{ fontSize: '12px', padding: '6px 14px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5', background: '#fff' }}
+                      >
+                        <FileText size={14} />
+                        <span>Xem File Quyết định thôi việc</span>
+                      </a>
+                    )}
+                    {selectedContractDetail.TerminationMeetingFileUrl && (
+                      <a
+                        href={`http://localhost:5000${selectedContractDetail.TerminationMeetingFileUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn"
+                        style={{ fontSize: '12px', padding: '6px 14px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#0f766e', borderColor: '#99f6e4', background: '#fff' }}
+                      >
+                        <FileCheck size={14} />
+                        <span>Xem File Biên bản họp kỷ luật</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="lc-modal-footer">
+              {selectedContractDetail.Status !== 'Đã chấm dứt' && (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+                  onClick={() => handleOpenTerminateModal(selectedContractDetail)}
+                >
+                  <XCircle size={14} />
+                  <span>Chấm dứt hợp đồng</span>
+                </button>
+              )}
+              {selectedContractDetail.EndDate && selectedContractDetail.Status !== 'Đã chấm dứt' && (
+                <button
+                  type="button"
+                  className="btn pri"
+                  onClick={() => {
+                    handleOpenRenewModal(selectedContractDetail);
+                  }}
+                >
+                  <Award size={14} />
+                  <span>Gia hạn hợp đồng</span>
+                </button>
+              )}
+              <button type="button" className="btn" onClick={() => setIsDetailModalOpen(false)}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTerminateModalOpen && terminateTarget && (
+        <div className="lc-modal-overlay" onClick={() => !terminateSubmitting && setIsTerminateModalOpen(false)}>
+          <div className="lc-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="lc-modal-header" style={{ borderBottomColor: '#fee2e2' }}>
+              <h2 style={{ color: '#dc2626' }}>
+                <XCircle size={18} color="#dc2626" />
+                <span>Chấm dứt Hợp đồng: {terminateTarget.ContractNumber}</span>
+              </h2>
+              {!terminateSubmitting && (
+                <button type="button" className="lc-modal-close-btn" onClick={() => setIsTerminateModalOpen(false)}>
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleConfirmTerminate} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <div className="lc-modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="lc-form-group">
+                  <label>Hình thức chấm dứt hợp đồng: <span className="req">*</span></label>
+                  <select
+                    className="lc-form-select"
+                    required
+                    value={terminateForm.terminationType}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTerminateForm({
+                        ...terminateForm,
+                        terminationType: val,
+                        reason: val === 'Doanh nghiệp cho thôi việc' ? 'Doanh nghiệp đơn phương chấm dứt hợp đồng lao động' : 'Hai bên thỏa thuận chấm dứt hợp đồng lao động'
+                      });
+                    }}
+                  >
+                    <option value="Thỏa thuận hai bên">Thỏa thuận hai bên</option>
+                    <option value="Doanh nghiệp cho thôi việc">Doanh nghiệp cho thôi việc / Sa thải</option>
+                  </select>
+                </div>
+
+                <div className="lc-form-group">
+                  <label>Ngày chấm dứt hiệu lực (Ngày làm việc cuối cùng): <span className="req">*</span></label>
+                  <input
+                    type="date"
+                    className="lc-form-input"
+                    required
+                    value={terminateForm.terminateDate}
+                    onChange={(e) => setTerminateForm({ ...terminateForm, terminateDate: e.target.value })}
+                  />
+                </div>
+
+                {terminateForm.terminationType === 'Doanh nghiệp cho thôi việc' && (
+                  <>
+                    <div className="lc-form-row">
+                      <div className="lc-form-group">
+                        <label>Số quyết định sa thải / thôi việc: <span className="req">*</span></label>
+                        <input
+                          type="text"
+                          className="lc-form-input"
+                          required
+                          placeholder="VD: QĐ-2026/08-KL"
+                          value={terminateForm.decisionNumber}
+                          onChange={(e) => setTerminateForm({ ...terminateForm, decisionNumber: e.target.value })}
+                        />
+                      </div>
+                      <div className="lc-form-group">
+                        <label>Số biên bản họp kỷ luật / đánh giá: <span className="req">*</span></label>
+                        <input
+                          type="text"
+                          className="lc-form-input"
+                          required
+                          placeholder="VD: BB-2026/08-HĐKL"
+                          value={terminateForm.evaluationMeetingNumber}
+                          onChange={(e) => setTerminateForm({ ...terminateForm, evaluationMeetingNumber: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="lc-form-row">
+                      <div className="lc-form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FileText size={14} color="#dc2626" />
+                          <span>File Quyết định sa thải (PDF):</span>
+                        </label>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="lc-form-input"
+                          onChange={(e) => setTerminateFiles({ ...terminateFiles, decisionFile: e.target.files[0] })}
+                        />
+                      </div>
+                      <div className="lc-form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FileCheck size={14} color="#dc2626" />
+                          <span>File Biên bản họp kỷ luật (PDF):</span>
+                        </label>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="lc-form-input"
+                          onChange={(e) => setTerminateFiles({ ...terminateFiles, meetingFile: e.target.files[0] })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="lc-form-group">
+                  <label>Căn cứ / Lý do cụ thể: <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className="lc-form-input"
+                    required
+                    value={terminateForm.reason}
+                    onChange={(e) => setTerminateForm({ ...terminateForm, reason: e.target.value })}
+                  />
+                </div>
+
+                <div className="lc-form-group">
+                  <label>Ghi chú bàn giao & Quyết toán:</label>
+                  <textarea
+                    className="lc-form-textarea"
+                    rows={3}
+                    placeholder="Ghi chú về bàn giao trang thiết bị, tài liệu, chốt công nợ..."
+                    value={terminateForm.note}
+                    onChange={(e) => setTerminateForm({ ...terminateForm, note: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="lc-modal-footer">
+                <button type="button" className="btn" disabled={terminateSubmitting} onClick={() => setIsTerminateModalOpen(false)}>
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="btn"
+                  disabled={terminateSubmitting}
+                  style={{
+                    background: terminateForm.terminationType === 'Doanh nghiệp cho thôi việc' ? '#dc2626' : '#0f766e',
+                    color: '#fff',
+                    borderColor: terminateForm.terminationType === 'Doanh nghiệp cho thôi việc' ? '#b91c1c' : '#0d5d56'
+                  }}
+                >
+                  {terminateSubmitting
+                    ? 'Đang xử lý...'
+                    : terminateForm.terminationType === 'Doanh nghiệp cho thôi việc'
+                    ? 'Ban hành quyết định sa thải & Thu hồi tài khoản'
+                    : 'Gửi đề xuất thỏa thuận sang nhân viên'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isResignationModalOpen && resignationTarget && (
+        <div className="lc-modal-overlay" onClick={() => !resignationSubmitting && setIsResignationModalOpen(false)}>
+          <div className="lc-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="lc-modal-header" style={{ borderBottomColor: resignationAction === 'approve' ? '#bbf7d0' : '#fecaca' }}>
+              <h2 style={{ color: resignationAction === 'approve' ? '#166534' : '#dc2626' }}>
+                <FileCheck size={18} />
+                <span>{resignationAction === 'approve' ? 'Duyệt đơn xin thôi việc' : 'Từ chối đơn xin thôi việc'}</span>
+              </h2>
+              {!resignationSubmitting && (
+                <button type="button" className="lc-modal-close-btn" onClick={() => setIsResignationModalOpen(false)}>
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleConfirmResignation} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <div className="lc-modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
+                  <div><strong>Nhân sự nộp đơn:</strong> {resignationTarget.EmployeeName} ({resignationTarget.EmployeeCode})</div>
+                  <div><strong>Hợp đồng:</strong> {resignationTarget.ContractNumber} ({resignationTarget.ContractType})</div>
+                  <div><strong>Ngày nghỉ mong muốn:</strong> <strong style={{ color: '#0f766e' }}>{resignationTarget.TerminationDate}</strong></div>
+                  <div><strong>Lý do của nhân viên:</strong> {resignationTarget.TerminationReason}</div>
+                  {resignationTarget.TerminationNote && (
+                    <div><strong>Lời nhắn bàn giao:</strong> {resignationTarget.TerminationNote}</div>
+                  )}
+                </div>
+
+                <div className="lc-form-group">
+                  <label>Ghi chú phản hồi của phòng Nhân sự:</label>
+                  <textarea
+                    className="lc-form-textarea"
+                    rows={3}
+                    placeholder="Ý kiến phê duyệt, kế hoạch bàn giao tài sản..."
+                    value={resignationNote}
+                    onChange={(e) => setResignationNote(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="lc-modal-footer">
+                <button type="button" className="btn" disabled={resignationSubmitting} onClick={() => setIsResignationModalOpen(false)}>
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="btn"
+                  disabled={resignationSubmitting}
+                  style={{
+                    background: resignationAction === 'approve' ? '#16a34a' : '#dc2626',
+                    color: '#fff',
+                    borderColor: resignationAction === 'approve' ? '#15803d' : '#b91c1c'
+                  }}
+                >
+                  {resignationSubmitting ? 'Đang lưu...' : resignationAction === 'approve' ? 'Xác nhận chấp thuận đơn' : 'Xác nhận từ chối'}
                 </button>
               </div>
             </form>

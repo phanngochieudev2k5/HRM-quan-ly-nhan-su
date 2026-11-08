@@ -1,0 +1,20 @@
+# HRM Project UI & Code Constraints
+
+1. Zero Technical Clutter on UI
+- Never display database table names (tblCandidate, tblEmployee, tblContract, tblUser, etc.) or column names in the UI.
+- Never display developer sprint codes, user story tags (US-04, US-06, etc.), or task numbers.
+- Never display raw database errors (such as ODBC SQL Server Driver errors, UNIQUE KEY violations). All errors must be intercepted and displayed as user-friendly Vietnamese messages.
+- Never display verbose legal lecture boxes or developer workflow tutorials inside modal forms. Keep interfaces clean, direct, and professional.
+- Do not add subtitle notes under file upload inputs explaining backend tasks (e.g. email attachments). Use simple, standard input labels.
+
+2. Modal UX and Form Standards
+- Modal bodies must support mouse wheel scrolling: use max-height: 90vh, modal-body with flex: 1, min-height: 0, overflow-y: auto. Pin headers and action footers.
+- Form controls must use vertical layout: label on top, input/select/textarea on the bottom with 100% width. Never cram textareas into horizontal rows next to labels.
+
+3. Minimalist and Clean Screen Design
+- Avoid redundant KPI cards or duplicate view tabs if standard tables with clean filters serve the purpose better.
+- Remove duplicate action buttons (e.g. duplicate create buttons) across headers.
+
+4. Strict Code Comment Rule
+- Do not write comments (neither // nor /* */) in the code.
+

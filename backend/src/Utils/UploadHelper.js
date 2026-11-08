@@ -35,3 +35,33 @@ export const cvUpload = multer({
   }
 });
 
+const contractUploadDir = path.resolve(__dirname, '../../uploads/contracts');
+if (!fs.existsSync(contractUploadDir)) {
+  fs.mkdirSync(contractUploadDir, { recursive: true });
+}
+
+const contractStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, contractUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const cleanOriginalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const uniqueSuffix = `${Date.now()}_${Math.round(Math.random() * 1e4)}`;
+    cb(null, `doc_${uniqueSuffix}_${cleanOriginalName}`);
+  }
+});
+
+export const terminationUpload = multer({
+  storage: contractStorage,
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowed = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg'];
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Chỉ chấp nhận file định dạng PDF, Word hoặc Ảnh scan (.pdf, .doc, .docx, .png, .jpg)!'));
+    }
+    cb(null, true);
+  }
+});
+
