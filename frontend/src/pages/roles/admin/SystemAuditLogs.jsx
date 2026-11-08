@@ -38,8 +38,8 @@ export default function SystemAuditLogs() {
     <div className="system-audit-logs-container">
       <div className="ph">
         <div>
-          <h1>Nhật ký kiểm toán an ninh & Thao tác (Audit Logs)</h1>
-          <p>Ghi vết toàn diện mọi sự kiện đăng nhập, sửa đổi dữ liệu nhân sự, bảng lương và chấm công từ CSDL SQL Server (tblAuditLog)</p>
+          <h1>Nhật ký kiểm toán an ninh & Thao tác</h1>
+          <p>Ghi vết toàn diện mọi sự kiện đăng nhập, sửa đổi dữ liệu nhân sự, bảng lương và chấm công hệ thống</p>
         </div>
         <div className="ph-tools">
           <button className="btn" onClick={fetchLogs} disabled={loading}>

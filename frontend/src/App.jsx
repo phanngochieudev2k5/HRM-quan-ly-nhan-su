@@ -4,6 +4,7 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import AuthPage from './pages/auth/AuthPage';
 import PendingApprovalView from './pages/auth/PendingApprovalView';
+import CareersPage from './pages/public/CareersPage';
 
 import AdminDashboard from './pages/roles/admin/AdminDashboard';
 import UserAccountsView from './pages/roles/admin/UserAccountsView';
@@ -18,6 +19,8 @@ import TeamPerformanceKpi from './pages/roles/manager/TeamPerformanceKpi';
 
 import EmployeeDashboard from './pages/roles/employee/EmployeeDashboard';
 import MyProfileView from './pages/roles/employee/MyProfileView';
+import MyContractsView from './pages/roles/employee/MyContractsView';
+import MyAssetsView from './pages/roles/employee/MyAssetsView';
 import MyFaceCheckinView from './pages/roles/employee/MyFaceCheckinView';
 import MyAttendanceView from './pages/roles/employee/MyAttendanceView';
 import MyLeaveView from './pages/roles/employee/MyLeaveView';
@@ -212,6 +215,8 @@ export default function App() {
         }
       />
 
+      <Route path="/careers" element={<CareersPage />} />
+
       <Route
         element={
           !authToken || !currentUser ? (
@@ -263,6 +268,8 @@ export default function App() {
         <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />
         <Route path="/employee/dashboard" element={<EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
         <Route path="/employee/profile" element={<MyProfileView user={currentUser} />} />
+        <Route path="/employee/contracts" element={<MyContractsView />} />
+        <Route path="/employee/assets" element={<MyAssetsView />} />
         <Route path="/employee/checkin" element={<MyFaceCheckinView />} />
         <Route path="/employee/attendance" element={<MyAttendanceView />} />
         <Route path="/employee/leave" element={<MyLeaveView />} />

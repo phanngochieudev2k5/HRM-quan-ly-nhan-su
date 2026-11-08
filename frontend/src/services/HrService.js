@@ -1,10 +1,6 @@
 import ApiClient from './ApiClient';
 
 export const HrService = {
-  /**
-   * Lấy danh sách nhân sự (hỗ trợ phân trang, tìm kiếm, lọc)
-   * @param {Object} params { page, limit, search, departmentId, workStatus }
-   */
   async getEmployees(params = {}) {
     try {
       const query = new URLSearchParams();
@@ -19,7 +15,7 @@ export const HrService = {
       const res = await ApiClient.get(endpoint);
       return res.data;
     } catch (error) {
-      console.warn('[HrService.getEmployees] Error, trying fallback endpoint:', error.message);
+      console.warn(error.message);
       try {
         const fallbackRes = await ApiClient.get('/hr/employees');
         return fallbackRes.data;
@@ -29,10 +25,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy chi tiết hồ sơ 360° nhân viên bao gồm hợp đồng và user
-   * @param {string|number} id EmployeeId hoặc EmployeeCode
-   */
   async getEmployeeById(id) {
     try {
       const res = await ApiClient.get(`/employees/${id}`);
@@ -43,9 +35,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Thêm mới hồ sơ nhân sự
-   */
   async createEmployee(employeeData) {
     try {
       const res = await ApiClient.post('/employees', employeeData);
@@ -56,9 +45,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Cập nhật thông tin nhân sự
-   */
   async updateEmployee(id, employeeData) {
     try {
       const res = await ApiClient.put(`/employees/${id}`, employeeData);
@@ -69,9 +55,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Xóa nhân sự
-   */
   async deleteEmployee(id) {
     try {
       const res = await ApiClient.delete(`/employees/${id}`);
@@ -82,9 +65,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Lấy danh sách hợp đồng
-   */
   async getContracts(params = {}) {
     const query = new URLSearchParams();
     if (params.employeeId) query.append('employeeId', params.employeeId);
@@ -100,7 +80,6 @@ export const HrService = {
       const res = await ApiClient.get(endpoint);
       return res.data || [];
     } catch (err) {
-      console.warn('[HrService.getContracts] Fallback to /hr/contracts:', err.message);
       try {
         const fallbackEndpoint = qs ? `/hr/contracts?${qs}` : '/hr/contracts';
         const res2 = await ApiClient.get(fallbackEndpoint);
@@ -169,11 +148,6 @@ export const HrService = {
     }
   },
 
-  // ==================== US-04: RECRUITMENT JOBS ====================
-
-  /**
-   * Lấy danh sách vị trí / đề xuất tuyển dụng (tblRecruitmentJob)
-   */
   async getRecruitmentJobs(params = {}) {
     const query = new URLSearchParams();
     if (params.departmentId && params.departmentId !== 'all') query.append('departmentId', params.departmentId);
@@ -197,9 +171,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Tạo đề xuất tuyển dụng mới
-   */
   async createRecruitmentJob(jobData) {
     try {
       const res = await ApiClient.post('/recruitment-jobs', jobData);
@@ -210,9 +181,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Duyệt (Approved) hoặc Từ chối (Rejected) đề xuất tuyển dụng
-   */
   async updateRecruitmentJobStatus(id, status) {
     try {
       const res = await ApiClient.put(`/recruitment-jobs/${id}/status`, { status });
@@ -223,9 +191,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Cập nhật thông tin vị trí tuyển dụng
-   */
   async updateRecruitmentJob(id, jobData) {
     try {
       const res = await ApiClient.put(`/recruitment-jobs/${id}`, jobData);
@@ -236,9 +201,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Xóa vị trí tuyển dụng
-   */
   async deleteRecruitmentJob(id) {
     try {
       const res = await ApiClient.delete(`/recruitment-jobs/${id}`);
@@ -249,11 +211,6 @@ export const HrService = {
     }
   },
 
-  // ==================== US-05: CANDIDATES PIPELINE ====================
-
-  /**
-   * Lấy danh sách ứng viên (tblCandidate) theo Job hoặc Stage
-   */
   async getCandidates(params = {}) {
     const query = new URLSearchParams();
     if (params.jobId && params.jobId !== 'all') query.append('jobId', params.jobId);
@@ -277,9 +234,6 @@ export const HrService = {
     }
   },
 
-  /**
-   * Thêm mới ứng viên ứng tuyển
-   */
   async createCandidate(candidateData) {
     try {
       const res = await ApiClient.post('/candidates', candidateData);
@@ -290,22 +244,27 @@ export const HrService = {
     }
   },
 
-  /**
-   * Cập nhật giai đoạn tuyển dụng (Kanban Stage) cho ứng viên
-   */
-  async updateCandidateStage(id, stage) {
+  async updateCandidateStage(id, stage, additionalData = {}, sendEmail = false) {
+    const payload = { stage, additionalData, sendEmail };
     try {
-      const res = await ApiClient.put(`/candidates/${id}/stage`, { stage });
+      const res = await ApiClient.put(`/candidates/${id}/stage`, payload);
       return res.data;
     } catch {
-      const res2 = await ApiClient.put(`/hr/candidates/${id}/stage`, { stage });
+      const res2 = await ApiClient.put(`/hr/candidates/${id}/stage`, payload);
       return res2.data;
     }
   },
 
-  /**
-   * Cập nhật toàn bộ thông tin ứng viên
-   */
+  async sendCandidateEmail(id, emailData = {}) {
+    try {
+      const res = await ApiClient.post(`/candidates/${id}/send-email`, emailData);
+      return res.data;
+    } catch {
+      const res2 = await ApiClient.post(`/hr/candidates/${id}/send-email`, emailData);
+      return res2.data;
+    }
+  },
+
   async updateCandidate(id, candidateData) {
     try {
       const res = await ApiClient.put(`/candidates/${id}`, candidateData);
@@ -316,9 +275,20 @@ export const HrService = {
     }
   },
 
-  /**
-   * Xóa ứng viên
-   */
+  async uploadCv(file) {
+    const formData = new FormData();
+    formData.append('cvFile', file);
+    const res = await ApiClient.post('/candidates/upload-cv', formData);
+    return res.data || res;
+  },
+
+  async uploadPublicCv(file) {
+    const formData = new FormData();
+    formData.append('cvFile', file);
+    const res = await ApiClient.post('/careers/upload-cv', formData);
+    return res.data || res;
+  },
+
   async deleteCandidate(id) {
     try {
       const res = await ApiClient.delete(`/candidates/${id}`);
@@ -327,6 +297,108 @@ export const HrService = {
       const res2 = await ApiClient.delete(`/hr/candidates/${id}`);
       return res2.data;
     }
+  },
+
+  async getPublicCareersJobs(params = {}) {
+    const query = new URLSearchParams();
+    if (params.departmentId && params.departmentId !== 'all') query.append('departmentId', params.departmentId);
+    if (params.search) query.append('search', params.search);
+    const qs = query.toString();
+    const endpoint = qs ? `/careers/jobs?${qs}` : '/careers/jobs';
+    const res = await ApiClient.get(endpoint);
+    return res.data || [];
+  },
+
+  async getPublicCareerJobById(id) {
+    const res = await ApiClient.get(`/careers/jobs/${id}`);
+    return res.data;
+  },
+
+  async applyPublicCareer(data) {
+    const res = await ApiClient.post('/careers/apply', data);
+    return res.data;
+  },
+
+  async getOnboardings(params = {}) {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'all') query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
+    const qs = query.toString();
+    const endpoint = qs ? `/onboarding?${qs}` : '/onboarding';
+    const res = await ApiClient.get(endpoint);
+    return res.data || [];
+  },
+
+  async getOnboardingById(id) {
+    const res = await ApiClient.get(`/onboarding/${id}`);
+    return res.data;
+  },
+
+  async createOnboarding(data) {
+    const res = await ApiClient.post('/onboarding', data);
+    return res.data;
+  },
+
+  async updateOnboardingChecklist(id, fields) {
+    const res = await ApiClient.put(`/onboarding/${id}/checklist`, fields);
+    return res.data;
+  },
+
+  async convertOnboardingToEmployee(id, data) {
+    const res = await ApiClient.post(`/onboarding/${id}/convert-employee`, data);
+    return res.data;
+  },
+
+  async deleteOnboarding(id) {
+    const res = await ApiClient.delete(`/onboarding/${id}`);
+    return res.data;
+  },
+
+  async createOnboardingAccount(id, data) {
+    const res = await ApiClient.post(`/onboarding/${id}/create-account`, data);
+    return res.data || res;
+  },
+
+  async sendOnboardingAccountEmail(id, data) {
+    const res = await ApiClient.post(`/onboarding/${id}/send-account-email`, data);
+    return res.data || res;
+  },
+
+  async getAssets(params = {}) {
+    const query = new URLSearchParams();
+    if (params.category && params.category !== 'all') query.append('category', params.category);
+    if (params.status && params.status !== 'all') query.append('status', params.status);
+    if (params.employeeId) query.append('employeeId', params.employeeId);
+    if (params.search) query.append('search', params.search);
+    const qs = query.toString();
+    const endpoint = qs ? `/assets?${qs}` : '/assets';
+    const res = await ApiClient.get(endpoint);
+    return res.data || [];
+  },
+
+  async getMyAssets() {
+    const res = await ApiClient.get('/assets/my-assets');
+    return res.data || [];
+  },
+
+  async createAsset(data) {
+    const res = await ApiClient.post('/assets', data);
+    return res.data || res;
+  },
+
+  async deleteAsset(id) {
+    const res = await ApiClient.delete(`/assets/${id}`);
+    return res.data;
+  },
+
+  async getMyContracts() {
+    const res = await ApiClient.get('/contracts/my-contracts');
+    return res.data || [];
+  },
+
+  async signContract(id) {
+    const res = await ApiClient.post(`/contracts/${id}/sign`, {});
+    return res.data || res;
   }
 };
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Database, Plus, RefreshCw, Sparkles, Inbox } from 'lucide-react';
+import { Database, Plus, RefreshCw, Inbox } from 'lucide-react';
 
 export default function EmptyState({
-  title = 'Chưa có dữ liệu từ máy chủ',
-  description = 'Giao diện mẫu đã sẵn sàng tiếp nhận dữ liệu động từ backend API.',
+  title = 'Chưa có dữ liệu',
+  description = 'Chưa có thông tin hiển thị tại thời điểm này.',
   icon: Icon = Inbox,
   actionLabel,
   onAction,
@@ -71,22 +71,6 @@ export default function EmptyState({
             <span>{actionLabel}</span>
           </button>
         )}
-      </div>
-
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '11.5px',
-        color: '#0f766e',
-        background: '#f0fdfa',
-        padding: '4px 10px',
-        borderRadius: '6px',
-        marginTop: '8px',
-        fontWeight: '500'
-      }}>
-        <Sparkles size={13} />
-        <span>Sẵn sàng kết nối cơ sở dữ liệu SQL Server (HRM_Enterprise_DB)</span>
       </div>
     </div>
   );

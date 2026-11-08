@@ -336,7 +336,7 @@ export default function EmployeeProfile360({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Key size={18} style={{ color: '#0f766e' }} />
                 <h3 style={{ margin: 0, fontSize: '15px', color: '#042f2e' }}>
-                  Tài khoản đăng nhập hệ thống (tblUser)
+                  Tài khoản đăng nhập hệ thống
                 </h3>
               </div>
             </div>
@@ -409,8 +409,8 @@ export default function EmployeeProfile360({
                   </div>
                   <p style={{ margin: '3px 0 0', fontSize: '12.5px', color: '#64748b' }}>
                     {isFaceRegistered
-                      ? 'Dữ liệu vector 128 chiều đã được lưu trữ trong CSDL và sẵn sàng điểm danh Kiosk.'
-                      : 'Nhân viên cần chụp và nạp dữ liệu khuôn mặt để thực hiện chấm công AI.'}
+                      ? 'Dữ liệu nhận diện khuôn mặt đã sẵn sàng điểm danh Kiosk.'
+                      : 'Nhân viên cần chụp và nạp dữ liệu khuôn mặt để thực hiện chấm công.'}
                   </p>
                 </div>
               </div>

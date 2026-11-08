@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Lock, User, Mail, Phone, Shield, ArrowRight,
-  CheckCircle2, AlertCircle, Building2, KeyRound, Sparkles
+  CheckCircle2, AlertCircle, Building2, KeyRound, Sparkles, Briefcase
 } from 'lucide-react';
 import AuthService from '../../services/AuthService';
 import '../../styles/auth/AuthPage.css';
@@ -285,6 +285,24 @@ export default function AuthPage({ onAuthSuccess }) {
             </button>
           </form>
         )}
+
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+          <a
+            href="/careers"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#0f766e',
+              fontSize: '13.5px',
+              fontWeight: 600,
+              textDecoration: 'none'
+            }}
+          >
+            <Briefcase size={15} />
+            <span>Xem cơ hội việc làm & Nộp hồ sơ ứng tuyển (Careers)</span>
+          </a>
+        </div>
       </div>
     </div>
   );

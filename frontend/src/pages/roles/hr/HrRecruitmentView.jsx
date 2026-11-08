@@ -15,7 +15,6 @@ export default function HrRecruitmentView({
   const routeParams = useParams();
   const [searchParams] = useSearchParams();
 
-  // Xác định subModule hiện tại (jobs | candidates)
   const currentSubModule = routeParams.subModule || searchParams.get('subModule') || propSubModule || 'jobs';
 
   const [departments, setDepartments] = useState([]);
@@ -30,7 +29,6 @@ export default function HrRecruitmentView({
     setToast({ message, type });
   };
 
-  // Nạp danh mục dùng chung (Phòng ban, Nhân sự phỏng vấn, Danh sách vị trí)
   const loadSharedData = useCallback(async () => {
     try {
       const [depts, empsRes, jobsList, candidatesList] = await Promise.all([
@@ -46,7 +44,7 @@ export default function HrRecruitmentView({
       if (jobsList && jobsList.length > 0) setJobs(jobsList);
       if (Array.isArray(candidatesList)) setCandidateCount(candidatesList.length);
     } catch (err) {
-      console.warn('Lỗi khi nạp dữ liệu dùng chung tuyển dụng:', err.message);
+      console.warn(err.message);
     }
   }, []);
 
@@ -69,14 +67,13 @@ export default function HrRecruitmentView({
 
   return (
     <div className="hr-recruitment-container">
-      {/* TABS HEADER CHUYỂN ĐỔI GIỮA US-04 VÀ US-05 */}
       <div className="attendance-tabs-header">
         <button
           className={`attendance-tab-btn ${currentSubModule === 'jobs' ? 'active' : ''}`}
           onClick={() => handleTabChange('jobs')}
         >
           <Briefcase size={16} />
-          <span>Vị trí tuyển dụng & Chỉ tiêu (US-04)</span>
+          <span>Vị trí tuyển dụng & Chỉ tiêu</span>
           <span className="badge b-p" style={{ marginLeft: '6px' }}>
             {jobs.length}
           </span>
@@ -87,14 +84,13 @@ export default function HrRecruitmentView({
           onClick={() => handleTabChange('candidates')}
         >
           <Users size={16} />
-          <span>Pipeline ứng viên - Kanban (US-05)</span>
+          <span>Pipeline ứng viên - Kanban</span>
           <span className="badge b-blue" style={{ marginLeft: '6px' }}>
             {candidateCount}
           </span>
         </button>
       </div>
 
-      {/* NỘI DUNG TỪNG SUB-MODULE */}
       {currentSubModule === 'candidates' ? (
         <CandidateKanban
           jobs={jobs}
@@ -110,7 +106,6 @@ export default function HrRecruitmentView({
         />
       )}
 
-      {/* TOAST THÔNG BÁO TẬP TRUNG */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

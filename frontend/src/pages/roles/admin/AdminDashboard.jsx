@@ -35,8 +35,8 @@ export default function AdminDashboard({ onNavigate }) {
     <div className="admin-dashboard-container">
       <div className="ph">
         <div>
-          <h1>Bảng điều khiển quản trị hệ thống (System Admin)</h1>
-          <p>Dữ liệu động kết nối trực tiếp CSDL SQL Server (HRM_Enterprise_DB) qua API Backend Node.js</p>
+          <h1>Bảng điều khiển quản trị hệ thống</h1>
+          <p>Trung tâm giám sát và điều hành hệ thống HRM Enterprise</p>
         </div>
         <div className="ph-tools">
           <button className="btn pri" onClick={() => onNavigate('admin-accounts')}>
@@ -51,9 +51,9 @@ export default function AdminDashboard({ onNavigate }) {
 
       <div className="grid c4">
         <StatCard
-          title="TỔNG TÀI KHOẢN RBAC"
+          title="TỔNG TÀI KHOẢN HỆ THỐNG"
           value={accounts.length}
-          subtext="Đồng bộ từ CSDL SQL Server"
+          subtext="Dữ liệu thời gian thực"
           icon={Users}
           color="#0f766e"
           bg="#ccfbf1"
@@ -76,9 +76,9 @@ export default function AdminDashboard({ onNavigate }) {
           bg="#fee2e2"
         />
         <StatCard
-          title="MÁY CHỦ CSDL SQL SERVER"
+          title="TRẠNG THÁI HỆ THỐNG"
           value="Trực tuyến"
-          subtext="CODER\\SQLEXPRESS01"
+          subtext="Máy chủ hoạt động ổn định"
           icon={Server}
           color="#7c3aed"
           bg="#ede9fe"
@@ -123,7 +123,7 @@ export default function AdminDashboard({ onNavigate }) {
 
         <div className="card">
           <div className="card-h">
-            <h3>Nhật ký bảo mật & Kiểm toán gần nhất (Audit Logs)</h3>
+            <h3>Nhật ký bảo mật & Kiểm toán gần nhất</h3>
             <button className="btn sm" onClick={() => onNavigate('admin-logs')}>
               <span>Xem toàn bộ</span>
               <ArrowRight size={13} />
@@ -133,7 +133,7 @@ export default function AdminDashboard({ onNavigate }) {
             {logs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748b' }}>
                 <Inbox size={28} style={{ color: '#cbd5e1', marginBottom: '6px' }} />
-                <div style={{ fontSize: '13px' }}>Chưa có nhật ký bảo mật mới từ SQL Server.</div>
+                <div style={{ fontSize: '13px' }}>Chưa có nhật ký bảo mật mới.</div>
               </div>
             ) : (
               logs.slice(0, 4).map((log) => {

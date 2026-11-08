@@ -62,7 +62,7 @@ export default function EmployeeList({
     e.stopPropagation();
     const name = emp.FullName || emp.name;
     const code = emp.EmployeeCode || emp.id;
-    if (window.confirm(`Xác nhận xóa hồ sơ nhân viên ${name} (${code}) khỏi CSDL?`)) {
+    if (window.confirm(`Xác nhận xóa hồ sơ nhân viên ${name} (${code})?`)) {
       onDeleteEmployee(emp.EmployeeId || emp.id);
     }
   };
@@ -72,10 +72,10 @@ export default function EmployeeList({
       <div className="ph" style={{ marginBottom: 0 }}>
         <div>
           <h1 style={{ fontSize: '20px', margin: 0, color: '#042f2e' }}>
-            Quản lý hồ sơ nhân viên (tblEmployee)
+            Quản lý hồ sơ nhân viên
           </h1>
           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Hệ thống dữ liệu động kết nối trực tiếp CSDL SQL Server (HRM_Enterprise_DB)
+            Hệ thống quản lý thông tin nhân sự toàn diện
           </p>
         </div>
         <div className="ph-tools">
@@ -161,7 +161,7 @@ export default function EmployeeList({
                   <td colSpan={10} style={{ textAlign: 'center', padding: '40px 16px', color: '#64748b' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                       <div className="status-dot-pulse" style={{ background: '#0f766e' }}></div>
-                      <span>Đang tải danh sách nhân sự từ CSDL SQL Server...</span>
+                      <span>Đang tải danh sách nhân sự...</span>
                     </div>
                   </td>
                 </tr>

@@ -53,7 +53,6 @@ export default function OrgStructureManagement() {
 
   const [selectedDeptDetail, setSelectedDeptDetail] = useState(null);
 
-  // Load all initial data from database
   const loadData = async (deptIdToRefresh = null) => {
     try {
       setLoading(true);
@@ -81,7 +80,6 @@ export default function OrgStructureManagement() {
       });
       setExpandedNodes(exp);
 
-      // Refresh selected dept detail if requested or currently open
       const targetDeptId = deptIdToRefresh || selectedDeptDetail?.DepartmentId;
       if (targetDeptId) {
         const findNode = (nodes) => {
@@ -134,7 +132,6 @@ export default function OrgStructureManagement() {
 
   const handleOpenAddDept = (parentDeptId = null) => {
     setDeptFormMode('create');
-    // Default to Ban Giám Đốc (BOD) if parentDeptId is not specified
     const defaultParent = parentDeptId 
       ? String(parentDeptId) 
       : (departments.find(d => d.DepartmentId === 1 || d.DepartmentCode === 'BOD')?.DepartmentId 
@@ -529,7 +526,7 @@ export default function OrgStructureManagement() {
           <p>Mô hình phân cấp quản trị, phòng ban, khối chuyên môn và quy mô định biên nhân sự</p>
         </div>
         <div className="ph-tools">
-          <button className="btn" onClick={() => loadData()} title="Làm mới dữ liệu từ CSDL">
+          <button className="btn" onClick={() => loadData()} title="Làm mới dữ liệu">
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             <span>Làm mới</span>
           </button>
@@ -944,7 +941,6 @@ export default function OrgStructureManagement() {
         </div>
       )}
 
-      {/* ================= MODAL 4: CHI TIẾT PHÒNG BAN & DANH SÁCH NHÂN SỰ ================= */}
       {selectedDeptDetail && (
         <div className="org-modal-overlay">
           <div className="org-modal-content wide">
@@ -1102,7 +1098,6 @@ export default function OrgStructureManagement() {
         </div>
       )}
 
-      {/* ================= MODAL 3: ĐIỀU CHUYỂN / GÁN NHÂN SỰ (HIỂN THỊ PHÍA TRƯỚC VỚI Z-INDEX CAO HƠN) ================= */}
       {isTransferModalOpen && (
         <div className="org-modal-overlay modal-top-layer">
           <div className="org-modal-content">
