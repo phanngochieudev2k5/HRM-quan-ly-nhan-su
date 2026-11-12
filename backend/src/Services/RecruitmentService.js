@@ -40,7 +40,7 @@ export class RecruitmentService {
                     Deadline: '2026-12-15',
                     JobDescription:
                         'Tính toán bảng lương tháng, phụ cấp, giảm trừ gia cảnh, đóng bảo hiểm xã hội và báo cáo thuế TNCN.',
-                    Status: 'Pending',
+                    Status: 'Approved',
                 });
 
                 const job4 = await RecruitmentJobModel.create({
@@ -52,7 +52,7 @@ export class RecruitmentService {
                     Deadline: '2026-10-30',
                     JobDescription:
                         'Xây dựng chiến lược thương hiệu tuyển dụng, tổ chức các chiến dịch tiếp thị truyền thông cho công ty.',
-                    Status: 'Rejected',
+                    Status: 'Closed',
                 });
 
                 await CandidateModel.create({
@@ -172,20 +172,10 @@ export class RecruitmentService {
             throw error;
         }
 
-        return await RecruitmentJobModel.create(jobData);
-    }
-
-    static async updateJobStatus(id, status) {
-        const validStatuses = ['Pending', 'Approved', 'Rejected', 'Closed'];
-        if (!validStatuses.includes(status)) {
-            const error = new Error(
-                `Trạng thái không hợp lệ! Chỉ chấp nhận: ${validStatuses.join(', ')}`,
-            );
-            error.statusCode = 400;
-            throw error;
-        }
-
-        return await RecruitmentJobModel.updateStatus(id, status);
+        return await RecruitmentJobModel.create({
+            ...jobData,
+            Status: jobData.Status === 'Closed' ? 'Closed' : 'Approved',
+        });
     }
 
     static async updateJob(id, jobData) {

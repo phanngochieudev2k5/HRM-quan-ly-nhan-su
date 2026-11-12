@@ -28,7 +28,6 @@ router.get('/positions', DepartmentController.getPositions);
 router.get('/recruitment-jobs', RecruitmentController.getJobs);
 router.get('/recruitment-jobs/:id', RecruitmentController.getJobById);
 router.post('/recruitment-jobs', RecruitmentController.createJob);
-router.put('/recruitment-jobs/:id/status', RecruitmentController.updateJobStatus);
 router.put('/recruitment-jobs/:id', RecruitmentController.updateJob);
 router.delete('/recruitment-jobs/:id', RecruitmentController.deleteJob);
 
