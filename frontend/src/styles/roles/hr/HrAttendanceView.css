@@ -255,3 +255,27 @@ table.attendance-matrix-table td.ot-col input {
   gap: 12px;
   box-shadow: var(--shadow-sm);
 }
+
+.shift-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.shift-cell-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: 6px;
+  color: #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+table.shift-matrix-table td.day-cell:hover .shift-cell-empty {
+  color: var(--p);
+  background: var(--p50);
+}

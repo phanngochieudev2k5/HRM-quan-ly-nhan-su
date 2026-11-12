@@ -77,6 +77,15 @@ class ApiClient {
     });
   }
 
+  static patch(endpoint, body, options = {}) {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+    return this.request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: isFormData ? body : JSON.stringify(body)
+    });
+  }
+
   static delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }

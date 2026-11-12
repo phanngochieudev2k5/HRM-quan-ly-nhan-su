@@ -5,6 +5,7 @@ import { EmployeeController } from '../Controllers/Hr/EmployeeController.js';
 import { ContractController } from '../Controllers/Hr/ContractController.js';
 import { DepartmentController } from '../Controllers/Hr/DepartmentController.js';
 import { RecruitmentController } from '../Controllers/Hr/RecruitmentController.js';
+import { ShiftController } from '../Controllers/Hr/ShiftController.js';
 
 const router = express.Router();
 
@@ -38,5 +39,13 @@ router.put('/candidates/:id/stage', RecruitmentController.updateCandidateStage);
 router.put('/candidates/:id', RecruitmentController.updateCandidate);
 router.post('/candidates/:id/send-email', RecruitmentController.sendCandidateEmail);
 router.delete('/candidates/:id', RecruitmentController.deleteCandidate);
+
+router.get('/shifts/schedule', ShiftController.getSchedule);
+router.post('/shifts/assign', ShiftController.assignShifts);
+router.delete('/shifts/assign/:attendanceId', ShiftController.removeAssignment);
+router.get('/shifts', ShiftController.getShifts);
+router.post('/shifts', ShiftController.createShift);
+router.put('/shifts/:id', ShiftController.updateShift);
+router.patch('/shifts/:id/status', ShiftController.toggleShiftStatus);
 
 export default router;
