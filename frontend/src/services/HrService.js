@@ -409,6 +409,26 @@ export const HrService = {
   async respondTermination(id, data) {
     const res = await ApiClient.post(`/contracts/${id}/employee-respond-termination`, data);
     return res.data || res;
+  },
+
+  async registerFace(data) {
+    const res = await ApiClient.post('/attendance/register-face', data);
+    return res.data || res;
+  },
+
+  async requestFacePhoto(data) {
+    const res = await ApiClient.post('/attendance/request-face-photo', data);
+    return res.data || res;
+  },
+
+  async getPendingFaceRequest(params = {}) {
+    const q = new URLSearchParams();
+    if (params.employeeId) q.append('employeeId', params.employeeId);
+    if (params.username) q.append('username', params.username);
+    if (params.email) q.append('email', params.email);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    const res = await ApiClient.get(`/attendance/pending-face-request${qs}`);
+    return res.data || res;
   }
 };
 

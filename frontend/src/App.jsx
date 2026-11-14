@@ -21,7 +21,7 @@ import EmployeeDashboard from './pages/roles/employee/EmployeeDashboard';
 import MyProfileView from './pages/roles/employee/MyProfileView';
 import MyContractsView from './pages/roles/employee/MyContractsView';
 import MyAssetsView from './pages/roles/employee/MyAssetsView';
-import MyFaceCheckinView from './pages/roles/employee/MyFaceCheckinView';
+import AttendanceKioskView from './pages/public/AttendanceKioskView';
 import MyAttendanceView from './pages/roles/employee/MyAttendanceView';
 import MyLeaveView from './pages/roles/employee/MyLeaveView';
 import MyOvertimeView from './pages/roles/employee/MyOvertimeView';
@@ -216,6 +216,9 @@ export default function App() {
       />
 
       <Route path="/careers" element={<CareersPage />} />
+      <Route path="/kiosk" element={<AttendanceKioskView />} />
+      <Route path="/attendance-kiosk" element={<AttendanceKioskView />} />
+      <Route path="/cham-cong" element={<AttendanceKioskView />} />
 
       <Route
         element={
@@ -270,7 +273,7 @@ export default function App() {
         <Route path="/employee/profile" element={<MyProfileView user={currentUser} />} />
         <Route path="/employee/contracts" element={<MyContractsView />} />
         <Route path="/employee/assets" element={<MyAssetsView />} />
-        <Route path="/employee/checkin" element={<MyFaceCheckinView />} />
+        <Route path="/employee/checkin" element={<Navigate to="/employee/attendance" replace />} />
         <Route path="/employee/attendance" element={<MyAttendanceView />} />
         <Route path="/employee/leave" element={<MyLeaveView />} />
         <Route path="/employee/overtime" element={<MyOvertimeView />} />

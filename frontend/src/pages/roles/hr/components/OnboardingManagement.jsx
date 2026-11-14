@@ -3,7 +3,7 @@ import {
   UserCheck, Search, Plus, RefreshCw, CheckCircle2, Clock, CheckSquare,
   Square, Trash2, Shield, Briefcase, Calendar, Building2, User,
   ChevronRight, AlertCircle, X, Award, Eye, Mail, Key, Laptop, FileText,
-  Send, PenTool, Check, ExternalLink, HelpCircle
+  Send, PenTool, Check, ExternalLink, HelpCircle, Camera, Upload, Sparkles
 } from 'lucide-react';
 import HrService from '../../../../services/HrService';
 
@@ -50,6 +50,11 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
     Notes: 'Bàn giao đầy đủ thân máy, củ sạc Type-C và túi chống sốc'
   });
   const [assetSubmitting, setAssetSubmitting] = useState(false);
+
+  const [faceModalTarget, setFaceModalTarget] = useState(null);
+  const [faceFiles, setFaceFiles] = useState([]);
+  const [facePreviews, setFacePreviews] = useState([]);
+  const [faceSubmitting, setFaceSubmitting] = useState(false);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
@@ -293,6 +298,82 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
     }
   };
 
+  const handleOpenFaceModal = (item) => {
+    setFaceModalTarget(item);
+    setFaceFiles([]);
+    setFacePreviews([]);
+  };
+
+  const handleFaceFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (selected.length > 0) {
+      setFaceFiles(selected);
+      const urls = selected.map(f => URL.createObjectURL(f));
+      setFacePreviews(urls);
+    }
+  };
+
+  const handleSendFaceRequest = async () => {
+    if (!faceModalTarget) return;
+
+    try {
+      setFaceSubmitting(true);
+      await HrService.updateOnboardingChecklist(faceModalTarget.OnboardingId, {
+        FaceRequestSent: 1
+      });
+      if (showToast) {
+        showToast(`Đã gửi yêu cầu nộp ảnh Face ID tới tài khoản ${faceModalTarget.CandidateName}!`, 'success');
+      }
+      setFaceModalTarget(null);
+      loadData();
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Lỗi gửi yêu cầu!', 'error');
+    } finally {
+      setFaceSubmitting(false);
+    }
+  };
+
+  const handleFaceSubmit = async (e) => {
+    e.preventDefault();
+    if (!faceModalTarget) return;
+
+    try {
+      setFaceSubmitting(true);
+      const cleanCode = faceModalTarget.EmployeeCode || (faceModalTarget.CandidateName || 'emp')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+      if (faceFiles.length > 0) {
+        const formData = new FormData();
+        formData.append('employeeCode', cleanCode);
+        if (faceModalTarget.EmployeeId) {
+          formData.append('employeeId', faceModalTarget.EmployeeId);
+        }
+        faceFiles.forEach(f => {
+          formData.append('faceImages', f);
+        });
+        await HrService.registerFace(formData);
+      }
+
+      await HrService.updateOnboardingChecklist(faceModalTarget.OnboardingId, {
+        FaceEnrolled: 1,
+        FacePhotosCount: faceFiles.length || 1
+      });
+
+      if (showToast) {
+        showToast(`Đã lưu ${faceFiles.length || 1} ảnh khuôn mặt & kích hoạt Face ID cho ${faceModalTarget.CandidateName}!`, 'success');
+      }
+      setFaceModalTarget(null);
+      loadData();
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Lỗi khi lưu dữ liệu Face ID!', 'error');
+    } finally {
+      setFaceSubmitting(false);
+    }
+  };
+
   const handleToggleStep = async (item, stepKey) => {
     if (stepKey === 'AccountCreated') {
       handleOpenAccountModal(item);
@@ -304,6 +385,10 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
     }
     if (stepKey === 'AssetAssigned') {
       handleOpenAssetModal(item);
+      return;
+    }
+    if (stepKey === 'FaceEnrolled') {
+      handleOpenFaceModal(item);
       return;
     }
 
@@ -663,7 +748,9 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
                       {
                         key: 'FaceEnrolled',
                         label: '4. Face ID & Đào tạo hội nhập',
-                        desc: item.FaceEnrolled ? 'Đã hoàn thành' : 'Chưa hoàn thành'
+                        desc: item.FaceEnrolled
+                          ? (item.FacePhotosCount ? `Đã hoàn thành (${item.FacePhotosCount} ảnh Face ID)` : 'Đã hoàn thành Face ID')
+                          : (item.FaceRequestSent ? 'Đã gửi yêu cầu nạp ảnh Face ID' : 'Gửi yêu cầu / Nạp ảnh Face ID')
                       }
                     ].map(step => {
                       const isDone = !!item[step.key];
@@ -1142,6 +1229,109 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {faceModalTarget && (
+        <div className="modal-wrap" onClick={() => !faceSubmitting && setFaceModalTarget(null)} style={{ zIndex: 1000 }}>
+          <div className="modal" style={{ maxWidth: '560px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-h" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Camera size={18} style={{ color: '#0f766e' }} />
+                <h3 style={{ margin: 0, fontSize: '16px' }}>
+                  Bước 4: Cấp mã & Thu thập ảnh khuôn mặt Face ID
+                </h3>
+              </div>
+              <button
+                className="btn icon"
+                type="button"
+                disabled={faceSubmitting}
+                onClick={() => setFaceModalTarget(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-b" style={{ padding: '20px 24px' }}>
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px', fontSize: '13px' }}>
+                <div>Nhân sự tiếp nhận: <strong>{faceModalTarget.CandidateName}</strong></div>
+                <div style={{ color: '#64748b', marginTop: '2px' }}>
+                  Vị trí: {faceModalTarget.PositionName || 'Chuyên viên'} · Phòng ban: {faceModalTarget.DepartmentName || 'Khối Kỹ Thuật'}
+                </div>
+              </div>
+
+              <div style={{ border: '1px solid #ccfbf1', background: '#f0fdfa', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f766e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Send size={15} />
+                  <span>Cách 1: Gửi yêu cầu nhân viên tự nộp ảnh</span>
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#134e4a', margin: '6px 0 12px' }}>
+                  Hệ thống gửi thông báo tới tài khoản nhân sự. Nhân viên chỉ cần đăng nhập, vào tab <strong>Bảng công & Điểm danh</strong> để nộp từ 1 đến 5 ảnh chân dung với các góc mặt khác nhau nhằm đạt xác suất nhận diện cao nhất.
+                </div>
+                <button
+                  type="button"
+                  className="btn sm pri"
+                  disabled={faceSubmitting}
+                  onClick={handleSendFaceRequest}
+                >
+                  <Send size={14} />
+                  <span>{faceSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu nộp ảnh Face ID'}</span>
+                </button>
+              </div>
+
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px', background: '#ffffff' }}>
+                <div style={{ fontWeight: 700, fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <Upload size={15} />
+                  <span>Cách 2: HR tải trực tiếp nhiều ảnh tại đây</span>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', margin: '12px 0' }}>
+                  {facePreviews.length > 0 ? (
+                    facePreviews.map((url, i) => (
+                      <div key={i} style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #0d9488' }}>
+                        <img src={url} alt={`Face ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ width: '100%', padding: '16px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', textAlign: 'center', color: '#64748b', fontSize: '12.5px' }}>
+                      Chưa chọn ảnh nào. Có thể chọn cùng lúc từ 1 đến 5 ảnh (.jpg, .png).
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="btn sm teal" style={{ cursor: 'pointer' }}>
+                    <Upload size={14} />
+                    <span>{facePreviews.length > 0 ? `Đã chọn ${facePreviews.length} ảnh (Bấm để chọn lại)` : 'Chọn nhiều ảnh (.jpg, .png)'}</span>
+                    <input type="file" multiple accept="image/*" onChange={handleFaceFileChange} style={{ display: 'none' }} />
+                  </label>
+
+                  {faceFiles.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn sm pri"
+                      disabled={faceSubmitting}
+                      onClick={handleFaceSubmit}
+                    >
+                      <CheckCircle2 size={14} />
+                      <span>{faceSubmitting ? 'Đang lưu...' : `Kích hoạt Face ID (${faceFiles.length} ảnh)`}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-f" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn"
+                disabled={faceSubmitting}
+                onClick={() => setFaceModalTarget(null)}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -36,6 +36,8 @@ export class OnboardingModel {
         o.ContractSigned,
         o.AssetAssigned,
         o.FaceEnrolled,
+        COALESCE(o.FaceRequestSent, 0) as FaceRequestSent,
+        COALESCE(o.FacePhotosCount, 0) as FacePhotosCount,
         o.Status,
         COALESCE(o.OfferedSalary, cand.OfferedSalary, 15000000) as OfferedSalary,
         COALESCE(o.Username, u.Username) as Username,
@@ -89,6 +91,8 @@ export class OnboardingModel {
         o.ContractSigned,
         o.AssetAssigned,
         o.FaceEnrolled,
+        COALESCE(o.FaceRequestSent, 0) as FaceRequestSent,
+        COALESCE(o.FacePhotosCount, 0) as FacePhotosCount,
         o.Status,
         COALESCE(o.OfferedSalary, cand.OfferedSalary, 15000000) as OfferedSalary,
         COALESCE(o.Username, u.Username) as Username,
@@ -200,6 +204,14 @@ export class OnboardingModel {
     if (fields.FaceEnrolled !== undefined) {
       request.input('FaceEnrolled', sql.Bit, fields.FaceEnrolled ? 1 : 0);
       updates.push('FaceEnrolled = @FaceEnrolled');
+    }
+    if (fields.FaceRequestSent !== undefined) {
+      request.input('FaceRequestSent', sql.Bit, fields.FaceRequestSent ? 1 : 0);
+      updates.push('FaceRequestSent = @FaceRequestSent');
+    }
+    if (fields.FacePhotosCount !== undefined) {
+      request.input('FacePhotosCount', sql.Int, parseInt(fields.FacePhotosCount, 10));
+      updates.push('FacePhotosCount = @FacePhotosCount');
     }
     if (fields.Status) {
       request.input('Status', sql.NVarChar(50), fields.Status);

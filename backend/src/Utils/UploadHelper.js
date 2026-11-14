@@ -65,3 +65,17 @@ export const terminationUpload = multer({
   }
 });
 
+const faceStorage = multer.memoryStorage();
+export const faceUpload = multer({
+  storage: faceStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowed = ['.png', '.jpg', '.jpeg', '.webp'];
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Chỉ chấp nhận file định dạng ảnh (.png, .jpg, .jpeg, .webp)!'));
+    }
+    cb(null, true);
+  }
+});
+

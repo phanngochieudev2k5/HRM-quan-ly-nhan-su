@@ -34,10 +34,10 @@ export default function HrDashboard({ onNavigate, currentUser }) {
         <div className="ph-tools">
           <button
             className="btn pri"
-            onClick={() => onNavigate('hr-attendance', 'face-checkin')}
+            onClick={() => window.open('/kiosk', '_blank')}
           >
             <Camera size={15} />
-            <span>Kiosk OpenCV</span>
+            <span>Mở Kiosk Chấm Công</span>
           </button>
           <button
             className="btn"
