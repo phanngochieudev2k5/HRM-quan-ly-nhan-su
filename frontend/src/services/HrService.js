@@ -181,16 +181,6 @@ export const HrService = {
     }
   },
 
-  async updateRecruitmentJobStatus(id, status) {
-    try {
-      const res = await ApiClient.put(`/recruitment-jobs/${id}/status`, { status });
-      return res.data;
-    } catch {
-      const res2 = await ApiClient.put(`/hr/recruitment-jobs/${id}/status`, { status });
-      return res2.data;
-    }
-  },
-
   async updateRecruitmentJob(id, jobData) {
     try {
       const res = await ApiClient.put(`/recruitment-jobs/${id}`, jobData);
@@ -409,6 +399,61 @@ export const HrService = {
   async respondTermination(id, data) {
     const res = await ApiClient.post(`/contracts/${id}/employee-respond-termination`, data);
     return res.data || res;
+  },
+
+  // ==================== QUẢN LÝ CA LÀM VIỆC & PHÂN CA ====================
+
+  async getShifts(params = {}) {
+    const query = new URLSearchParams();
+    if (params.isActive !== undefined && params.isActive !== '' && params.isActive !== 'all') {
+      query.append('isActive', params.isActive);
+    }
+    if (params.shiftType && params.shiftType !== 'all') {
+      query.append('shiftType', params.shiftType);
+    }
+    if (params.search) {
+      query.append('search', params.search);
+    }
+    const qs = query.toString();
+    const res = await ApiClient.get(qs ? `/shifts?${qs}` : '/shifts');
+    return res.data || [];
+  },
+
+  async createShift(shiftData) {
+    const res = await ApiClient.post('/shifts', shiftData);
+    return res.data;
+  },
+
+  async updateShift(id, shiftData) {
+    const res = await ApiClient.put(`/shifts/${id}`, shiftData);
+    return res.data;
+  },
+
+  async toggleShiftStatus(id, isActive) {
+    const res = await ApiClient.patch(`/shifts/${id}/status`, { isActive });
+    return res.data;
+  },
+
+  async getShiftSchedule(params = {}) {
+    const query = new URLSearchParams();
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    if (params.departmentId && params.departmentId !== 'all') {
+      query.append('departmentId', params.departmentId);
+    }
+    if (params.search) query.append('search', params.search);
+    const res = await ApiClient.get(`/shifts/schedule?${query.toString()}`);
+    return res.data || { employees: [], totalAssignments: 0 };
+  },
+
+  async assignShifts(payload) {
+    const res = await ApiClient.post('/shifts/assign', payload);
+    return res;
+  },
+
+  async removeShiftAssignment(attendanceId) {
+    const res = await ApiClient.delete(`/shifts/assign/${attendanceId}`);
+    return res.data;
   }
 };
 

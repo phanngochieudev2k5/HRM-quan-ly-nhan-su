@@ -32,7 +32,7 @@ export default function JobModal({
         SalaryRange: job.SalaryRange || '',
         Deadline: job.Deadline || '',
         JobDescription: job.JobDescription || '',
-        Status: job.Status || 'Approved'
+        Status: job.Status === 'Closed' ? 'Closed' : 'Approved'
       });
     } else {
       setFormData({
@@ -172,12 +172,10 @@ export default function JobModal({
 
               {isEdit && (
                 <label className="field">
-                  <span>Trạng thái đề xuất:</span>
+                  <span>Trạng thái tuyển dụng:</span>
                   <select name="Status" className="inp" value={formData.Status} onChange={handleChange}>
-                    <option value="Pending">Pending (Chờ duyệt)</option>
-                    <option value="Approved">Approved (Đang mở tuyển)</option>
-                    <option value="Rejected">Rejected (Từ chối)</option>
-                    <option value="Closed">Closed (Đã đủ chỉ tiêu)</option>
+                    <option value="Approved">Đang mở tuyển</option>
+                    <option value="Closed">Đã đóng / Đủ chỉ tiêu</option>
                   </select>
                 </label>
               )}
@@ -202,7 +200,7 @@ export default function JobModal({
               Hủy
             </button>
             <button type="submit" className="btn pri" disabled={submitting}>
-              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Tạo & Duyệt mở tuyển dụng'}
+              {submitting ? 'Đang lưu...' : isEdit ? 'Lưu cập nhật' : 'Tạo & Mở tuyển dụng'}
             </button>
           </div>
         </form>

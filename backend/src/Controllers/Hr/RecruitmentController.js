@@ -68,35 +68,6 @@ export class RecruitmentController {
         }
     }
 
-    static async updateJobStatus(req, res) {
-        try {
-            const { id } = req.params;
-            const { status } = req.body;
-            if (!status) {
-                return sendError(
-                    res,
-                    'Vui lòng cung cấp trạng thái status (Approved, Rejected, Pending, Closed)!',
-                    400,
-                );
-            }
-
-            const result = await RecruitmentService.updateJobStatus(id, status);
-            return sendSuccess(
-                res,
-                result,
-                'Cập nhật trạng thái đề xuất tuyển dụng thành công!',
-            );
-        } catch (error) {
-            console.error(error);
-            return sendError(
-                res,
-                error.message,
-                error.statusCode || 500,
-                error,
-            );
-        }
-    }
-
     static async updateJob(req, res) {
         try {
             const { id } = req.params;

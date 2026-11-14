@@ -10,7 +10,6 @@ router.use(verifyToken, requireRole('HR', 'Admin'));
 router.get('/', RecruitmentController.getJobs);
 router.get('/:id', RecruitmentController.getJobById);
 router.post('/', RecruitmentController.createJob);
-router.put('/:id/status', RecruitmentController.updateJobStatus);
 router.put('/:id', RecruitmentController.updateJob);
 router.delete('/:id', RecruitmentController.deleteJob);
 

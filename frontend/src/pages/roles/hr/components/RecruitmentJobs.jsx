@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Briefcase, Search, Plus, RefreshCw, CheckCircle2, XCircle, Clock,
-  Edit2, Trash2, Users, Calendar, DollarSign, Building2, Eye, AlertCircle, Archive
+  Briefcase, Search, Plus, RefreshCw, CheckCircle2,
+  Edit2, Trash2, Users, Calendar, Building2, Archive
 } from 'lucide-react';
 import HrService from '../../../../services/HrService';
 import JobModal from './JobModal';
@@ -42,24 +42,19 @@ export default function RecruitmentJobs({
     loadJobs();
   }, [loadJobs]);
 
-  const approvedCount = jobs.filter(j => j.Status === 'Approved').length;
-  const pendingCount = jobs.filter(j => j.Status === 'Pending').length;
-  const rejectedCount = jobs.filter(j => j.Status === 'Rejected').length;
-  const closedCount = jobs.filter(j => j.Status === 'Closed').length;
+  const openCount = jobs.filter(j => j.Status !== 'Closed' && j.Status !== 'Rejected').length;
+  const closedCount = jobs.filter(j => j.Status === 'Closed' || j.Status === 'Rejected').length;
   const totalTargetQuantity = jobs.reduce((sum, j) => sum + (j.TargetQuantity || 0), 0);
+  const totalAppliedCount = jobs.reduce((sum, j) => sum + (j.AppliedCount || 0), 0);
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Approved':
-        return <span className="badge b-green">Approved (Đang mở tuyển)</span>;
-      case 'Pending':
-        return <span className="badge b-amber">Pending (Chờ duyệt)</span>;
-      case 'Rejected':
-        return <span className="badge b-red">Rejected (Từ chối)</span>;
       case 'Closed':
-        return <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>Closed (Đủ chỉ tiêu)</span>;
+      case 'Rejected':
+        return <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>Đã đóng (Đủ chỉ tiêu)</span>;
+      case 'Approved':
       default:
-        return <span className="badge">{status || 'Pending'}</span>;
+        return <span className="badge b-green">Đang mở tuyển</span>;
     }
   };
 
@@ -90,20 +85,6 @@ export default function RecruitmentJobs({
     }
   };
 
-  const handleUpdateStatus = async (jobId, newStatus, jobTitle, e) => {
-    e.stopPropagation();
-    const actionLabel = newStatus === 'Approved' ? 'Duyệt' : 'Từ chối';
-    if (window.confirm(`Xác nhận ${actionLabel} đề xuất tuyển dụng: "${jobTitle}"?`)) {
-      try {
-        await HrService.updateRecruitmentJobStatus(jobId, newStatus);
-        if (showToast) showToast(`Đã ${actionLabel} đề xuất tuyển dụng thành công!`, 'success');
-        loadJobs();
-      } catch (err) {
-        if (showToast) showToast(err.message || `Lỗi khi ${actionLabel} đề xuất!`, 'error');
-      }
-    }
-  };
-
   const handleDeleteJob = async (job, e) => {
     e.stopPropagation();
     if (window.confirm(`Xác nhận xóa vị trí tuyển dụng "${job.JobTitle}" khỏi hệ thống?`)) {
@@ -125,7 +106,7 @@ export default function RecruitmentJobs({
             Quản lý nhu cầu & đề xuất tuyển dụng
           </h1>
           <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Lập kế hoạch định biên nhân sự theo phòng ban, phê duyệt chỉ tiêu và theo dõi tiến độ tuyển dụng
+            Quản lý vị trí tuyển dụng theo phòng ban, mở tuyển trực tiếp và theo dõi tiến độ tuyển dụng
           </p>
         </div>
 
@@ -145,7 +126,7 @@ export default function RecruitmentJobs({
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
-              TỔNG VỊ TRÍ ĐỀ XUẤT
+              TỔNG VỊ TRÍ TUYỂN DỤNG
             </span>
             <Briefcase size={18} style={{ color: '#0f766e' }} />
           </div>
@@ -160,12 +141,12 @@ export default function RecruitmentJobs({
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: '#059669', textTransform: 'uppercase' }}>
-              ĐÃ PHÊ DUYỆT (OPEN)
+              ĐANG MỞ TUYỂN
             </span>
             <CheckCircle2 size={18} style={{ color: '#059669' }} />
           </div>
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#059669', marginTop: '8px' }}>
-            {approvedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>đang tuyển</small>
+            {openCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>đang tuyển</small>
           </div>
           <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px' }}>
             Sẵn sàng tiếp nhận hồ sơ CV
@@ -174,31 +155,31 @@ export default function RecruitmentJobs({
 
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>
-              CHỜ PHÊ DUYỆT
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>
+              ĐÃ ĐÓNG / ĐỦ CHỈ TIÊU
             </span>
-            <Clock size={18} style={{ color: '#d97706' }} />
+            <Archive size={18} style={{ color: '#475569' }} />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#d97706', marginTop: '8px' }}>
-            {pendingCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>đề xuất</small>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#475569', marginTop: '8px' }}>
+            {closedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>vị trí</small>
           </div>
-          <div style={{ fontSize: '12px', color: '#d97706', marginTop: '4px' }}>
-            Cần HR Manager / BOD duyệt
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+            Đã hoàn tất hoặc ngừng tuyển
           </div>
         </div>
 
         <div className="card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#dc2626', textTransform: 'uppercase' }}>
-              TỪ CHỐI / ĐÓNG
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase' }}>
+              HỒ SƠ CV ĐÃ NHẬN
             </span>
-            <XCircle size={18} style={{ color: '#dc2626' }} />
+            <Users size={18} style={{ color: '#0284c7' }} />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#dc2626', marginTop: '8px' }}>
-            {rejectedCount + closedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>vị trí</small>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#0284c7', marginTop: '8px' }}>
+            {totalAppliedCount} <small style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>hồ sơ</small>
           </div>
-          <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-            Không đạt hoặc đã hoàn tất tuyển
+          <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '4px' }}>
+            Tổng ứng viên các vị trí
           </div>
         </div>
       </div>
@@ -237,16 +218,14 @@ export default function RecruitmentJobs({
             style={{ width: 'auto', minWidth: '160px' }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="Approved">Approved (Đã duyệt)</option>
-            <option value="Pending">Pending (Chờ duyệt)</option>
-            <option value="Rejected">Rejected (Từ chối)</option>
-            <option value="Closed">Closed (Đã đủ chỉ tiêu)</option>
+            <option value="Approved">Đang mở tuyển</option>
+            <option value="Closed">Đã đóng / Đủ chỉ tiêu</option>
           </select>
 
           <span className="grow"></span>
 
           <span className="small muted">
-            Hiển thị <strong>{jobs.length}</strong> đề xuất vị trí
+            Hiển thị <strong>{jobs.length}</strong> vị trí tuyển dụng
           </span>
         </div>
 
@@ -261,7 +240,7 @@ export default function RecruitmentJobs({
                 <th>DẢI LƯƠNG ĐỀ XUẤT</th>
                 <th>HẠN CHÓT</th>
                 <th>TRẠNG THÁI</th>
-                <th className="act">THAO TÁC / DUYỆT ĐỀ XUẤT</th>
+                <th className="act">THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
