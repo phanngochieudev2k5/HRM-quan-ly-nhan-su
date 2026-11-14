@@ -16,7 +16,8 @@ const ATTENDANCE_CODES = {
   P: { label: 'Nghỉ phép năm', lv: 0, bg: '#dbeafe', c: '#1d4ed8' },
   L: { label: 'Nghỉ lễ, Tết', lv: 0, bg: '#ede9fe', c: '#6d28d9' },
   O: { label: 'Nghỉ ốm (BHXH)', lv: 0, bg: '#fef3c7', c: '#b45309' },
-  KP: { label: 'Nghỉ không lương', lv: 0, bg: '#fee2e2', c: '#b91c1c' }
+  KP: { label: 'Nghỉ không lương', lv: 0, bg: '#fee2e2', c: '#b91c1c' },
+  PC: { label: 'Đã phân ca', lv: 0, bg: '#f1f5f9', c: '#475569' }
 };
 
 export default function HrAttendanceView({ subModule = 'matrix', employee, onBack, onCompleteRegistration, onNavigate }) {
@@ -335,7 +336,7 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
                         {daysArray.map(day => {
                           const dayVal = empAtt.days ? empAtt.days[day] : null;
                           const rawCode = typeof dayVal === 'string' ? dayVal : dayVal?.code || '';
-                          const code = rawCode === 'MUON' ? 'M' : rawCode;
+                          const code = rawCode === 'MUON' ? 'M' : (rawCode === 'SCHEDULED' ? 'PC' : rawCode);
                           const c = ATTENDANCE_CODES[code];
                           const info = getDayInfo(day);
 
@@ -347,7 +348,7 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
                                 background: c ? c.bg : undefined,
                                 color: c ? c.c : undefined
                               }}
-                              title={dayVal?.timeIn ? `Vào: ${dayVal.timeIn} | Ra: ${dayVal.timeOut || 'Đang làm việc'}${dayVal.lateMinutes > 0 ? ` (Muộn ${dayVal.lateMinutes}p)` : ''}${dayVal.earlyMinutes > 0 ? ` (Sớm ${dayVal.earlyMinutes}p)` : ''}${dayVal.credit !== undefined ? ` · ${dayVal.credit} công` : ''}` : undefined}
+                              title={dayVal?.timeIn ? `Vào: ${dayVal.timeIn} | Ra: ${dayVal.timeOut || 'Đang làm việc'}${dayVal.lateMinutes > 0 ? ` (Muộn ${dayVal.lateMinutes}p)` : ''}${dayVal.earlyMinutes > 0 ? ` (Sớm ${dayVal.earlyMinutes}p)` : ''}${dayVal.credit !== undefined ? ` · ${dayVal.credit} công` : ''}` : (code === 'PC' ? 'Đã phân ca làm việc' : undefined)}
                             >
                               {code}
                             </td>

@@ -62,10 +62,6 @@ export const AttendanceModel = {
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const timeNowStr = `${hours}:${minutes}:${seconds}`;
 
-    const shiftRes = await pool.request()
-      .query('SELECT TOP 1 ShiftId, StartTime, EndTime FROM tblShift WHERE IsActive = 1 ORDER BY ShiftId ASC');
-    const shift = shiftRes.recordset[0] || { ShiftId: 1, StartTime: '08:00:00', EndTime: '17:30:00' };
-
     const existRes = await pool.request()
       .input('EmployeeId', sql.Int, targetEmp.EmployeeId)
       .input('AttendanceDate', sql.Date, todayStr)
@@ -78,6 +74,20 @@ export const AttendanceModel = {
       `);
 
     let attendanceRecord = existRes.recordset[0];
+    const hasCheckedIn = Boolean(attendanceRecord && attendanceRecord.TimeIn !== null && attendanceRecord.TimeIn !== undefined && attendanceRecord.TimeInStr);
+
+    let shift = null;
+    if (attendanceRecord && attendanceRecord.ShiftId) {
+      const sRes = await pool.request()
+        .input('ShiftId', sql.Int, attendanceRecord.ShiftId)
+        .query('SELECT TOP 1 ShiftId, StartTime, EndTime FROM tblShift WHERE ShiftId = @ShiftId');
+      shift = sRes.recordset[0];
+    }
+    if (!shift) {
+      const shiftRes = await pool.request()
+        .query('SELECT TOP 1 ShiftId, StartTime, EndTime FROM tblShift WHERE IsActive = 1 ORDER BY ShiftId ASC');
+      shift = shiftRes.recordset[0] || { ShiftId: 1, StartTime: '08:00:00', EndTime: '17:30:00' };
+    }
 
     const formatRawTime = (val, fallback = '') => {
       if (!val) return fallback;
@@ -111,7 +121,7 @@ export const AttendanceModel = {
       return String(val);
     };
 
-    if (mode === 'CHECK_IN' && attendanceRecord) {
+    if (mode === 'CHECK_IN' && hasCheckedIn) {
       const checkInTime = formatRawTime(attendanceRecord.TimeInStr || attendanceRecord.TimeIn, timeNowStr);
       return {
         action: 'ALREADY_CHECKED_IN',
@@ -124,11 +134,11 @@ export const AttendanceModel = {
       };
     }
 
-    if (mode === 'CHECK_OUT' && !attendanceRecord) {
+    if (mode === 'CHECK_OUT' && !hasCheckedIn) {
       throw new Error(`Nhân viên ${targetEmp.FullName} (${targetEmp.EmployeeCode}) chưa chấm công Vào ca hôm nay! Vui lòng chọn "Chấm công Vào ca" trước.`);
     }
 
-    if (!attendanceRecord) {
+    if (!hasCheckedIn) {
       let lateMinutes = 0;
       const [startH, startM] = (shift.StartTime || '08:00:00').toString().split(':').map(Number);
       const scheduledMinutes = (startH || 8) * 60 + (startM || 0);
@@ -152,35 +162,67 @@ export const AttendanceModel = {
         note = `Đi muộn ${lateMinutes} phút (Vẫn tính 1 công vì <= 10p)`;
       }
 
-      const insertRes = await pool.request()
-        .input('EmployeeId', sql.Int, targetEmp.EmployeeId)
-        .input('AttendanceDate', sql.Date, todayStr)
-        .input('ShiftId', sql.Int, shift.ShiftId)
-        .input('TimeIn', sql.VarChar(20), timeNowStr)
-        .input('AttendanceCode', sql.VarChar(10), attendanceCode)
-        .input('WorkCredit', sql.Decimal(3, 1), workCredit)
-        .input('OvertimeHours', sql.Decimal(4, 1), 0)
-        .input('LateMinutes', sql.Int, lateMinutes)
-        .input('EarlyMinutes', sql.Int, 0)
-        .input('CheckinMethod', sql.NVarChar(50), checkinMethod)
-        .input('DeviceName', sql.NVarChar(100), deviceName)
-        .input('SnapshotUrl', sql.NVarChar(500), snapshotUrl)
-        .input('Note', sql.NVarChar(255), note)
-        .query(`
-          INSERT INTO tblAttendance (
-            EmployeeId, AttendanceDate, ShiftId, TimeIn, AttendanceCode,
-            WorkCredit, OvertimeHours, LateMinutes, EarlyMinutes,
-            CheckinMethod, DeviceName, SnapshotUrl, Note
-          )
-          OUTPUT INSERTED.*
-          VALUES (
-            @EmployeeId, @AttendanceDate, @ShiftId, @TimeIn, @AttendanceCode,
-            @WorkCredit, @OvertimeHours, @LateMinutes, @EarlyMinutes,
-            @CheckinMethod, @DeviceName, @SnapshotUrl, @Note
-          )
-        `);
-
-      attendanceRecord = insertRes.recordset[0];
+      if (attendanceRecord) {
+        const updateCheckinRes = await pool.request()
+          .input('AttendanceId', sql.Int, attendanceRecord.AttendanceId)
+          .input('ShiftId', sql.Int, shift.ShiftId)
+          .input('TimeIn', sql.VarChar(20), timeNowStr)
+          .input('AttendanceCode', sql.VarChar(10), attendanceCode)
+          .input('WorkCredit', sql.Decimal(3, 1), workCredit)
+          .input('OvertimeHours', sql.Decimal(4, 1), 0)
+          .input('LateMinutes', sql.Int, lateMinutes)
+          .input('EarlyMinutes', sql.Int, 0)
+          .input('CheckinMethod', sql.NVarChar(50), checkinMethod)
+          .input('DeviceName', sql.NVarChar(100), deviceName)
+          .input('SnapshotUrl', sql.NVarChar(500), snapshotUrl)
+          .input('Note', sql.NVarChar(255), note)
+          .query(`
+            UPDATE tblAttendance
+            SET ShiftId = @ShiftId,
+                TimeIn = @TimeIn,
+                AttendanceCode = @AttendanceCode,
+                WorkCredit = @WorkCredit,
+                OvertimeHours = @OvertimeHours,
+                LateMinutes = @LateMinutes,
+                EarlyMinutes = @EarlyMinutes,
+                CheckinMethod = @CheckinMethod,
+                DeviceName = @DeviceName,
+                SnapshotUrl = @SnapshotUrl,
+                Note = @Note
+            OUTPUT INSERTED.*
+            WHERE AttendanceId = @AttendanceId
+          `);
+        attendanceRecord = updateCheckinRes.recordset[0];
+      } else {
+        const insertRes = await pool.request()
+          .input('EmployeeId', sql.Int, targetEmp.EmployeeId)
+          .input('AttendanceDate', sql.Date, todayStr)
+          .input('ShiftId', sql.Int, shift.ShiftId)
+          .input('TimeIn', sql.VarChar(20), timeNowStr)
+          .input('AttendanceCode', sql.VarChar(10), attendanceCode)
+          .input('WorkCredit', sql.Decimal(3, 1), workCredit)
+          .input('OvertimeHours', sql.Decimal(4, 1), 0)
+          .input('LateMinutes', sql.Int, lateMinutes)
+          .input('EarlyMinutes', sql.Int, 0)
+          .input('CheckinMethod', sql.NVarChar(50), checkinMethod)
+          .input('DeviceName', sql.NVarChar(100), deviceName)
+          .input('SnapshotUrl', sql.NVarChar(500), snapshotUrl)
+          .input('Note', sql.NVarChar(255), note)
+          .query(`
+            INSERT INTO tblAttendance (
+              EmployeeId, AttendanceDate, ShiftId, TimeIn, AttendanceCode,
+              WorkCredit, OvertimeHours, LateMinutes, EarlyMinutes,
+              CheckinMethod, DeviceName, SnapshotUrl, Note
+            )
+            OUTPUT INSERTED.*
+            VALUES (
+              @EmployeeId, @AttendanceDate, @ShiftId, @TimeIn, @AttendanceCode,
+              @WorkCredit, @OvertimeHours, @LateMinutes, @EarlyMinutes,
+              @CheckinMethod, @DeviceName, @SnapshotUrl, @Note
+            )
+          `);
+        attendanceRecord = insertRes.recordset[0];
+      }
 
       return {
         action: 'CHECK_IN',

@@ -154,7 +154,7 @@ export default function MyAttendanceView() {
 
     let workCredit = 0;
 
-    if (r) {
+    if (r && (r.TimeInStr || (r.AttendanceCode !== 'SCHEDULED' && r.AttendanceCode !== null))) {
       checkIn = r.TimeInStr ? r.TimeInStr.slice(0, 5) : '---';
       checkOut = r.TimeOutStr ? r.TimeOutStr.slice(0, 5) : (isToday ? 'Đang làm việc' : '---');
       workCredit = r.WorkCredit !== null && r.WorkCredit !== undefined ? Number(r.WorkCredit) : 0;
@@ -179,6 +179,20 @@ export default function MyAttendanceView() {
         status = 'ON_TIME';
         label = 'Đúng giờ';
         badgeType = 'success';
+      }
+    } else if (r && r.AttendanceCode === 'SCHEDULED') {
+      if (isToday) {
+        status = 'TODAY_NO_CHECKIN';
+        label = 'Chưa điểm danh';
+        badgeType = 'muted';
+      } else if (isFutureMonth || (isCurrentViewingMonth && day > currentDayNum)) {
+        status = 'FUTURE';
+        label = 'Đã phân ca';
+        badgeType = 'muted';
+      } else {
+        status = 'ABSENT';
+        label = 'Chưa chấm công';
+        badgeType = 'muted';
       }
     } else if (isWeekend) {
       status = 'WEEKEND';
