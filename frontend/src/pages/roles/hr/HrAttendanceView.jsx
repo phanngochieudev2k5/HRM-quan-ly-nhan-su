@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import AttendanceService from '../../../services/AttendanceService';
 import '../../../styles/roles/hr/HrAttendanceView.css';
+import HrShiftManagement from './components/HrShiftManagement';
 
 const ATTENDANCE_CODES = {
   X: { label: 'Đi làm cả ngày', lv: 1, bg: '#dcfce7', c: '#15803d' },
@@ -545,45 +546,7 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
         </div>
       )}
 
-      {activeTab === 'shifts' && (
-        <div className="card">
-          <div className="card-h">
-            <h3>Danh sách ca làm việc & Phân ca chuẩn</h3>
-            <button className="btn sm pri">
-              <Plus size={14} />
-              <span>Thêm ca làm việc</span>
-            </button>
-          </div>
-          <div className="card-b">
-            <div className="grid c3">
-              <div className="card" style={{ border: '1px solid #ccfbf1', background: '#f0fdfa' }}>
-                <div className="card-b">
-                  <span className="badge b-p">Ca chuẩn</span>
-                  <h3 style={{ margin: '8px 0 4px', fontSize: '16px' }}>Ca Hành chính Chuẩn</h3>
-                  <div style={{ fontSize: '13px', color: '#115e59', fontWeight: 600 }}>08:00 - 17:30 (Nghỉ trưa 12:00 - 13:30)</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Áp dụng: Khối Văn phòng, Kỹ thuật, Nhân sự, Kế toán</div>
-                </div>
-              </div>
-              <div className="card" style={{ border: '1px solid #fef3c7', background: '#fffbeb' }}>
-                <div className="card-b">
-                  <span className="badge b-amber">Ca sản xuất</span>
-                  <h3 style={{ margin: '8px 0 4px', fontSize: '16px' }}>Ca Xoay Sản xuất Sáng</h3>
-                  <div style={{ fontSize: '13px', color: '#b45309', fontWeight: 600 }}>06:00 - 14:00 (Nghỉ giữa ca 30 phút)</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Áp dụng: Công nhân & Tổ trưởng phân xưởng</div>
-                </div>
-              </div>
-              <div className="card" style={{ border: '1px solid #ede9fe', background: '#faf5ff' }}>
-                <div className="card-b">
-                  <span className="badge b-purple">Ca trực đêm</span>
-                  <h3 style={{ margin: '8px 0 4px', fontSize: '16px' }}>Ca Trực IT & Vận hành</h3>
-                  <div style={{ fontSize: '13px', color: '#6d28d9', fontWeight: 600 }}>22:00 - 06:00 (Hưởng phụ cấp ca đêm 30%)</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Áp dụng: Kỹ sư trực hệ thống máy chủ 24/7</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'shifts' && <HrShiftManagement />}
     </div>
   );
 }

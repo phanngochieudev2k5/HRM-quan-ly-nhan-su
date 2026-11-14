@@ -181,16 +181,6 @@ export const HrService = {
     }
   },
 
-  async updateRecruitmentJobStatus(id, status) {
-    try {
-      const res = await ApiClient.put(`/recruitment-jobs/${id}/status`, { status });
-      return res.data;
-    } catch {
-      const res2 = await ApiClient.put(`/hr/recruitment-jobs/${id}/status`, { status });
-      return res2.data;
-    }
-  },
-
   async updateRecruitmentJob(id, jobData) {
     try {
       const res = await ApiClient.put(`/recruitment-jobs/${id}`, jobData);
