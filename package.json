@@ -3,13 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue,magenta\" \"npm:backend:dev\" \"npm:frontend\"",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
     "frontend": "npm --prefix frontend run dev",
     "backend": "npm --prefix backend start",
     "backend:dev": "npm --prefix backend run dev",
-    "dev:all": "concurrently \"npm:backend:dev\" \"npm:frontend\""
+    "opencv": "python opencv_attendance.py",
+    "dev:all": "concurrently -n \"backend,frontend,opencv\" -c \"blue,magenta,cyan\" \"npm:backend:dev\" \"npm:frontend\" \"npm:opencv\"",
+    "dev:web": "concurrently -n \"backend,frontend\" -c \"blue,magenta\" \"npm:backend:dev\" \"npm:frontend\""
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

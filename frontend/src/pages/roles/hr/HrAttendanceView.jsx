@@ -1,42 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar, Camera, Clock, UserCheck, CheckCircle2,
-  Scan, RefreshCw, Plus, Printer, Search, ArrowLeft,
-  Video, VideoOff, ShieldCheck, Sparkles, AlertCircle
+  RefreshCw, Plus, Printer, Search,
+  ExternalLink, Sparkles
 } from 'lucide-react';
+import AttendanceService from '../../../services/AttendanceService';
 import '../../../styles/roles/hr/HrAttendanceView.css';
 import HrShiftManagement from './components/HrShiftManagement';
 
 const ATTENDANCE_CODES = {
-  X: { label: 'Đi làm cả ngày', lv: 1, hl: 1, kl: 0, bg: '#dcfce7', c: '#15803d' },
-  N: { label: 'Làm nửa ngày', lv: 0.5, hl: 0.5, kl: 0.5, bg: '#ccfbf1', c: '#0f766e' },
-  CT: { label: 'Đi công tác', lv: 1, hl: 1, kl: 0, bg: '#e0f2fe', c: '#0369a1' },
-  P: { label: 'Nghỉ phép năm', lv: 0, hl: 1, kl: 0, bg: '#dbeafe', c: '#1d4ed8' },
-  L: { label: 'Nghỉ lễ, Tết', lv: 0, hl: 1, kl: 0, bg: '#ede9fe', c: '#6d28d9' },
-  O: { label: 'Nghỉ ốm (BHXH)', lv: 0, hl: 0, kl: 1, bg: '#fef3c7', c: '#b45309' },
-  KP: { label: 'Nghỉ không lương', lv: 0, hl: 0, kl: 1, bg: '#fee2e2', c: '#b91c1c' }
+  X: { label: 'Đi làm cả ngày', lv: 1, bg: '#dcfce7', c: '#15803d' },
+  M: { label: 'Đi muộn', lv: 1, bg: '#fef3c7', c: '#d97706' },
+  N: { label: 'Làm nửa ngày', lv: 0.5, bg: '#ccfbf1', c: '#0f766e' },
+  CT: { label: 'Đi công tác', lv: 1, bg: '#e0f2fe', c: '#0369a1' },
+  P: { label: 'Nghỉ phép năm', lv: 0, bg: '#dbeafe', c: '#1d4ed8' },
+  L: { label: 'Nghỉ lễ, Tết', lv: 0, bg: '#ede9fe', c: '#6d28d9' },
+  O: { label: 'Nghỉ ốm (BHXH)', lv: 0, bg: '#fef3c7', c: '#b45309' },
+  KP: { label: 'Nghỉ không lương', lv: 0, bg: '#fee2e2', c: '#b91c1c' }
 };
-
-const EMPLOYEES = [
-  { id: 'NV001', ma: 'NV001', ten: 'Nguyễn Văn A', phongBan: 'Ban Giám Đốc' },
-  { id: 'NV002', ma: 'NV002', ten: 'Trần Thị Bích', phongBan: 'Khối Kỹ Thuật (IT)' },
-  { id: 'NV003', ma: 'NV003', ten: 'Lê Hoàng Long', phongBan: 'Khối Kỹ Thuật (IT)' },
-  { id: 'NV004', ma: 'NV004', ten: 'Phạm Minh Đức', phongBan: 'Phòng Kế Toán' },
-  { id: 'NV005', ma: 'NV005', ten: 'Vũ Thị Hoa', phongBan: 'Phòng Nhân Sự' },
-  { id: 'NV006', ma: 'NV006', ten: 'Đỗ Gia Huy', phongBan: 'Khối Sản Xuất' },
-  { id: 'NV007', ma: 'NV007', ten: 'Hoàng Quốc Bảo', phongBan: 'Khối Kinh Doanh' }
-];
 
 export default function HrAttendanceView({ subModule = 'matrix', employee, onBack, onCompleteRegistration, onNavigate }) {
   const [activeTab, setActiveTab] = useState(
-    subModule === 'face-checkin' ? 'kiosk' :
+    subModule === 'live-logs' || subModule === 'face-checkin' ? 'live-logs' :
     subModule === 'register-face' ? 'register' :
     subModule === 'shifts' ? 'shifts' : 'matrix'
   );
 
   useEffect(() => {
-    if (subModule === 'face-checkin') {
-      setActiveTab('kiosk');
+    if (subModule === 'face-checkin' || subModule === 'live-logs') {
+      setActiveTab('live-logs');
     } else if (subModule === 'register-face') {
       setActiveTab('register');
     } else if (subModule === 'shifts') {
@@ -45,188 +37,156 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
       setActiveTab('matrix');
     }
   }, [subModule]);
-  const [period, setPeriod] = useState('2026-04');
-  const [selectedBrush, setSelectedBrush] = useState('X');
+
+  const now = new Date();
+  const defaultPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [period, setPeriod] = useState(defaultPeriod);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
-  const [isPainting, setIsPainting] = useState(false);
 
-  const [attendanceData, setAttendanceData] = useState(() => {
-    const init = {};
-    EMPLOYEES.forEach((emp, i) => {
-      init[emp.id] = { d: {}, ot: i === 1 ? 12 : i === 2 ? 8 : i === 5 ? 18 : 0 };
-      for (let day = 1; day <= 28; day++) {
-        const dow = (day + 2) % 7;
-        if (dow === 0) continue;
-        init[emp.id].d[day] = (day === 12 && i === 4) ? 'P' : (day === 18 && i === 6) ? 'CT' : 'X';
+  const [matrixData, setMatrixData] = useState({});
+  const [realEmployees, setRealEmployees] = useState([]);
+  const [daysInMonth, setDaysInMonth] = useState(30);
+  const [loadingMatrix, setLoadingMatrix] = useState(false);
+
+  const [liveLogs, setLiveLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const fetchMatrix = async () => {
+    try {
+      setLoadingMatrix(true);
+      const [y, m] = period.split('-').map(Number);
+      const res = await AttendanceService.getMonthMatrix({ year: y, month: m });
+      const data = res?.data || res || {};
+      if (data.employees && Array.isArray(data.employees)) {
+        setRealEmployees(data.employees);
       }
-    });
-    return init;
-  });
-
-  const [useRealWebcam, setUseRealWebcam] = useState(false);
-  const [webcamError, setWebcamError] = useState(null);
-  const videoRef = useRef(null);
-  const [scanning, setScanning] = useState(false);
-  const [liveLogs, setLiveLogs] = useState([
-    { id: 1, name: 'Nguyễn Văn A', code: 'NV001', time: '08:02:15', status: 'Hợp lệ', score: 99.2, device: 'Cổng Kiosk A' },
-    { id: 2, name: 'Trần Thị Bích', code: 'NV002', time: '08:14:40', status: 'Hợp lệ', score: 98.7, device: 'Cổng Kiosk A' },
-    { id: 3, name: 'Lê Hoàng Long', code: 'NV003', time: '08:29:10', status: 'Hợp lệ', score: 99.5, device: 'Cổng Kiosk B' }
-  ]);
-
-  const [regAngle, setRegAngle] = useState(1);
-  const [regSuccess, setRegSuccess] = useState(false);
+      if (data.matrix) {
+        setMatrixData(data.matrix);
+      }
+      if (data.daysInMonth) {
+        setDaysInMonth(data.daysInMonth);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMatrix(false);
+    }
+  };
 
   useEffect(() => {
-    let stream = null;
-    if (useRealWebcam) {
-      navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
-        .then(s => {
-          stream = s;
-          if (videoRef.current) {
-            videoRef.current.srcObject = s;
-          }
-        })
-        .catch(() => {
-          setWebcamError('Không thể mở Camera thực tế hoặc quyền bị chặn');
-          setUseRealWebcam(false);
-        });
-    }
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-      }
-    };
-  }, [useRealWebcam]);
+    fetchMatrix();
+  }, [period]);
 
-  const daysInMonth = 30;
+  const fetchLiveLogs = async () => {
+    try {
+      setLoadingLogs(true);
+      const res = await AttendanceService.getTodayEvents();
+      const list = (res?.data && Array.isArray(res.data)) ? res.data : (Array.isArray(res) ? res : []);
+      setLiveLogs(list);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveLogs();
+  }, []);
+
+  const [regEmpId, setRegEmpId] = useState('');
+  const [regSuccess, setRegSuccess] = useState(false);
+  const [regFile, setRegFile] = useState(null);
+  const [regPreview, setRegPreview] = useState(null);
+  const [regSubmitting, setRegSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (realEmployees.length > 0 && !regEmpId) {
+      setRegEmpId(realEmployees[0].EmployeeCode);
+    }
+  }, [realEmployees, regEmpId]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRegFile(file);
+      setRegPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRegisterSubmit = async () => {
+    try {
+      setRegSubmitting(true);
+      const formData = new FormData();
+      formData.append('employeeCode', regEmpId);
+      if (regFile) {
+        formData.append('faceImages', regFile);
+      }
+      await AttendanceService.registerFace(formData);
+      setRegSuccess(true);
+      setRegFile(null);
+      setRegPreview(null);
+    } catch (err) {
+      alert(err.message || 'Lỗi khi đăng ký Face ID!');
+    } finally {
+      setRegSubmitting(false);
+    }
+  };
+
+  const [curYear, curMonth] = period.split('-').map(Number);
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const getDayOfWeekName = (day) => {
-    const dow = (day + 2) % 7;
-    const names = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    return names[dow];
+  const getDayInfo = (day) => {
+    const dateObj = new Date(curYear, curMonth - 1, day);
+    const dow = dateObj.getDay();
+    const isSunday = dow === 0;
+    const dowName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dow];
+    return { dow, dowName, isSunday };
   };
 
-  const isWeekendDay = (day) => {
-    return (day + 2) % 7 === 0;
-  };
+  const departments = Array.from(new Set(realEmployees.map(e => e.DepartmentName).filter(Boolean)));
 
-  const summarizeEmp = (empId) => {
-    const a = attendanceData[empId] || { d: {}, ot: 0 };
-    let lv = 0;
-    let hl = 0;
-    let kl = 0;
-    let pL = 0;
-    for (const d in a.d) {
-      const code = a.d[d];
-      const c = ATTENDANCE_CODES[code];
-      if (c) {
-        lv += c.lv;
-        hl += c.hl;
-        kl += c.kl;
-        if (code === 'P' || code === 'L') pL += 1;
-      }
-    }
-    return { lv, hl, kl, pL, ot: a.ot || 0 };
-  };
-
-  const handleCellClick = (empId, day) => {
-    setAttendanceData(prev => {
-      const currentEmp = prev[empId] || { d: {}, ot: 0 };
-      const currentDays = { ...currentEmp.d };
-      if (!selectedBrush) {
-        delete currentDays[day];
-      } else {
-        currentDays[day] = selectedBrush;
-      }
-      return {
-        ...prev,
-        [empId]: {
-          ...currentEmp,
-          d: currentDays
-        }
-      };
-    });
-  };
-
-  const handleCellHover = (empId, day) => {
-    if (!isPainting) return;
-    handleCellClick(empId, day);
-  };
-
-  const handleFillEmpty = () => {
-    setAttendanceData(prev => {
-      const updated = { ...prev };
-      EMPLOYEES.forEach(emp => {
-        const empAtt = updated[emp.id] || { d: {}, ot: 0 };
-        const newD = { ...empAtt.d };
-        for (let d = 1; d <= daysInMonth; d++) {
-          if (isWeekendDay(d)) continue;
-          if (!newD[d]) newD[d] = 'X';
-        }
-        updated[emp.id] = { ...empAtt, d: newD };
-      });
-      return updated;
-    });
-  };
-
-  const handleClearMonth = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dữ liệu chấm công tháng này?')) {
-      setAttendanceData(prev => {
-        const updated = {};
-        EMPLOYEES.forEach(emp => {
-          updated[emp.id] = { d: {}, ot: 0 };
-        });
-        return updated;
-      });
-    }
-  };
-
-  const handleOtChange = (empId, value) => {
-    const num = Math.max(0, parseFloat(value) || 0);
-    setAttendanceData(prev => ({
-      ...prev,
-      [empId]: {
-        ...(prev[empId] || { d: {} }),
-        ot: num
-      }
-    }));
-  };
-
-  const handleSimulateCheckin = () => {
-    setScanning(true);
-    setTimeout(() => {
-      setScanning(false);
-      const newLog = {
-        id: Date.now(),
-        name: 'Đỗ Gia Huy',
-        code: 'NV006',
-        time: new Date().toLocaleTimeString('vi-VN'),
-        status: 'Hợp lệ',
-        score: 99.8,
-        device: 'Camera Kiosk Chính'
-      };
-      setLiveLogs(prev => [newLog, ...prev]);
-    }, 1200);
-  };
-
-  const filteredEmployees = EMPLOYEES.filter(e => {
-    const matchDept = !deptFilter || e.phongBan === deptFilter;
-    const matchSearch = !searchTerm ||
-      e.ten.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.ma.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchDept && matchSearch;
+  const filteredEmployees = realEmployees.filter(emp => {
+    const nameMatch = (emp.FullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (emp.EmployeeCode || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const deptMatch = !deptFilter || emp.DepartmentName === deptFilter;
+    return nameMatch && deptMatch;
   });
 
+  const calculateTotalWork = (daysObj = {}) => {
+    let total = 0;
+    for (const d in daysObj) {
+      const dayVal = daysObj[d];
+      const code = typeof dayVal === 'string' ? dayVal : dayVal?.code;
+      const credit = typeof dayVal === 'object' && dayVal?.credit !== undefined ? dayVal.credit : null;
+      if (credit !== null && credit !== undefined) {
+        total += Number(credit);
+      } else if (code === 'X' || code === 'CT') {
+        total += 1;
+      } else if (code === 'N') {
+        total += 0.5;
+      }
+    }
+    return total;
+  };
+
   return (
-    <div className="attendance-view-container" onMouseUp={() => setIsPainting(false)}>
+    <div className="attendance-view-container">
       <div className="ph">
         <div>
           <h1>Quản lý chấm công & Điểm danh OpenCV</h1>
           <p>Bảng chấm công ma trận đa ký hiệu, đồng bộ nhận diện khuôn mặt Kiosk và phân ca</p>
         </div>
         <div className="ph-tools">
+          <button
+            className="btn"
+            style={{ background: '#0284c7', color: '#ffffff', borderColor: '#0284c7' }}
+            onClick={() => window.open('/kiosk', '_blank')}
+          >
+            <ExternalLink size={15} />
+            <span>Mở Trạm Kiosk Công Cộng</span>
+          </button>
           <button className="btn" onClick={() => window.print()}>
             <Printer size={15} />
             <span>In biểu chấm công</span>
@@ -239,6 +199,7 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
           className={`attendance-tab-btn ${activeTab === 'matrix' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('matrix');
+            fetchMatrix();
             if (onNavigate) onNavigate('hr-attendance', 'history');
           }}
         >
@@ -246,14 +207,15 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
           <span>Bảng chấm công ma trận tháng</span>
         </button>
         <button
-          className={`attendance-tab-btn ${activeTab === 'kiosk' ? 'active' : ''}`}
+          className={`attendance-tab-btn ${activeTab === 'live-logs' ? 'active' : ''}`}
           onClick={() => {
-            setActiveTab('kiosk');
+            setActiveTab('live-logs');
+            fetchLiveLogs();
             if (onNavigate) onNavigate('hr-attendance', 'face-checkin');
           }}
         >
           <Camera size={16} />
-          <span>Camera Kiosk OpenCV Face Check-in</span>
+          <span>Nhật ký điểm danh Kiosk hôm nay ({liveLogs.length})</span>
         </button>
         <button
           className={`attendance-tab-btn ${activeTab === 'register' ? 'active' : ''}`}
@@ -279,223 +241,211 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
 
       {activeTab === 'matrix' && (
         <>
-          <div className="attendance-brush-toolbar">
+          <div className="attendance-legend-bar">
             {Object.entries(ATTENDANCE_CODES).map(([k, c]) => (
-              <button
-                key={k}
-                className={`brush-code-btn ${selectedBrush === k ? 'active' : ''}`}
-                style={{ background: c.bg, color: c.c }}
-                onClick={() => setSelectedBrush(k)}
-              >
-                <span>{k}</span>
-                <small>{c.label}</small>
-              </button>
+              <span key={k} className="legend-tag" style={{ background: c.bg, color: c.c }}>
+                <b>{k}</b> {c.label}
+              </span>
             ))}
-            <button
-              className={`brush-code-btn ${selectedBrush === '' ? 'active' : ''}`}
-              style={{ background: '#f1f5f9', color: '#475569' }}
-              onClick={() => setSelectedBrush('')}
-            >
-              <span>Tẩy</span>
-              <small>Xóa ô</small>
-            </button>
-
-            <span className="grow"></span>
-
-            <div className="search">
-              <Search size={15} />
-              <input
-                className="inp"
-                placeholder="Tìm nhân viên..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '180px' }}
-              />
-            </div>
-
-            <label className="mp">
-              <span>Kỳ:</span>
-              <input
-                type="month"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-              />
-            </label>
-
-            <button className="btn" onClick={handleFillEmpty}>
-              <CheckCircle2 size={15} />
-              <span>Điền "X" ngày trống</span>
-            </button>
-
-            <button className="btn danger" onClick={handleClearMonth}>
-              <span>Xóa tháng</span>
-            </button>
           </div>
 
-          <div className="attendance-matrix-wrapper">
-            <table className="attendance-matrix-table">
+          <div className="card filter-bar-attendance">
+            <div className="field-group-row">
+              <label className="mp">
+                <span>Kỳ chấm công:</span>
+                <input
+                  type="month"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                />
+              </label>
+
+              <div className="search-inp-wrapper">
+                <Search size={15} color="#64748b" />
+                <input
+                  type="text"
+                  placeholder="Tìm nhân viên theo tên hoặc mã..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <select
+                className="dept-select"
+                value={deptFilter}
+                onChange={(e) => setDeptFilter(e.target.value)}
+              >
+                <option value="">Tất cả phòng ban</option>
+                {departments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+
+              <div style={{ marginLeft: 'auto' }}>
+                <button className="btn sm" onClick={fetchMatrix} disabled={loadingMatrix}>
+                  <RefreshCw size={13} className={loadingMatrix ? 'spin' : ''} />
+                  <span>Làm mới</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="table-wrapper attendance-matrix-scroll">
+            <table className="tbl attendance-matrix-table">
               <thead>
                 <tr>
-                  <th className="emp-name-col">
-                    <div>NHÂN VIÊN</div>
-                    <small style={{ color: '#94a3b8' }}>{period}</small>
-                  </th>
-                  {daysArray.map((day) => {
-                    const isWe = isWeekendDay(day);
-                    const isTd = day === 25;
+                  <th className="col-idx">#</th>
+                  <th className="col-emp">NHÂN VIÊN</th>
+                  <th className="col-dept">PHÒNG BAN</th>
+                  {daysArray.map(day => {
+                    const info = getDayInfo(day);
                     return (
                       <th
                         key={day}
-                        className={`${isTd ? 'today' : isWe ? 'weekend' : ''}`}
+                        className={`day-col ${info.isSunday ? 'weekend' : ''}`}
                       >
-                        <div>{day}</div>
-                        <div>{getDayOfWeekName(day)}</div>
+                        {info.dowName}{day}
                       </th>
                     );
                   })}
-                  <th>Công<br />làm</th>
-                  <th>Phép<br />+Lễ</th>
-                  <th>Nghỉ<br />KL</th>
-                  <th>Công<br />hưởng</th>
-                  <th>Giờ<br />OT</th>
+                  <th className="summary-col">CÔNG</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map((emp) => {
-                  const empAtt = attendanceData[emp.id] || { d: {}, ot: 0 };
-                  const sum = summarizeEmp(emp.id);
-                  return (
-                    <tr key={emp.id}>
-                      <td className="emp-name-col">
-                        <b>{emp.ten}</b>
-                        <br />
-                        <small style={{ color: '#64748b' }}>{emp.ma} · {emp.phongBan}</small>
-                      </td>
-                      {daysArray.map((day) => {
-                        const code = empAtt.d[day] || '';
-                        const c = ATTENDANCE_CODES[code];
-                        const isWe = isWeekendDay(day);
-                        return (
-                          <td
-                            key={day}
-                            className={`day-cell ${isWe ? 'weekend' : ''}`}
-                            style={{
-                              background: c ? c.bg : undefined,
-                              color: c ? c.c : undefined
-                            }}
-                            onMouseDown={() => {
-                              setIsPainting(true);
-                              handleCellClick(emp.id, day);
-                            }}
-                            onMouseEnter={() => handleCellHover(emp.id, day)}
-                          >
-                            {code}
-                          </td>
-                        );
-                      })}
-                      <td className="summary-col">{sum.lv}</td>
-                      <td className="summary-col">{sum.pL}</td>
-                      <td className="summary-col">{sum.kl}</td>
-                      <td className="summary-col highlight">{sum.hl}</td>
-                      <td className="ot-col">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          value={empAtt.ot || ''}
-                          onChange={(e) => handleOtChange(emp.id, e.target.value)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={daysArray.length + 4} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                      {loadingMatrix ? 'Đang tải bảng chấm công từ cơ sở dữ liệu...' : 'Không có nhân viên phù hợp bộ lọc.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((emp, index) => {
+                    const empId = emp.EmployeeId;
+                    const empAtt = matrixData[empId] || { days: {} };
+                    const totalWork = calculateTotalWork(empAtt.days);
+
+                    return (
+                      <tr key={empId}>
+                        <td className="col-idx">{index + 1}</td>
+                        <td className="col-emp">
+                          <span className="emp-name">{emp.FullName}</span>
+                          <span className="emp-code-sub">{emp.EmployeeCode}</span>
+                        </td>
+                        <td className="col-dept">{emp.DepartmentName || 'Khối Kỹ Thuật'}</td>
+                        {daysArray.map(day => {
+                          const dayVal = empAtt.days ? empAtt.days[day] : null;
+                          const rawCode = typeof dayVal === 'string' ? dayVal : dayVal?.code || '';
+                          const code = rawCode === 'MUON' ? 'M' : rawCode;
+                          const c = ATTENDANCE_CODES[code];
+                          const info = getDayInfo(day);
+
+                          return (
+                            <td
+                              key={day}
+                              className={`day-cell ${info.isSunday ? 'weekend' : ''}`}
+                              style={{
+                                background: c ? c.bg : undefined,
+                                color: c ? c.c : undefined
+                              }}
+                              title={dayVal?.timeIn ? `Vào: ${dayVal.timeIn} | Ra: ${dayVal.timeOut || 'Đang làm việc'}${dayVal.lateMinutes > 0 ? ` (Muộn ${dayVal.lateMinutes}p)` : ''}${dayVal.earlyMinutes > 0 ? ` (Sớm ${dayVal.earlyMinutes}p)` : ''}${dayVal.credit !== undefined ? ` · ${dayVal.credit} công` : ''}` : undefined}
+                            >
+                              {code}
+                            </td>
+                          );
+                        })}
+                        <td className="summary-col">
+                          <strong>{totalWork}</strong>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
           <div className="small muted mt">
-            Quy định: Công chuẩn <strong>26 ngày/tháng</strong> · Nghỉ tuần: <strong>Chủ nhật</strong> · Công hưởng = Đi làm + Công tác + Nghỉ phép + Nghỉ lễ có lương. Bấm giữ chuột và kéo để chấm nhanh nhiều ngày.
+            Quy định: Công chuẩn <strong>26 ngày/tháng</strong> · Nghỉ tuần: <strong>Chủ nhật</strong> · Dữ liệu được đồng bộ trực tiếp từ máy chấm công Kiosk OpenCV của nhân viên và không thể sửa đổi.
           </div>
         </>
       )}
 
-      {activeTab === 'kiosk' && (
-        <div className="kiosk-grid-container">
-          <div className="card">
-            <div className="card-h">
-              <h3>Camera Nhận diện Khuôn mặt Kiosk</h3>
-              <div className="ph-tools">
-                <button
-                  className={`btn sm ${useRealWebcam ? 'danger' : 'teal'}`}
-                  onClick={() => setUseRealWebcam(!useRealWebcam)}
-                >
-                  {useRealWebcam ? <VideoOff size={14} /> : <Video size={14} />}
-                  <span>{useRealWebcam ? 'Tắt Webcam' : 'Bật Webcam thật'}</span>
-                </button>
-                <button
-                  className="btn sm pri"
-                  disabled={scanning}
-                  onClick={handleSimulateCheckin}
-                >
-                  <Scan size={14} />
-                  <span>{scanning ? 'Đang nhận diện...' : 'Quét thử Face ID'}</span>
-                </button>
-              </div>
-            </div>
-            <div className="card-b">
-              <div className="camera-preview-box">
-                {useRealWebcam ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="camera-preview-video"
-                  />
-                ) : (
-                  <div style={{ textAlign: 'center', color: '#94a3b8' }}>
-                    <Scan size={52} style={{ color: '#4ade80', margin: '0 auto 12px' }} />
-                    <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '15px' }}>
-                      Kiosk AI OpenCV Sẵn sàng
-                    </div>
-                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                      Bật webcam thật hoặc nhấn "Quét thử Face ID" để kiểm tra luồng nhận diện
-                    </div>
-                  </div>
-                )}
-
-                <div className="face-scanning-overlay">
-                  <div className="face-bounding-box">
-                    <div className="face-bounding-box-badge">
-                      OpenCV Liveness: 99.4%
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {activeTab === 'live-logs' && (
+        <div className="card">
+          <div className="card-h">
+            <h3>Nhật ký điểm danh thực tế từ Kiosk & OpenCV hôm nay ({liveLogs.length})</h3>
+            <div className="ph-tools">
+              <button
+                className="btn sm"
+                onClick={fetchLiveLogs}
+                disabled={loadingLogs}
+              >
+                <RefreshCw size={14} className={loadingLogs ? 'spin' : ''} />
+                <span>Làm mới</span>
+              </button>
+              <button
+                className="btn sm pri"
+                onClick={() => window.open('/kiosk', '_blank')}
+              >
+                <ExternalLink size={14} />
+                <span>Mở Trạm Kiosk toàn màn hình</span>
+              </button>
             </div>
           </div>
-
-          <div className="kiosk-log-card">
-            <div className="card-h" style={{ padding: '0 0 10px', borderBottom: '1px solid #eef2f1' }}>
-              <h3>Nhật ký điểm danh thời gian thực</h3>
-              <span className="badge b-green">Trực tiếp</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {liveLogs.map((log) => (
-                <div key={log.id} className="tli">
-                  <div className="avatar" style={{ background: '#ccfbf1', color: '#0f766e' }}>
-                    {(log.name || 'N').split(' ').slice(-1)[0]?.[0] || 'N'}
-                  </div>
-                  <div className="grow">
-                    <b>{log.name}</b>
-                    <small>{log.code} · {log.device}</small>
-                  </div>
-                  <div className="v">
-                    <span className="badge b-green">{log.time}</span>
-                    <small style={{ color: '#15803d', marginTop: '2px' }}>Độ khớp {log.score}%</small>
-                  </div>
+          <div className="card-b">
+            {liveLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#64748b', padding: '36px 12px' }}>
+                <Clock size={44} style={{ margin: '0 auto 10px', color: '#94a3b8' }} />
+                <div style={{ fontWeight: 600, fontSize: '15px' }}>Chưa có lượt điểm danh nào hôm nay</div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                  Khi nhân viên quét mặt tại trạm Kiosk hoặc chạy tiến trình OpenCV, dữ liệu sẽ tức thì hiển thị tại đây.
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Mã NV</th>
+                      <th>Họ và tên</th>
+                      <th>Phòng ban</th>
+                      <th>Giờ vào</th>
+                      <th>Giờ ra</th>
+                      <th>Trạng thái</th>
+                      <th>Hình thức</th>
+                      <th>Thiết bị</th>
+                      <th>Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveLogs.map((log, idx) => (
+                      <tr key={log.AttendanceId || idx}>
+                        <td>{idx + 1}</td>
+                        <td><strong>{log.EmployeeCode}</strong></td>
+                        <td>{log.FullName}</td>
+                        <td>{log.DepartmentName || 'Khối Kỹ Thuật'}</td>
+                        <td>
+                          <span className="badge b-green">{log.TimeInStr || '-'}</span>
+                        </td>
+                        <td>
+                          {log.TimeOutStr ? <span className="badge b-blue">{log.TimeOutStr}</span> : '-'}
+                        </td>
+                        <td>
+                          {log.LateMinutes > 0 ? (
+                            <span className="badge b-amber">Muộn {log.LateMinutes}p</span>
+                          ) : (
+                            <span className="badge b-green">Đúng giờ</span>
+                          )}
+                        </td>
+                        <td>{log.CheckinMethod || 'OPENCV_CAMERA'}</td>
+                        <td>{log.DeviceName || 'Kiosk Cổng Chính'}</td>
+                        <td>{log.Note || 'Hợp lệ'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -503,15 +453,15 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
       {activeTab === 'register' && (
         <div className="card">
           <div className="card-h">
-            <h3>Đăng ký hồ sơ sinh trắc học Face ID</h3>
-            <span className="badge b-p">Mô hình ResNet50 OpenCV</span>
+            <h3>Đăng ký hồ sơ sinh trắc học Face ID cho nhân sự</h3>
+            <span className="badge b-p">Mô hình ResNet50 OpenCV (128D)</span>
           </div>
           <div className="card-b">
             {regSuccess ? (
               <div className="banner" style={{ background: '#dcfce7', borderColor: '#bbf7d0', color: '#15803d' }}>
                 <CheckCircle2 size={20} />
                 <div className="grow">
-                  <b>Đăng ký Face ID thành công!</b> Vector đặc trưng 512 chiều đã được lưu trữ an toàn trong cơ sở dữ liệu.
+                  <b>Đăng ký Face ID thành công!</b> Ảnh khuôn mặt đã được lưu vào thư mục <code>faces/</code> và trạm Kiosk OpenCV đã sẵn sàng nhận diện.
                 </div>
                 <button className="btn sm pri" onClick={() => setRegSuccess(false)}>
                   Đăng ký nhân sự khác
@@ -519,22 +469,48 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
               </div>
             ) : (
               <div className="grid c2">
-                <div className="camera-preview-box" style={{ height: '320px' }}>
-                  <div style={{ textAlign: 'center', color: '#ffffff' }}>
-                    <Camera size={44} style={{ color: '#38bdf8', margin: '0 auto 10px' }} />
-                    <div style={{ fontWeight: 700 }}>Góc chụp {regAngle}/3: {regAngle === 1 ? 'Chính diện' : regAngle === 2 ? 'Nghiêng trái 20°' : 'Nghiêng phải 20°'}</div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Giữ khuôn mặt ổn định trong khung hình</div>
-                  </div>
+                <div className="camera-preview-box" style={{ height: '320px', background: '#0f172a', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {regPreview ? (
+                    <img
+                      src={regPreview}
+                      alt="Face Preview"
+                      style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                      <Camera size={44} style={{ color: '#38bdf8', margin: '0 auto 10px' }} />
+                      <div style={{ fontWeight: 700 }}>Chưa chọn ảnh khuôn mặt</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                        Tải lên ảnh chân dung rõ mặt (.jpg, .png)
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div className="field">
                     <span>Chọn nhân viên đăng ký Face ID:</span>
-                    <select className="inp">
-                      {EMPLOYEES.map(e => (
-                        <option key={e.id} value={e.id}>{e.ma} - {e.ten} ({e.phongBan})</option>
+                    <select
+                      className="inp"
+                      value={regEmpId}
+                      onChange={(e) => setRegEmpId(e.target.value)}
+                    >
+                      {realEmployees.map(e => (
+                        <option key={e.EmployeeId} value={e.EmployeeCode}>{e.EmployeeCode} - {e.FullName} ({e.DepartmentName || 'Chung'})</option>
                       ))}
                     </select>
                   </div>
+
+                  <div className="field">
+                    <span>Tải ảnh khuôn mặt chính diện:</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="inp"
+                    />
+                  </div>
+
                   <div className="field">
                     <span>Đánh giá chất lượng hình ảnh AI:</span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px' }}>
@@ -547,25 +523,20 @@ export default function HrAttendanceView({ subModule = 'matrix', employee, onBac
                         <strong>98% (Chuẩn)</strong>
                       </div>
                       <div className="row" style={{ justifyContent: 'space-between' }}>
-                        <span>Chống giả mạo (Anti-spoofing):</span>
-                        <strong>99.5% (Người thật)</strong>
+                        <span>Mô hình tương thích:</span>
+                        <strong>dlib 128D Face Encodings</strong>
                       </div>
                     </div>
                   </div>
+
                   <div className="row mt">
                     <button
                       className="btn pri"
-                      onClick={() => {
-                        if (regAngle < 3) {
-                          setRegAngle(regAngle + 1);
-                        } else {
-                          setRegSuccess(true);
-                          setRegAngle(1);
-                        }
-                      }}
+                      disabled={regSubmitting}
+                      onClick={handleRegisterSubmit}
                     >
                       <Sparkles size={15} />
-                      <span>{regAngle < 3 ? `Chụp góc tiếp theo (${regAngle}/3)` : 'Hoàn tất đăng ký Face ID'}</span>
+                      <span>{regSubmitting ? 'Đang lưu trữ...' : 'Hoàn tất đăng ký Face ID'}</span>
                     </button>
                   </div>
                 </div>

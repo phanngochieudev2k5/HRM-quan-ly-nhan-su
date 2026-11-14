@@ -401,59 +401,24 @@ export const HrService = {
     return res.data || res;
   },
 
-  // ==================== QUẢN LÝ CA LÀM VIỆC & PHÂN CA ====================
-
-  async getShifts(params = {}) {
-    const query = new URLSearchParams();
-    if (params.isActive !== undefined && params.isActive !== '' && params.isActive !== 'all') {
-      query.append('isActive', params.isActive);
-    }
-    if (params.shiftType && params.shiftType !== 'all') {
-      query.append('shiftType', params.shiftType);
-    }
-    if (params.search) {
-      query.append('search', params.search);
-    }
-    const qs = query.toString();
-    const res = await ApiClient.get(qs ? `/shifts?${qs}` : '/shifts');
-    return res.data || [];
+  async registerFace(data) {
+    const res = await ApiClient.post('/attendance/register-face', data);
+    return res.data || res;
   },
 
-  async createShift(shiftData) {
-    const res = await ApiClient.post('/shifts', shiftData);
-    return res.data;
+  async requestFacePhoto(data) {
+    const res = await ApiClient.post('/attendance/request-face-photo', data);
+    return res.data || res;
   },
 
-  async updateShift(id, shiftData) {
-    const res = await ApiClient.put(`/shifts/${id}`, shiftData);
-    return res.data;
-  },
-
-  async toggleShiftStatus(id, isActive) {
-    const res = await ApiClient.patch(`/shifts/${id}/status`, { isActive });
-    return res.data;
-  },
-
-  async getShiftSchedule(params = {}) {
-    const query = new URLSearchParams();
-    if (params.startDate) query.append('startDate', params.startDate);
-    if (params.endDate) query.append('endDate', params.endDate);
-    if (params.departmentId && params.departmentId !== 'all') {
-      query.append('departmentId', params.departmentId);
-    }
-    if (params.search) query.append('search', params.search);
-    const res = await ApiClient.get(`/shifts/schedule?${query.toString()}`);
-    return res.data || { employees: [], totalAssignments: 0 };
-  },
-
-  async assignShifts(payload) {
-    const res = await ApiClient.post('/shifts/assign', payload);
-    return res;
-  },
-
-  async removeShiftAssignment(attendanceId) {
-    const res = await ApiClient.delete(`/shifts/assign/${attendanceId}`);
-    return res.data;
+  async getPendingFaceRequest(params = {}) {
+    const q = new URLSearchParams();
+    if (params.employeeId) q.append('employeeId', params.employeeId);
+    if (params.username) q.append('username', params.username);
+    if (params.email) q.append('email', params.email);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    const res = await ApiClient.get(`/attendance/pending-face-request${qs}`);
+    return res.data || res;
   }
 };
 

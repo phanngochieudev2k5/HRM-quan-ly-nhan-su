@@ -1,13 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Calendar, Clock, DollarSign, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import AuthService from '../../../services/AuthService';
+import AttendanceService from '../../../services/AttendanceService';
 import '../../../styles/roles/employee/EmployeeDashboard.css';
 
 export default function EmployeeDashboard({ onNavigate, currentUser }) {
   const user = currentUser || AuthService.getCurrentUser() || {};
   const displayName = user.name || user.fullName || user.username || 'Nhân viên';
+  const [attRecords, setAttRecords] = useState([]);
+
+  useEffect(() => {
+    const fetchAtt = async () => {
+      try {
+        const now = new Date();
+        const res = await AttendanceService.getMyAttendance({
+          employeeId: user.employeeId || user.EmployeeId || null,
+          userId: user.userId || user.id || null,
+          employeeCode: user.employeeCode || user.EmployeeCode || user.username,
+          username: user.username || user.Username,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1
+        });
+        const list = (res?.data && Array.isArray(res.data)) ? res.data : (Array.isArray(res) ? res : []);
+        setAttRecords(list);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAtt();
+  }, [user]);
+
+  const workDaysCount = attRecords.filter(r => r.TimeInStr).length;
+  const otHours = attRecords.reduce((acc, r) => acc + (parseFloat(r.OvertimeHours) || 0), 0);
+  const recentRecords = [...attRecords].reverse().slice(0, 5);
 
   return (
     <div className="employee-dashboard-container">
@@ -25,10 +52,10 @@ export default function EmployeeDashboard({ onNavigate, currentUser }) {
         <div className="ph-tools">
           <button
             className="btn pri"
-            onClick={() => onNavigate('employee-checkin')}
+            onClick={() => window.open('/kiosk', '_blank')}
           >
             <Camera size={15} />
-            <span>Chấm công OpenCV</span>
+            <span>Trạm Kiosk Chấm Công</span>
           </button>
           <button
             className="btn"
@@ -44,36 +71,35 @@ export default function EmployeeDashboard({ onNavigate, currentUser }) {
       <div className="grid c4">
         <StatCard
           title="NGÀY CÔNG THÁNG"
-          value="21.5 / 26"
-          subtext="Đạt 96.2% chỉ tiêu công"
+          value={`${workDaysCount} / 22`}
+          subtext={workDaysCount > 0 ? `Đạt ${((workDaysCount / 22) * 100).toFixed(1)}% chỉ tiêu công` : 'Chưa có ngày công trong tháng'}
           icon={Clock}
           color="#0f766e"
           bg="#ccfbf1"
-          trend="+1.2%"
         />
         <StatCard
           title="PHÉP NĂM CÒN LẠI"
-          value="11.0"
+          value="12.0"
           unit="ngày"
-          subtext="Đã sử dụng 1.0 / 12 ngày phép"
+          subtext="Chưa sử dụng ngày phép"
           icon={Calendar}
           color="#2563eb"
           bg="#dbeafe"
         />
         <StatCard
-          title="THỰC LĨNH THÁNG 04/2026"
-          value="23.209.769"
+          title="THỰC LĨNH TẠM TÍNH"
+          value="0"
           unit="đ"
-          subtext="Đã giải ngân qua Vietcombank"
+          subtext="Theo dữ liệu công thực tế"
           icon={DollarSign}
           color="#16a34a"
           bg="#dcfce7"
         />
         <StatCard
           title="GIỜ TĂNG CA (OT)"
-          value="8.0"
+          value={otHours.toFixed(1)}
           unit="giờ"
-          subtext="Được miễn thuế TNCN 2026"
+          subtext={otHours > 0 ? 'Đã được Quản lý duyệt' : 'Chưa có giờ tăng ca'}
           icon={Award}
           color="#7c3aed"
           bg="#ede9fe"
@@ -83,45 +109,36 @@ export default function EmployeeDashboard({ onNavigate, currentUser }) {
       <div className="grid c2">
         <div className="card">
           <div className="card-h">
-            <h3>Lịch sử điểm danh 5 ngày gần nhất</h3>
+            <h3>Lịch sử điểm danh gần nhất</h3>
             <button className="btn sm" onClick={() => onNavigate('employee-attendance')}>
               <span>Xem toàn bộ lịch</span>
               <ArrowRight size={13} />
             </button>
           </div>
           <div className="card-b">
-            <div className="tli">
-              <span className="badge b-green">Hôm nay</span>
-              <div className="grow">
-                <b>Thứ Hai, 25/04/2026</b>
-                <small>Giờ vào: 08:02:15 · Giờ ra: Đang làm việc</small>
+            {recentRecords.length > 0 ? (
+              recentRecords.map((r) => {
+                const isLate = r.LateMinutes > 0;
+                return (
+                  <div className="tli" key={r.AttendanceId || r.DayNum}>
+                    <span className={`badge ${isLate ? 'b-amber' : 'b-green'}`}>
+                      {r.AttendanceDate ? String(r.AttendanceDate).slice(0, 10) : `Ngày ${r.DayNum}`}
+                    </span>
+                    <div className="grow">
+                      <b>{r.AttendanceDate ? String(r.AttendanceDate).slice(0, 10) : `Ngày ${r.DayNum}`}</b>
+                      <small>Giờ vào: {r.TimeInStr ? r.TimeInStr.slice(0, 5) : '---'} · Giờ ra: {r.TimeOutStr ? r.TimeOutStr.slice(0, 5) : 'Đang làm việc'}</small>
+                    </div>
+                    <span className={`badge ${isLate ? 'b-amber' : 'b-green'}`}>
+                      {isLate ? `Muộn ${r.LateMinutes}p` : 'Đúng giờ'}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontStyle: 'italic' }}>
+                Chưa có dữ liệu điểm danh trong tháng. Hãy check-in tại Kiosk.
               </div>
-              <span className="badge b-green">Đúng giờ</span>
-            </div>
-            <div className="tli">
-              <span className="badge b-p">Hôm qua</span>
-              <div className="grow">
-                <b>Chủ nhật, 24/04/2026</b>
-                <small>Ngày nghỉ tuần</small>
-              </div>
-              <span className="muted small">Nghỉ tuần</span>
-            </div>
-            <div className="tli">
-              <span className="badge b-p">23/04</span>
-              <div className="grow">
-                <b>Thứ Bảy, 23/04/2026</b>
-                <small>Giờ vào: 08:01:10 · Giờ ra: 17:32:00</small>
-              </div>
-              <span className="badge b-green">Đúng giờ</span>
-            </div>
-            <div className="tli">
-              <span className="badge b-amber">16/04</span>
-              <div className="grow">
-                <b>Thứ Sáu, 16/04/2026</b>
-                <small>Giờ vào: 08:45:00 (Đi muộn 15p) · Giờ ra: 17:30:00</small>
-              </div>
-              <span className="badge b-amber">Đi muộn 15p</span>
-            </div>
+            )}
           </div>
         </div>
 

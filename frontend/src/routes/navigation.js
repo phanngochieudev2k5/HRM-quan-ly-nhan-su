@@ -47,7 +47,7 @@ export const moduleToPath = (module, subModule = null) => {
         case 'employee-assets':
             return '/employee/assets';
         case 'employee-checkin':
-            return '/employee/checkin';
+            return '/kiosk';
         case 'employee-attendance':
             return '/employee/attendance';
         case 'employee-leave':

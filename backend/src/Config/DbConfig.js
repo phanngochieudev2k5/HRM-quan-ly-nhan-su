@@ -139,6 +139,21 @@ export const connectDb = async () => {
                         ALTER TABLE tblContract ADD TerminationDecisionFileUrl NVARCHAR(500) NULL;
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblContract') AND name = 'TerminationMeetingFileUrl')
                         ALTER TABLE tblContract ADD TerminationMeetingFileUrl NVARCHAR(500) NULL;
+
+                    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblFaceData') AND name = 'FaceVector512D')
+                    BEGIN
+                        ALTER TABLE tblFaceData ALTER COLUMN FaceVector512D NVARCHAR(MAX) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOnboarding') AND name = 'FaceRequestSent')
+                    BEGIN
+                        ALTER TABLE tblOnboarding ADD FaceRequestSent BIT DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOnboarding') AND name = 'FacePhotosCount')
+                    BEGIN
+                        ALTER TABLE tblOnboarding ADD FacePhotosCount INT DEFAULT 0;
+                    END
                 `);
             } catch (migrationErr) {
                 console.warn(

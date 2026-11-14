@@ -17,7 +17,7 @@ import CandidateRoutes from './src/Routes/CandidateRoutes.js';
 import CareersRoutes from './src/Routes/CareersRoutes.js';
 import OnboardingRoutes from './src/Routes/OnboardingRoutes.js';
 import AssetRoutes from './src/Routes/AssetRoutes.js';
-import ShiftRoutes from './src/Routes/ShiftRoutes.js';
+import AttendanceRoutes from './src/Routes/AttendanceRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -62,7 +62,7 @@ app.use('/api/candidates', CandidateRoutes);
 app.use('/api/careers', CareersRoutes);
 app.use('/api/onboarding', OnboardingRoutes);
 app.use('/api/assets', AssetRoutes);
-app.use('/api/shifts', ShiftRoutes);
+app.use('/api/attendance', AttendanceRoutes);
 
 app.get(
     '/api/departments',
