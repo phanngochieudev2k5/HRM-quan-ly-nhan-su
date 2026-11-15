@@ -55,6 +55,7 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
   const [faceFiles, setFaceFiles] = useState([]);
   const [facePreviews, setFacePreviews] = useState([]);
   const [faceSubmitting, setFaceSubmitting] = useState(false);
+  const [faceErrorMsg, setFaceErrorMsg] = useState(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
@@ -339,6 +340,7 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
 
     try {
       setFaceSubmitting(true);
+      setFaceErrorMsg(null);
       const cleanCode = faceModalTarget.EmployeeCode || (faceModalTarget.CandidateName || 'emp')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -366,8 +368,10 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
         showToast(`Đã lưu ${faceFiles.length || 1} ảnh khuôn mặt & kích hoạt Face ID cho ${faceModalTarget.CandidateName}!`, 'success');
       }
       setFaceModalTarget(null);
+      setFaceErrorMsg(null);
       loadData();
     } catch (err) {
+      setFaceErrorMsg(err.message || 'Lỗi khi lưu dữ liệu Face ID!');
       if (showToast) showToast(err.message || 'Lỗi khi lưu dữ liệu Face ID!', 'error');
     } finally {
       setFaceSubmitting(false);
@@ -1319,6 +1323,13 @@ export default function OnboardingManagement({ showToast, onNavigate }) {
                     </button>
                   )}
                 </div>
+
+                {faceErrorMsg && (
+                  <div style={{ marginTop: '12px', background: '#fee2e2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={16} />
+                    <span>{faceErrorMsg}</span>
+                  </div>
+                )}
               </div>
             </div>
 

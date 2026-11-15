@@ -3,6 +3,7 @@ import sql from 'mssql/msnodesqlv8.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,33 @@ if (!fs.existsSync(facesUploadDir)) {
 if (!fs.existsSync(rootFacesDir)) {
   fs.mkdirSync(rootFacesDir, { recursive: true });
 }
+
+const checkDuplicateFace = async (tempImagePath, excludeCode) => {
+  return new Promise((resolve) => {
+    const pyScript = path.resolve(__dirname, '../Controllers/OpenCv/check_duplicate_face.py');
+    const py = spawn('python', [pyScript, tempImagePath, excludeCode || '']);
+    let stdout = '';
+    let stderr = '';
+    py.stdout.on('data', data => { stdout += data.toString(); });
+    py.stderr.on('data', data => { stderr += data.toString(); });
+    py.on('close', () => {
+      try {
+        const lines = stdout.trim().split('\n').map(l => l.trim()).filter(Boolean);
+        const jsonLine = lines.reverse().find(l => l.startsWith('{') && l.endsWith('}'));
+        if (jsonLine) {
+          resolve(JSON.parse(jsonLine));
+        } else {
+          resolve({ success: true, isDuplicate: false });
+        }
+      } catch {
+        resolve({ success: true, isDuplicate: false });
+      }
+    });
+    py.on('error', () => {
+      resolve({ success: true, isDuplicate: false });
+    });
+  });
+};
 
 export const AttendanceModel = {
   async recordCheckIn({ employeeCode, employeeId, checkinMethod = 'OPENCV_CAMERA', deviceName = 'Kiosk Cổng Chính', snapshotUrl = null, mode = 'AUTO' }) {
@@ -557,6 +585,65 @@ export const AttendanceModel = {
       .replace(/[^a-zA-Z0-9_-]/g, '')
       .toLowerCase();
 
+    const incomingBuffers = [];
+    if (Array.isArray(files) && files.length > 0) {
+      files.forEach(f => {
+        if (f.buffer) incomingBuffers.push(f.buffer);
+      });
+    } else if (imageBuffer) {
+      incomingBuffers.push(imageBuffer);
+    } else if (imageBase64) {
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      incomingBuffers.push(Buffer.from(cleanBase64, 'base64'));
+    }
+
+    for (let i = 0; i < incomingBuffers.length; i++) {
+      const buf = incomingBuffers[i];
+      const tempPath = path.join(facesUploadDir, `temp_validate_${Date.now()}_${i}.jpg`);
+      try {
+        fs.writeFileSync(tempPath, buf);
+        const dupResult = await checkDuplicateFace(tempPath, cleanBaseCode);
+        if (dupResult.noFace) {
+          throw new Error('Không phát hiện khuôn mặt nào trong ảnh tải lên. Vui lòng chọn ảnh chân dung rõ mặt.');
+        }
+        if (dupResult.isDuplicate) {
+          let matchedEmpName = (dupResult.matchedCode || '').toUpperCase();
+          try {
+            const empMatch = await pool.request()
+              .input('Code', sql.VarChar(50), dupResult.matchedCode)
+              .query(`
+                SELECT TOP 1 EmployeeCode, FullName
+                FROM tblEmployee
+                WHERE LOWER(EmployeeCode) = LOWER(@Code)
+                   OR LOWER(EmployeeCode) = LOWER(REPLACE(@Code, 'nv', 'NV'))
+                   OR LOWER(EmployeeCode) = LOWER(REPLACE(@Code, 'emp', 'EMP'))
+              `);
+            if (empMatch.recordset.length > 0) {
+              matchedEmpName = `${empMatch.recordset[0].FullName} (${empMatch.recordset[0].EmployeeCode})`;
+            } else {
+              const onbMatch = await pool.request()
+                .input('Code', sql.NVarChar(100), dupResult.matchedCode)
+                .query(`
+                  SELECT TOP 1 CandidateName as FullName, Username as EmployeeCode
+                  FROM tblOnboarding
+                  WHERE LOWER(Username) = LOWER(@Code)
+                     OR LOWER(CandidateName) LIKE LOWER('%' + @Code + '%')
+                `);
+              if (onbMatch.recordset.length > 0) {
+                matchedEmpName = `${onbMatch.recordset[0].FullName} (${onbMatch.recordset[0].EmployeeCode || dupResult.matchedCode.toUpperCase()})`;
+              }
+            }
+          } catch {}
+
+          throw new Error(`Ảnh này đã thuộc về nhân viên ${matchedEmpName}. Vui lòng kiểm tra lại hồ sơ!`);
+        }
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          try { fs.unlinkSync(tempPath); } catch {}
+        }
+      }
+    }
+
     const savedFiles = [];
 
     if (Array.isArray(files) && files.length > 0) {
@@ -764,5 +851,265 @@ export const AttendanceModel = {
     }
 
     return { hasRequest: false, faceEnrolled: true, facePhotosCount: 1 };
+  },
+
+  async getAllFaceProfiles({ search, departmentId, status } = {}) {
+    const pool = getPool();
+    let query = `
+      SELECT
+        e.EmployeeId,
+        e.EmployeeCode,
+        e.FullName,
+        e.Email,
+        e.Phone,
+        e.AvatarUrl,
+        e.WorkStatus,
+        d.DepartmentId,
+        d.DepartmentName,
+        p.PositionId,
+        p.PositionName,
+        f.FaceId,
+        f.FrontSnapshotUrl,
+        f.LeftSnapshotUrl,
+        f.RightSnapshotUrl,
+        f.ConfidenceScore,
+        f.IsActive as FaceActive,
+        f.RegisteredAt
+      FROM tblEmployee e
+      LEFT JOIN tblDepartment d ON e.DepartmentId = d.DepartmentId
+      LEFT JOIN tblPosition p ON e.PositionId = p.PositionId
+      LEFT JOIN tblFaceData f ON e.EmployeeId = f.EmployeeId
+      WHERE (e.WorkStatus IS NULL OR e.WorkStatus <> N'Đã nghỉ việc')
+    `;
+
+    if (departmentId && departmentId !== 'all') {
+      query += ` AND e.DepartmentId = ${parseInt(departmentId, 10)}`;
+    }
+
+    query += ` ORDER BY e.EmployeeId ASC`;
+
+    const res = await pool.request().query(query);
+    const employees = res.recordset || [];
+
+    const diskFiles = fs.existsSync(facesUploadDir) ? fs.readdirSync(facesUploadDir) : [];
+
+    const enriched = employees.map(emp => {
+      const codeClean = (emp.EmployeeCode || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .toLowerCase();
+
+      const matchedFiles = diskFiles.filter(fn => {
+        const lower = fn.toLowerCase();
+        if (!lower.endsWith('.jpg') && !lower.endsWith('.jpeg') && !lower.endsWith('.png')) return false;
+        const base = path.parse(lower).name;
+        const prefix = base.split('_')[0];
+        return prefix === codeClean;
+      });
+
+      const photos = [];
+      const seen = new Set();
+
+      matchedFiles.forEach(fn => {
+        const url = `/uploads/faces/${fn}`;
+        if (!seen.has(url)) {
+          seen.add(url);
+          photos.push({
+            fileName: fn,
+            url,
+            isPrimary: !fn.includes('_'),
+            angle: !fn.includes('_') ? 'Chính diện' : (fn.includes('_2') ? 'Góc trái' : (fn.includes('_3') ? 'Góc phải' : 'Góc bổ sung'))
+          });
+        }
+      });
+
+      if (photos.length === 0 && emp.FrontSnapshotUrl) {
+        photos.push({
+          fileName: path.basename(emp.FrontSnapshotUrl),
+          url: emp.FrontSnapshotUrl,
+          isPrimary: true,
+          angle: 'Chính diện'
+        });
+        if (emp.LeftSnapshotUrl) {
+          photos.push({
+            fileName: path.basename(emp.LeftSnapshotUrl),
+            url: emp.LeftSnapshotUrl,
+            isPrimary: false,
+            angle: 'Góc trái'
+          });
+        }
+        if (emp.RightSnapshotUrl) {
+          photos.push({
+            fileName: path.basename(emp.RightSnapshotUrl),
+            url: emp.RightSnapshotUrl,
+            isPrimary: false,
+            angle: 'Góc phải'
+          });
+        }
+      }
+
+      photos.sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+
+      const hasFaceData = photos.length > 0 || Boolean(emp.FaceId);
+
+      return {
+        ...emp,
+        hasFaceData,
+        photos,
+        photosCount: photos.length,
+        confidenceScore: emp.ConfidenceScore || (hasFaceData ? 99.5 : null),
+        registeredAt: emp.RegisteredAt || null,
+        faceActive: emp.FaceActive ?? hasFaceData
+      };
+    });
+
+    let filtered = enriched;
+    if (search && search.trim()) {
+      const s = search.trim().toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.FullName || '').toLowerCase().includes(s) ||
+        (e.EmployeeCode || '').toLowerCase().includes(s) ||
+        (e.DepartmentName || '').toLowerCase().includes(s)
+      );
+    }
+
+    if (status === 'ENROLLED') {
+      filtered = filtered.filter(e => e.hasFaceData);
+    } else if (status === 'UNENROLLED') {
+      filtered = filtered.filter(e => !e.hasFaceData);
+    }
+
+    const totalEmployees = enriched.length;
+    const enrolledCount = enriched.filter(e => e.hasFaceData).length;
+    const unenrolledCount = totalEmployees - enrolledCount;
+    const readinessRate = totalEmployees > 0 ? Number(((enrolledCount / totalEmployees) * 100).toFixed(1)) : 0;
+
+    return {
+      employees: filtered,
+      stats: {
+        totalEmployees,
+        enrolledCount,
+        unenrolledCount,
+        readinessRate
+      }
+    };
+  },
+
+  async deleteFaceProfile(employeeId) {
+    const pool = getPool();
+    const empRes = await pool.request()
+      .input('EmployeeId', sql.Int, parseInt(employeeId, 10))
+      .query('SELECT EmployeeId, EmployeeCode, FullName FROM tblEmployee WHERE EmployeeId = @EmployeeId');
+
+    const emp = empRes.recordset[0];
+    if (!emp) {
+      throw new Error(`Không tìm thấy nhân viên với ID ${employeeId}`);
+    }
+
+    const codeClean = (emp.EmployeeCode || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .toLowerCase();
+
+    await pool.request()
+      .input('EmployeeId', sql.Int, parseInt(employeeId, 10))
+      .query('DELETE FROM tblFaceData WHERE EmployeeId = @EmployeeId');
+
+    await pool.request()
+      .input('FullName', sql.NVarChar(100), emp.FullName)
+      .query(`
+        UPDATE tblOnboarding
+        SET FaceEnrolled = 0,
+            FacePhotosCount = 0
+        WHERE CandidateName = @FullName
+           OR LOWER(CandidateName) LIKE LOWER('%' + @FullName + '%')
+      `);
+
+    const cleanFilesFromDir = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      const files = fs.readdirSync(dir);
+      files.forEach(fn => {
+        const lower = fn.toLowerCase();
+        if (!lower.endsWith('.jpg') && !lower.endsWith('.jpeg') && !lower.endsWith('.png')) return;
+        const prefix = path.parse(lower).name.split('_')[0];
+        if (prefix === codeClean) {
+          try {
+            fs.unlinkSync(path.join(dir, fn));
+          } catch {}
+        }
+      });
+    };
+
+    cleanFilesFromDir(facesUploadDir);
+    cleanFilesFromDir(rootFacesDir);
+
+    return {
+      employeeId: parseInt(employeeId, 10),
+      employeeCode: emp.EmployeeCode,
+      fullName: emp.FullName
+    };
+  },
+
+  async deleteFacePhoto(employeeId, photoUrl) {
+    const pool = getPool();
+    const empRes = await pool.request()
+      .input('EmployeeId', sql.Int, parseInt(employeeId, 10))
+      .query('SELECT EmployeeId, EmployeeCode, FullName FROM tblEmployee WHERE EmployeeId = @EmployeeId');
+
+    const emp = empRes.recordset[0];
+    if (!emp) {
+      throw new Error(`Không tìm thấy nhân viên với ID ${employeeId}`);
+    }
+
+    const fileName = path.basename(photoUrl || '');
+    if (!fileName) {
+      throw new Error('Tên file không hợp lệ');
+    }
+
+    const f1 = path.join(facesUploadDir, fileName);
+    const f2 = path.join(rootFacesDir, fileName);
+    if (fs.existsSync(f1)) {
+      try { fs.unlinkSync(f1); } catch {}
+    }
+    if (fs.existsSync(f2)) {
+      try { fs.unlinkSync(f2); } catch {}
+    }
+
+    const remaining = await this.getAllFaceProfiles({ search: emp.EmployeeCode });
+    const empData = remaining.employees.find(e => e.EmployeeId === parseInt(employeeId, 10));
+    const photos = empData?.photos || [];
+
+    if (photos.length === 0) {
+      await pool.request()
+        .input('EmployeeId', sql.Int, parseInt(employeeId, 10))
+        .query('DELETE FROM tblFaceData WHERE EmployeeId = @EmployeeId');
+      await pool.request()
+        .input('FullName', sql.NVarChar(100), emp.FullName)
+        .query(`UPDATE tblOnboarding SET FaceEnrolled = 0, FacePhotosCount = 0 WHERE CandidateName = @FullName`);
+    } else {
+      await pool.request()
+        .input('EmployeeId', sql.Int, parseInt(employeeId, 10))
+        .input('Front', sql.NVarChar(500), photos[0]?.url || null)
+        .input('Left', sql.NVarChar(500), photos[1]?.url || null)
+        .input('Right', sql.NVarChar(500), photos[2]?.url || null)
+        .query(`
+          UPDATE tblFaceData
+          SET FrontSnapshotUrl = @Front,
+              LeftSnapshotUrl = @Left,
+              RightSnapshotUrl = @Right
+          WHERE EmployeeId = @EmployeeId
+        `);
+      await pool.request()
+        .input('FullName', sql.NVarChar(100), emp.FullName)
+        .input('Count', sql.Int, photos.length)
+        .query(`UPDATE tblOnboarding SET FacePhotosCount = @Count WHERE CandidateName = @FullName`);
+    }
+
+    return {
+      employeeId: parseInt(employeeId, 10),
+      remainingCount: photos.length
+    };
   }
 };

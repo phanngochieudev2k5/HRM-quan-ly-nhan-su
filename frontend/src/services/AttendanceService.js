@@ -34,6 +34,23 @@ class AttendanceService {
     return ApiClient.get(`/attendance/my-attendance${query}`);
   }
 
+  static async getAllFaceProfiles({ search, departmentId, status } = {}) {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (departmentId && departmentId !== 'all') params.append('departmentId', departmentId);
+    if (status && status !== 'all') params.append('status', status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return ApiClient.get(`/attendance/faces${query}`);
+  }
+
+  static async deleteFaceProfile(employeeId) {
+    return ApiClient.delete(`/attendance/faces/${employeeId}`);
+  }
+
+  static async deleteFacePhoto(employeeId, photoUrl) {
+    return ApiClient.post(`/attendance/faces/${employeeId}/delete-photo`, { photoUrl });
+  }
+
   static async registerFace(data) {
     return ApiClient.post('/attendance/register-face', data);
   }

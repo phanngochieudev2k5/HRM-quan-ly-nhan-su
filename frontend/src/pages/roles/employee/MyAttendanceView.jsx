@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock, Calendar, CheckCircle2, AlertTriangle, Send,
+  Clock, Calendar, CheckCircle2, AlertTriangle, AlertCircle, Send,
   Plus, X, HelpCircle, Camera, RefreshCw, Upload, Sparkles,
   UserCheck, Award, ListFilter, LayoutGrid
 } from 'lucide-react';
@@ -36,6 +36,7 @@ export default function MyAttendanceView() {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadingFaces, setUploadingFaces] = useState(false);
   const [faceUploadSuccess, setFaceUploadSuccess] = useState(false);
+  const [faceUploadError, setFaceUploadError] = useState(null);
 
   const checkFaceRequest = async () => {
     try {
@@ -71,6 +72,7 @@ export default function MyAttendanceView() {
 
     try {
       setUploadingFaces(true);
+      setFaceUploadError(null);
       const formData = new FormData();
       const code = currentUser.employeeCode || currentUser.EmployeeCode || currentUser.username || currentUser.Username || 'emp';
       formData.append('employeeCode', code);
@@ -83,6 +85,7 @@ export default function MyAttendanceView() {
 
       await AttendanceService.registerFace(formData);
       setFaceUploadSuccess(true);
+      setFaceUploadError(null);
       setFaceRequest(prev => prev ? { ...prev, hasRequest: false, faceEnrolled: true, facePhotosCount: selectedPhotos.length } : null);
       setTimeout(() => {
         setIsFaceUploadOpen(false);
@@ -91,7 +94,7 @@ export default function MyAttendanceView() {
         setPreviewUrls([]);
       }, 2000);
     } catch (err) {
-      alert(err.message || 'Lỗi khi gửi ảnh Face ID!');
+      setFaceUploadError(err.message || 'Lỗi khi gửi ảnh Face ID!');
     } finally {
       setUploadingFaces(false);
     }
@@ -575,6 +578,13 @@ export default function MyAttendanceView() {
                   <div style={{ marginTop: '16px', background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
                     <CheckCircle2 size={18} />
                     <span>Đã gửi và kích hoạt Face ID thành công vào Kiosk!</span>
+                  </div>
+                )}
+
+                {faceUploadError && (
+                  <div style={{ marginTop: '16px', background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
+                    <AlertCircle size={18} />
+                    <span>{faceUploadError}</span>
                   </div>
                 )}
               </div>

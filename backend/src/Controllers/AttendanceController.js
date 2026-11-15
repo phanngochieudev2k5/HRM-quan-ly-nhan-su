@@ -183,7 +183,7 @@ export const AttendanceController = {
       return sendSuccess(res, result, 'Đăng ký dữ liệu khuôn mặt thành công');
     } catch (error) {
       console.error(error);
-      return sendError(res, error.message || 'Lỗi đăng ký dữ liệu khuôn mặt', 500);
+      return sendError(res, error.message || 'Lỗi đăng ký dữ liệu khuôn mặt', 400);
     }
   },
 
@@ -253,6 +253,40 @@ export const AttendanceController = {
       return sendSuccess(res, true, 'Đã giải phóng camera và đóng tiến trình OpenCV');
     } catch (error) {
       return sendError(res, error.message || 'Lỗi đóng tiến trình OpenCV', 500);
+    }
+  },
+
+  async getAllFaceProfiles(req, res) {
+    try {
+      const { search, departmentId, status } = req.query;
+      const data = await AttendanceModel.getAllFaceProfiles({ search, departmentId, status });
+      return sendSuccess(res, data, 'Lấy danh sách hồ sơ khuôn mặt thành công');
+    } catch (error) {
+      console.error(error);
+      return sendError(res, error.message || 'Lỗi lấy danh sách hồ sơ khuôn mặt', 500);
+    }
+  },
+
+  async deleteFaceProfile(req, res) {
+    try {
+      const { employeeId } = req.params;
+      const result = await AttendanceModel.deleteFaceProfile(employeeId);
+      return sendSuccess(res, result, 'Xóa dữ liệu khuôn mặt nhân viên thành công');
+    } catch (error) {
+      console.error(error);
+      return sendError(res, error.message || 'Lỗi xóa dữ liệu khuôn mặt', 500);
+    }
+  },
+
+  async deleteFacePhoto(req, res) {
+    try {
+      const { employeeId } = req.params;
+      const photoUrl = req.body.photoUrl || req.query.photoUrl;
+      const result = await AttendanceModel.deleteFacePhoto(employeeId, photoUrl);
+      return sendSuccess(res, result, 'Xóa ảnh khuôn mặt thành công');
+    } catch (error) {
+      console.error(error);
+      return sendError(res, error.message || 'Lỗi xóa ảnh khuôn mặt', 500);
     }
   }
 };
