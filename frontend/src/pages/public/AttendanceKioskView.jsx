@@ -195,12 +195,25 @@ export default function AttendanceKioskView() {
     try {
       setScanning(true);
 
+      const maxDim = 800;
+      let targetW = video.videoWidth;
+      let targetH = video.videoHeight;
+      if (targetW > maxDim || targetH > maxDim) {
+        if (targetW > targetH) {
+          targetH = Math.round((targetH * maxDim) / targetW);
+          targetW = maxDim;
+        } else {
+          targetW = Math.round((targetW * maxDim) / targetH);
+          targetH = maxDim;
+        }
+      }
+
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = targetW;
+      canvas.height = targetH;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageBase64 = canvas.toDataURL('image/jpeg', 0.88);
+      const imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
       const res = await AttendanceService.recognizeFrame(imageBase64, mode);
 
