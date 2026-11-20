@@ -166,7 +166,18 @@ export default function MyAttendanceView() {
       const isLateOrEarly = lateM > 0 || earlyM > 0 || r.AttendanceCode === 'M' || r.AttendanceCode === 'MUON';
       const isNoCredit = lateM > 10 || earlyM > 10 || (workCredit === 0);
 
-      if (isLateOrEarly) {
+      const isLeave = r.AttendanceCode && (
+        r.AttendanceCode.startsWith('LEAVE') ||
+        ['NP', 'KL', 'OM', 'TS', 'ANNUAL', 'SICK', 'MATERNITY', 'UNPAID'].includes(r.AttendanceCode)
+      );
+
+      if (isLeave) {
+        status = 'LEAVE';
+        label = r.Note || (workCredit > 0 ? 'Nghỉ phép (Có lương)' : 'Nghỉ không lương');
+        checkIn = '-';
+        checkOut = '-';
+        badgeType = workCredit > 0 ? 'info' : 'muted';
+      } else if (isLateOrEarly) {
         status = 'LATE';
         if (lateM > 0 && earlyM > 0) {
           label = `Muộn ${lateM}p, sớm ${earlyM}p${isNoCredit ? ' (0 công)' : ' (1 công)'}`;

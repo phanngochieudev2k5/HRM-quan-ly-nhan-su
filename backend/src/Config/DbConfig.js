@@ -154,6 +154,75 @@ export const connectDb = async () => {
                     BEGIN
                         ALTER TABLE tblOnboarding ADD FacePhotosCount INT DEFAULT 0;
                     END
+
+                    -- Migration cho Phân hệ Nghỉ phép (Leave Management)
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblEmployee') AND name = 'ManagerId')
+                    BEGIN
+                        ALTER TABLE tblEmployee ADD ManagerId INT NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblLeaveType')
+                    BEGIN
+                        CREATE TABLE tblLeaveType (
+                            LeaveTypeId INT IDENTITY(1,1) PRIMARY KEY,
+                            TypeCode VARCHAR(50) NOT NULL UNIQUE,
+                            TypeName NVARCHAR(100) NOT NULL,
+                            IsPaid BIT DEFAULT 1
+                        );
+
+                        INSERT INTO tblLeaveType (TypeCode, TypeName, IsPaid) VALUES
+                        ('ANNUAL', N'Nghỉ phép năm', 1),
+                        ('SICK', N'Nghỉ ốm đau', 0),
+                        ('MATERNITY', N'Nghỉ chế độ thai sản', 0),
+                        ('UNPAID', N'Nghỉ việc riêng không hưởng lương', 0);
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblLeaveRequest')
+                    BEGIN
+                        CREATE TABLE tblLeaveRequest (
+                            LeaveRequestId INT IDENTITY(1,1) PRIMARY KEY,
+                            RequestCode VARCHAR(50) NOT NULL UNIQUE,
+                            EmployeeId INT NOT NULL,
+                            LeaveTypeId INT NOT NULL,
+                            StartDate DATE NOT NULL,
+                            EndDate DATE NOT NULL,
+                            TotalDays DECIMAL(5, 1) NOT NULL,
+                            Reason NVARCHAR(500) NOT NULL,
+                            HandoverToEmployeeId INT NULL,
+                            ApproverEmployeeId INT NULL,
+                            Status NVARCHAR(50) DEFAULT 'Pending',
+                            ResponseNote NVARCHAR(500) NULL,
+                            ApprovedAt DATETIME2 NULL,
+                            CreatedAt DATETIME2 DEFAULT SYSDATETIME(),
+                            UpdatedAt DATETIME2 DEFAULT SYSDATETIME()
+                        );
+                    END
+                    ELSE
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'RequestCode')
+                            ALTER TABLE tblLeaveRequest ADD RequestCode VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'TotalDays')
+                            ALTER TABLE tblLeaveRequest ADD TotalDays DECIMAL(5, 1) DEFAULT 1.0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'Status')
+                            ALTER TABLE tblLeaveRequest ADD Status NVARCHAR(50) DEFAULT 'Pending';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'HandoverToEmployeeId')
+                            ALTER TABLE tblLeaveRequest ADD HandoverToEmployeeId INT NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'ApproverEmployeeId')
+                            ALTER TABLE tblLeaveRequest ADD ApproverEmployeeId INT NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'ResponseNote')
+                            ALTER TABLE tblLeaveRequest ADD ResponseNote NVARCHAR(500) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'ApprovedAt')
+                            ALTER TABLE tblLeaveRequest ADD ApprovedAt DATETIME2 NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'CreatedAt')
+                            ALTER TABLE tblLeaveRequest ADD CreatedAt DATETIME2 DEFAULT SYSDATETIME();
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblLeaveRequest') AND name = 'UpdatedAt')
+                            ALTER TABLE tblLeaveRequest ADD UpdatedAt DATETIME2 DEFAULT SYSDATETIME();
+                    END
+
+                    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblAttendance' AND COLUMN_NAME = 'AttendanceCode' AND CHARACTER_MAXIMUM_LENGTH < 20)
+                    BEGIN
+                        ALTER TABLE tblAttendance ALTER COLUMN AttendanceCode VARCHAR(20) NULL;
+                    END
                 `);
             } catch (migrationErr) {
                 console.warn(
