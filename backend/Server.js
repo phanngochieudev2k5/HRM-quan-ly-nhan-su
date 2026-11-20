@@ -19,6 +19,7 @@ import OnboardingRoutes from './src/Routes/OnboardingRoutes.js';
 import AssetRoutes from './src/Routes/AssetRoutes.js';
 import AttendanceRoutes from './src/Routes/AttendanceRoutes.js';
 import ShiftRoutes from './src/Routes/ShiftRoutes.js';
+import OvertimeRoutes from './src/Routes/OvertimeRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -65,6 +66,7 @@ app.use('/api/onboarding', OnboardingRoutes);
 app.use('/api/assets', AssetRoutes);
 app.use('/api/attendance', AttendanceRoutes);
 app.use('/api/shifts', ShiftRoutes);
+app.use('/api/overtime', OvertimeRoutes);
 
 app.get(
     '/api/departments',
