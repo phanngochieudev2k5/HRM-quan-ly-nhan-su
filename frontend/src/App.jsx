@@ -270,7 +270,7 @@ export default function App() {
 
         <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />
         <Route path="/employee/dashboard" element={<EmployeeDashboard onNavigate={handleNavigate} currentUser={currentUser} />} />
-        <Route path="/employee/profile" element={<MyProfileView user={currentUser} />} />
+        <Route path="/employee/profile" element={<MyProfileView user={currentUser} onUserUpdate={(updated) => setCurrentUser(prev => ({ ...prev, ...updated }))} />} />
         <Route path="/employee/contracts" element={<MyContractsView />} />
         <Route path="/employee/assets" element={<MyAssetsView />} />
         <Route path="/employee/checkin" element={<Navigate to="/employee/attendance" replace />} />
