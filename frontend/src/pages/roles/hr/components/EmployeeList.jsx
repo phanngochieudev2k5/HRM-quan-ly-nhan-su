@@ -60,9 +60,12 @@ export default function EmployeeList({
 
   const handleDelete = (emp, e) => {
     e.stopPropagation();
+    const isFormerEmployee = ['Đã thôi việc', 'Đã nghỉ việc'].includes((emp.WorkStatus || emp.status || '').trim());
+    if (!isFormerEmployee) return;
+
     const name = emp.FullName || emp.name;
     const code = emp.EmployeeCode || emp.id;
-    if (window.confirm(`Xác nhận xóa hồ sơ nhân viên ${name} (${code})?`)) {
+    if (window.confirm(`Xác nhận xóa hồ sơ nhân viên đã thôi việc ${name} (${code})?`)) {
       onDeleteEmployee(emp.EmployeeId || emp.id);
     }
   };
@@ -182,6 +185,7 @@ export default function EmployeeList({
                   const empName = emp.FullName || emp.name || 'Nhân viên';
                   const empCode = emp.EmployeeCode || emp.id || 'NV---';
                   const isFace = !!(emp.FaceRegistered ?? emp.faceRegistered);
+                  const isFormerEmployee = ['Đã thôi việc', 'Đã nghỉ việc'].includes((emp.WorkStatus || emp.status || '').trim());
 
                   return (
                     <tr
@@ -282,7 +286,8 @@ export default function EmployeeList({
                         </button>
                         <button
                           className="ibtn del"
-                          title="Xóa nhân viên"
+                          title={isFormerEmployee ? 'Xóa nhân viên đã thôi việc' : 'Chỉ xóa được nhân viên đã thôi việc'}
+                          disabled={!isFormerEmployee}
                           onClick={(e) => handleDelete(emp, e)}
                         >
                           <Trash2 size={15} />

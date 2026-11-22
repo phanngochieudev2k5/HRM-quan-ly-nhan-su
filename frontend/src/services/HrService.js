@@ -35,6 +35,11 @@ export const HrService = {
     }
   },
 
+  async getUnassignedUsers() {
+    const res = await ApiClient.get('/employees/unassigned-users');
+    return res.data || [];
+  },
+
   async createEmployee(employeeData) {
     try {
       const res = await ApiClient.post('/employees', employeeData);
