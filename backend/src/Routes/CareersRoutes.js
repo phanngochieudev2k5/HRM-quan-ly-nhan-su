@@ -62,11 +62,22 @@ router.post('/apply', async (req, res) => {
       return sendError(res, 'Vui lòng điền đầy đủ Họ tên, Số điện thoại và Vị trí ứng tuyển!', 400);
     }
 
+    const emailNormalized = email ? email.trim().toLowerCase() : null;
+    const phoneNormalized = phone.trim();
+    const existingCandidates = await CandidateModel.getAll({ jobId: parseInt(jobId) });
+    const alreadyApplied = existingCandidates.some(candidate =>
+      (emailNormalized && candidate.Email?.trim().toLowerCase() === emailNormalized) ||
+      candidate.Phone?.trim() === phoneNormalized
+    );
+    if (alreadyApplied) {
+      return sendError(res, 'Bạn đã nộp hồ sơ cho vị trí này trước đó.', 409);
+    }
+
     const candidate = await CandidateModel.create({
       JobId: parseInt(jobId),
       FullName: fullName.trim(),
-      Email: email ? email.trim() : null,
-      Phone: phone.trim(),
+      Email: emailNormalized,
+      Phone: phoneNormalized,
       CvUrl: cvUrl ? cvUrl.trim() : null,
       Stage: 'Applied',
       AppliedDate: new Date().toISOString().slice(0, 10),
@@ -75,7 +86,15 @@ router.post('/apply', async (req, res) => {
 
     return sendSuccess(res, candidate, 'Nộp hồ sơ ứng tuyển thành công! Ban Nhân sự sẽ sớm liên hệ với bạn.', 201);
   } catch (error) {
-    return sendError(res, error.message, 500, error);
+    const duplicateKey =
+      error?.number === 2627 ||
+      error?.number === 2601 ||
+      (error?.message || '').includes('UNIQUE KEY constraint') ||
+      (error?.message || '').includes('duplicate key');
+    if (duplicateKey) {
+      return sendError(res, 'Hồ sơ ứng tuyển đã tồn tại hoặc mã ứng viên bị trùng. Vui lòng thử lại.', 409, error);
+    }
+    return sendError(res, 'Không thể gửi hồ sơ ứng tuyển. Vui lòng thử lại sau.', 500, error);
   }
 });
 

@@ -147,13 +147,83 @@ export class CandidateModel {
 
     let candidateCode = (CandidateCode || '').trim();
     if (!candidateCode) {
-      const countRes = await pool
-        .request()
-        .query('SELECT COUNT(*) as total FROM tblCandidate');
-      const nextIdx = (countRes.recordset[0]?.total || 0) + 1;
-      candidateCode = `UV${String(nextIdx).padStart(3, '0')}`;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const codeRes = await pool.request().query(`
+          SELECT COALESCE(MAX(
+            TRY_CONVERT(INT, SUBSTRING(CandidateCode, 3, LEN(CandidateCode) - 2))
+          ), 0) AS maxCode
+          FROM tblCandidate
+          WHERE CandidateCode LIKE 'UV%'
+        `);
+        const nextIdx = (codeRes.recordset[0]?.maxCode || 0) + 1;
+        candidateCode = `UV${String(nextIdx).padStart(3, '0')}`;
+
+        try {
+          return await CandidateModel.insert(pool, {
+            candidateCode,
+            JobId,
+            FullName,
+            Phone,
+            Email,
+            CvUrl,
+            Stage,
+            AppliedDate,
+            InterviewerEmployeeId,
+            RatingScore,
+            Note,
+            InterviewDateTime,
+            InterviewLocation,
+            OfferedSalary,
+            StartDate
+          });
+        } catch (error) {
+          const duplicateCode =
+            error?.number === 2627 ||
+            error?.number === 2601 ||
+            (error?.message || '').includes('UNIQUE KEY constraint') ||
+            (error?.message || '').includes('duplicate key');
+          if (!duplicateCode) throw error;
+        }
+      }
+      throw new Error('Không thể tạo mã ứng viên duy nhất. Vui lòng thử lại.');
     }
 
+    return await CandidateModel.insert(pool, {
+      candidateCode,
+      JobId,
+      FullName,
+      Phone,
+      Email,
+      CvUrl,
+      Stage,
+      AppliedDate,
+      InterviewerEmployeeId,
+      RatingScore,
+      Note,
+      InterviewDateTime,
+      InterviewLocation,
+      OfferedSalary,
+      StartDate
+    });
+  }
+
+  static async insert(pool, {
+    candidateCode,
+    JobId,
+    FullName,
+    Phone,
+    Email,
+    CvUrl,
+    Stage = 'Applied',
+    AppliedDate,
+    InterviewerEmployeeId,
+    RatingScore,
+    Note,
+    InterviewDateTime,
+    InterviewLocation,
+    OfferedSalary,
+    StartDate
+  }) {
     const request = pool.request();
     request.input('CandidateCode', sql.VarChar(20), candidateCode);
     request.input('JobId', sql.Int, parseInt(JobId));
