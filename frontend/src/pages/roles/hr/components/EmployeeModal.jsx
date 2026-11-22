@@ -31,8 +31,10 @@ export default function EmployeeModal({ isOpen, onClose, onSave, employee = null
       HrService.getUnassignedUsers()
         .then(users => {
           setUnassignedUsers(users || []);
+        }).catch(err => {
+          setUnassignedUsers([]);
+          setErrorMsg(err.message || 'Không thể tải danh sách tài khoản đang chờ tiếp nhận!');
         })
-        .catch(() => setUnassignedUsers([]))
         .finally(() => setLoadingUnassigned(false));
     }
   }, [isOpen, isEdit]);

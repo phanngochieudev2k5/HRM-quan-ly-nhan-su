@@ -17,6 +17,7 @@ export default function RecruitmentJobs({
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [updatingStatusJobId, setUpdatingStatusJobId] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
@@ -47,15 +48,26 @@ export default function RecruitmentJobs({
   const totalTargetQuantity = jobs.reduce((sum, j) => sum + (j.TargetQuantity || 0), 0);
   const totalAppliedCount = jobs.reduce((sum, j) => sum + (j.AppliedCount || 0), 0);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Closed':
-      case 'Rejected':
-        return <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>Đã đóng (Đủ chỉ tiêu)</span>;
-      case 'Approved':
-      default:
-        return <span className="badge b-green">Đang mở tuyển</span>;
-    }
+  const getStatusBadge = (job) => {
+    const isClosed = job.Status === 'Closed' || job.Status === 'Rejected';
+    return (
+      <button
+        type="button"
+        className={`badge ${isClosed ? '' : 'b-green'}`}
+        style={{
+          border: 0,
+          cursor: updatingStatusJobId === job.JobId ? 'wait' : 'pointer',
+          opacity: updatingStatusJobId === job.JobId ? 0.6 : 1
+        }}
+        title={`Nhấn để ${isClosed ? 'mở tuyển' : 'đóng tuyển'}`}
+        aria-label={`${isClosed ? 'Đã đóng' : 'Đang mở tuyển'}. Nhấn để ${isClosed ? 'mở tuyển' : 'đóng tuyển'}`}
+        aria-pressed={!isClosed}
+        disabled={updatingStatusJobId === job.JobId}
+        onClick={(e) => handleToggleJobStatus(job, e)}
+      >
+        {isClosed ? 'Đã đóng (Đủ chỉ tiêu)' : 'Đang mở tuyển'}
+      </button>
+    );
   };
 
   const handleOpenCreate = () => {
@@ -82,6 +94,33 @@ export default function RecruitmentJobs({
     } catch (err) {
       if (showToast) showToast(err.message || 'Lỗi khi lưu vị trí tuyển dụng!', 'error');
       throw err;
+    }
+  };
+
+  const handleToggleJobStatus = async (job, e) => {
+    e.stopPropagation();
+    const nextStatus = job.Status === 'Closed' || job.Status === 'Rejected'
+      ? 'Approved'
+      : 'Closed';
+
+    try {
+      setUpdatingStatusJobId(job.JobId);
+      await HrService.updateRecruitmentJob(job.JobId, { Status: nextStatus });
+      setJobs(currentJobs => currentJobs.map(currentJob =>
+        currentJob.JobId === job.JobId
+          ? { ...currentJob, Status: nextStatus }
+          : currentJob
+      ));
+      if (showToast) {
+        showToast(
+          nextStatus === 'Approved' ? 'Đã mở tuyển vị trí này!' : 'Đã đóng vị trí tuyển dụng!',
+          'success'
+        );
+      }
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Lỗi khi cập nhật trạng thái tuyển dụng!', 'error');
+    } finally {
+      setUpdatingStatusJobId(null);
     }
   };
 
@@ -305,7 +344,7 @@ export default function RecruitmentJobs({
                         <span>{job.Deadline || 'Không giới hạn'}</span>
                       </div>
                     </td>
-                    <td>{getStatusBadge(job.Status)}</td>
+                    <td>{getStatusBadge(job)}</td>
                     <td className="act" onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
                         <button

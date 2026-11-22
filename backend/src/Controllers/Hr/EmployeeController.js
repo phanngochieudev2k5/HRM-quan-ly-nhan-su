@@ -460,21 +460,32 @@ export class EmployeeController {
         whereClause = 'EmployeeCode = @code';
       }
 
-      const existing = await checkReq.query(`SELECT EmployeeId, EmployeeCode, FullName FROM tblEmployee WHERE ${whereClause}`);
+      const existing = await checkReq.query(`SELECT EmployeeId, EmployeeCode, FullName, WorkStatus FROM tblEmployee WHERE ${whereClause}`);
       if (!existing.recordset || existing.recordset.length === 0) {
         return sendError(res, 'Không tìm thấy nhân viên cần xóa!', 404);
       }
 
       const targetEmp = existing.recordset[0];
+      if (!['Đã thôi việc', 'Đã nghỉ việc'].includes((targetEmp.WorkStatus || '').trim())) {
+        return sendError(res, 'Chỉ được xóa nhân viên đã thôi việc!', 409);
+      }
       const targetId = targetEmp.EmployeeId;
 
-      
-      const delReq = pool.request();
-      delReq.input('empId', sql.Int, targetId);
-      
-      await delReq.query(`DELETE FROM tblContract WHERE EmployeeId = @empId`);
-      
-      await delReq.query(`DELETE FROM tblEmployee WHERE EmployeeId = @empId`);
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+      try {
+        const delReq = new sql.Request(transaction);
+        delReq.input('empId', sql.Int, targetId);
+        await delReq.query(`
+          DELETE FROM tblCareerHistory WHERE EmployeeId = @empId;
+          DELETE FROM tblContract WHERE EmployeeId = @empId;
+          DELETE FROM tblEmployee WHERE EmployeeId = @empId;
+        `);
+        await transaction.commit();
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
 
       return sendSuccess(res, { EmployeeId: targetId, EmployeeCode: targetEmp.EmployeeCode }, `Xóa nhân sự ${targetEmp.FullName} (${targetEmp.EmployeeCode}) thành công!`);
     } catch (error) {
