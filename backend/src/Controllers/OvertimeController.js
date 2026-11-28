@@ -81,6 +81,7 @@ export class OvertimeController {
   static async createRequest(req, res) {
     try {
       const userId = req.user.userId;
+      const userEmpId = req.user.employeeId;
       const { overtimeDate, startTime, endTime, totalHours, overtimeRateType, reason } = req.body;
 
       if (!overtimeDate || !startTime || !endTime || !reason) {
@@ -88,15 +89,29 @@ export class OvertimeController {
       }
 
       const pool = await connectDb();
-      const empRes = await pool.request()
-        .input('userId', sql.Int, userId)
-        .query('SELECT EmployeeId, ManagerId, DepartmentId FROM tblEmployee WHERE UserId = @userId');
+      let emp = null;
 
-      if (!empRes.recordset || empRes.recordset.length === 0) {
-        return sendError(res, 'Tài khoản chưa được liên kết với hồ sơ nhân sự!', 400);
+      if (userEmpId) {
+        const empRes1 = await pool.request()
+          .input('empId', sql.Int, userEmpId)
+          .query('SELECT EmployeeId, ManagerId, DepartmentId FROM tblEmployee WHERE EmployeeId = @empId');
+        if (empRes1.recordset && empRes1.recordset.length > 0) {
+          emp = empRes1.recordset[0];
+        }
       }
 
-      const emp = empRes.recordset[0];
+      if (!emp) {
+        const empRes2 = await pool.request()
+          .input('userId', sql.Int, userId)
+          .query('SELECT EmployeeId, ManagerId, DepartmentId FROM tblEmployee WHERE UserId = @userId');
+        if (empRes2.recordset && empRes2.recordset.length > 0) {
+          emp = empRes2.recordset[0];
+        }
+      }
+
+      if (!emp) {
+        return sendError(res, 'Tài khoản chưa được liên kết với hồ sơ nhân sự!', 400);
+      }
       let approverId = emp.ManagerId;
 
       if (!approverId && emp.DepartmentId) {
@@ -206,20 +221,22 @@ export class OvertimeController {
       const userRole = req.user.role;
       const pool = await connectDb();
 
-      let managerEmployeeId = null;
-      let managerDepartmentId = null;
+      let managerEmployeeId = req.user.employeeId || null;
+      let managerDepartmentId = req.user.departmentId || null;
 
-      const mgrQuery = await pool.request()
-        .input('userId', sql.Int, userId)
-        .query(`
-          SELECT e.EmployeeId, e.DepartmentId 
-          FROM tblEmployee e 
-          WHERE e.UserId = @userId
-        `);
+      if (!managerEmployeeId || !managerDepartmentId) {
+        const mgrQuery = await pool.request()
+          .input('userId', sql.Int, userId)
+          .query(`
+            SELECT e.EmployeeId, e.DepartmentId 
+            FROM tblEmployee e 
+            WHERE e.UserId = @userId
+          `);
 
-      if (mgrQuery.recordset.length > 0) {
-        managerEmployeeId = mgrQuery.recordset[0].EmployeeId;
-        managerDepartmentId = mgrQuery.recordset[0].DepartmentId;
+        if (mgrQuery.recordset.length > 0) {
+          if (!managerEmployeeId) managerEmployeeId = mgrQuery.recordset[0].EmployeeId;
+          if (!managerDepartmentId) managerDepartmentId = mgrQuery.recordset[0].DepartmentId;
+        }
       }
 
       const search = (req.query.search || '').trim();
