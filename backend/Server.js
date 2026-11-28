@@ -20,6 +20,8 @@ import AssetRoutes from './src/Routes/AssetRoutes.js';
 import AttendanceRoutes from './src/Routes/AttendanceRoutes.js';
 import ShiftRoutes from './src/Routes/ShiftRoutes.js';
 import LeaveRoutes from './src/Routes/LeaveRoutes.js';
+import OvertimeRoutes from './src/Routes/OvertimeRoutes.js';
+import PayrollRoutes from './src/Routes/PayrollRoutes.js';
 import { DepartmentController } from './src/Controllers/Hr/DepartmentController.js';
 import { verifyToken } from './src/Middlewares/AuthMiddleware.js';
 import { requireRole } from './src/Middlewares/RoleMiddleware.js';
@@ -67,6 +69,8 @@ app.use('/api/assets', AssetRoutes);
 app.use('/api/attendance', AttendanceRoutes);
 app.use('/api/shifts', ShiftRoutes);
 app.use('/api/leaves', LeaveRoutes);
+app.use('/api/overtime', OvertimeRoutes);
+app.use('/api/payroll', PayrollRoutes);
 
 app.get(
     '/api/departments',
@@ -99,6 +103,9 @@ const startServer = async () => {
             );
             console.log(
                 `📡 API Candidates:      GET/POST http://localhost:${PORT}/api/candidates`,
+            );
+            console.log(
+                `📡 API Overtime:        GET/POST http://localhost:${PORT}/api/overtime`,
             );
         });
     } catch (error) {

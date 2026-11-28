@@ -4,7 +4,7 @@ dotenv.config();
 
 const connectionString =
     process.env.DB_CONNECTION_STRING ||
-    'Driver={ODBC Driver 17 for SQL Server};Server=CODER\\SQLEXPRESS01;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
+    'Driver={ODBC Driver 17 for SQL Server};Server=.\\SQLEXPRESS;Database=HRM_Enterprise_DB;Trusted_Connection=yes;TrustServerCertificate=yes;';
 
 let pool = null;
 
@@ -222,6 +222,46 @@ export const connectDb = async () => {
                     IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tblAttendance' AND COLUMN_NAME = 'AttendanceCode' AND CHARACTER_MAXIMUM_LENGTH < 20)
                     BEGIN
                         ALTER TABLE tblAttendance ALTER COLUMN AttendanceCode VARCHAR(20) NULL;
+                    END
+
+                    -- Migration cho Phân hệ Tăng ca / Làm thêm giờ (Overtime Management)
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblOvertimeRequest')
+                    BEGIN
+                        CREATE TABLE tblOvertimeRequest (
+                            OvertimeRequestId INT IDENTITY(1,1) PRIMARY KEY,
+                            RequestCode VARCHAR(20) NOT NULL UNIQUE,
+                            EmployeeId INT NOT NULL,
+                            OvertimeDate DATE NOT NULL,
+                            StartTime TIME(0) NOT NULL,
+                            EndTime TIME(0) NOT NULL,
+                            TotalHours DECIMAL(4, 2) NOT NULL,
+                            OvertimeRateType NVARCHAR(50) DEFAULT N'Ngày thường (150%)',
+                            Reason NVARCHAR(500) NOT NULL,
+                            ApproverEmployeeId INT NULL,
+                            Status NVARCHAR(50) DEFAULT 'PENDING',
+                            ManagerComment NVARCHAR(255) NULL,
+                            CreatedAt DATETIME2 DEFAULT SYSDATETIME(),
+                            UpdatedAt DATETIME2 DEFAULT SYSDATETIME()
+                        );
+                    END
+                    ELSE
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'RequestCode')
+                            ALTER TABLE tblOvertimeRequest ADD RequestCode VARCHAR(20) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'TotalHours')
+                            ALTER TABLE tblOvertimeRequest ADD TotalHours DECIMAL(4, 2) DEFAULT 0.0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'OvertimeRateType')
+                            ALTER TABLE tblOvertimeRequest ADD OvertimeRateType NVARCHAR(50) DEFAULT N'Ngày thường (150%)';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'Status')
+                            ALTER TABLE tblOvertimeRequest ADD Status NVARCHAR(50) DEFAULT 'PENDING';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'ApproverEmployeeId')
+                            ALTER TABLE tblOvertimeRequest ADD ApproverEmployeeId INT NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'ManagerComment')
+                            ALTER TABLE tblOvertimeRequest ADD ManagerComment NVARCHAR(255) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'CreatedAt')
+                            ALTER TABLE tblOvertimeRequest ADD CreatedAt DATETIME2 DEFAULT SYSDATETIME();
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tblOvertimeRequest') AND name = 'UpdatedAt')
+                            ALTER TABLE tblOvertimeRequest ADD UpdatedAt DATETIME2 DEFAULT SYSDATETIME();
                     END
                 `);
             } catch (migrationErr) {

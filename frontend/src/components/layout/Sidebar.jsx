@@ -45,8 +45,8 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
         return [
           { id: 'manager-dashboard', label: 'Tổng quan nhóm', icon: LayoutDashboard },
           { id: 'manager-team', label: 'Thành viên trong nhóm', icon: Users },
-          { id: 'manager-leaves', label: 'Phê duyệt đơn nghỉ', icon: CalendarDays, badge: '1 chờ' },
-          { id: 'manager-overtime', label: 'Phê duyệt tăng ca', icon: Timer, badge: '1 chờ' },
+          { id: 'manager-leaves', label: 'Phê duyệt đơn nghỉ', icon: CalendarDays },
+          { id: 'manager-overtime', label: 'Phê duyệt tăng ca', icon: Timer },
           { id: 'manager-performance', label: 'Đánh giá KPI nhóm', icon: Award },
           { id: 'manager-payslip', label: 'Phiếu lương cá nhân', icon: DollarSign }
         ];
@@ -69,8 +69,7 @@ export default function Sidebar({ currentRole, activeModule, activeSubModule, on
           { id: 'finance-dashboard', label: 'Tổng quan quỹ lương', icon: LayoutDashboard },
           { id: 'finance-calc', label: 'Bảng thanh toán lương', icon: DollarSign, badge: 'T04' },
           { id: 'finance-components', label: 'Gross ⇄ Net & Phụ cấp', icon: Settings },
-          { id: 'finance-reports', label: 'Báo cáo thuế & Ngân hàng', icon: BarChart3 },
-          { id: 'finance-payslip', label: 'Phiếu lương cá nhân', icon: DollarSign }
+          { id: 'finance-reports', label: 'Báo cáo thuế & Ngân hàng', icon: BarChart3 }
         ];
 
       case 'HR':

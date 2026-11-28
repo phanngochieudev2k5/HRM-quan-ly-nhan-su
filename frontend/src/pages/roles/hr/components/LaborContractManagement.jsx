@@ -28,13 +28,6 @@ export default function LaborContractManagement({
 
   
   const [activeTab, setActiveTab] = useState('list');
-
-  
-  
-  
-  
-  
-  
   
   const [selectedKpiFilter, setSelectedKpiFilter] = useState('ACTIVE_DEFAULT');
 
@@ -56,12 +49,11 @@ export default function LaborContractManagement({
     setSelectedActionContract(null);
   };
 
-  
   const [historyEmpId, setHistoryEmpId] = useState('');
   const [employeeHistoryData, setEmployeeHistoryData] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); 
   const [currentContract, setCurrentContract] = useState({
@@ -364,7 +356,8 @@ export default function LaborContractManagement({
   
   const handleOpenHistoryForEmp = (empId) => {
     setHistoryEmpId(String(empId));
-    setActiveTab('history');
+    setIsHistoryModalOpen(true);
+    loadEmployeeHistory(empId);
   };
 
   
@@ -1429,6 +1422,233 @@ export default function LaborContractManagement({
           </div>
         </div>
       )}
+
+      {/* MODAL 5: TRA CỨU TIẾN TRÌNH LỊCH SỬ HỢP ĐỒNG LAO ĐỘNG */}
+      {isHistoryModalOpen && (
+        <div className="lc-modal-overlay" onClick={() => setIsHistoryModalOpen(false)}>
+          <div
+            className="lc-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '860px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+          >
+            <div className="lc-modal-header" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <h2>
+                <History size={18} color="#0f766e" />
+                <span>Tiến trình & Lịch sử Hợp đồng Lao động</span>
+              </h2>
+              <button
+                type="button"
+                className="lc-modal-close-btn"
+                onClick={() => setIsHistoryModalOpen(false)}
+                title="Đóng"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="lc-modal-body" style={{ overflowY: 'auto', padding: '20px 24px' }}>
+              {loadingHistory ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: '#64748b' }}>
+                  <RefreshCw className="spin" size={28} style={{ marginBottom: '12px', color: '#0f766e' }} />
+                  <p style={{ fontSize: '14px', fontWeight: 500 }}>Đang tải tiến trình lịch sử hợp đồng...</p>
+                </div>
+              ) : employeeHistoryData?.employee ? (
+                <div className="lc-history-wrapper" style={{ border: 'none', padding: 0 }}>
+                  {/* Thẻ thông tin nhân sự */}
+                  <div className="lc-history-employee-header">
+                    <div className="lc-history-emp-info">
+                      {employeeHistoryData.employee.AvatarUrl ? (
+                        <img
+                          src={employeeHistoryData.employee.AvatarUrl}
+                          alt={employeeHistoryData.employee.FullName}
+                          className="lc-history-avatar"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="lc-history-avatar-placeholder">
+                          {(employeeHistoryData.employee.FullName || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <h3 style={{ margin: 0, fontSize: '17px', color: '#0f172a', fontWeight: 700 }}>
+                            {employeeHistoryData.employee.FullName}
+                          </h3>
+                          <span className="badge b-blue" style={{ fontSize: '11.5px', fontWeight: 600 }}>
+                            {employeeHistoryData.employee.EmployeeCode}
+                          </span>
+                          <span
+                            className={`badge ${employeeHistoryData.employee.WorkStatus === 'Đang làm việc' ? 'b-green' : 'b-gray'}`}
+                            style={{ fontSize: '11px' }}
+                          >
+                            {employeeHistoryData.employee.WorkStatus || 'Đang làm việc'}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            marginTop: '6px',
+                            fontSize: '12.5px',
+                            color: '#64748b',
+                            flexWrap: 'wrap'
+                          }}
+                        >
+                          <span>
+                            <Building size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                            Phòng ban: <strong>{employeeHistoryData.employee.DepartmentName || 'Chưa phân bổ'}</strong>
+                          </span>
+                          <span>
+                            <Briefcase size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                            Vị trí: <strong>{employeeHistoryData.employee.PositionName || 'Nhân viên'}</strong>
+                          </span>
+                          {employeeHistoryData.employee.JoinDate && (
+                            <span>
+                              <Calendar size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                              Ngày vào: <strong>{employeeHistoryData.employee.JoinDate}</strong>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="badge b-p" style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '16px' }}>
+                        Tổng số hợp đồng: <strong>{employeeHistoryData.totalContracts || employeeHistoryData.history?.length || 0}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tiến trình Timeline */}
+                  {(!employeeHistoryData.history || employeeHistoryData.history.length === 0) ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                      <AlertCircle size={32} style={{ marginBottom: '8px', opacity: 0.7 }} />
+                      <p>Chưa có dữ liệu tiến trình hợp đồng nào cho nhân sự này.</p>
+                    </div>
+                  ) : (
+                    <div className="lc-timeline">
+                      {employeeHistoryData.history.map((c, idx) => (
+                        <div key={c.ContractId || idx} className="lc-timeline-item">
+                          <div
+                            className={`lc-timeline-dot ${c.Status === 'Hiệu lực' ? 'active' : (c.Status === 'Hết hạn' || c.Status === 'Đã chấm dứt' ? 'expired' : '')}`}
+                          />
+                          <div className="lc-timeline-card">
+                            <div className="lc-timeline-card-header">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                <span className="lc-stage-badge">
+                                  {c.stageLabel || `Giai đoạn ${idx + 1}`}
+                                </span>
+                                <span style={{ fontWeight: 700, color: '#0f766e', fontSize: '14.5px' }}>
+                                  {c.ContractNumber}
+                                </span>
+                                <span style={{ fontSize: '13px', color: '#475569' }}>
+                                  ({c.ContractType})
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {renderStatusBadge(c)}
+                              </div>
+                            </div>
+
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                gap: '12px',
+                                marginTop: '6px',
+                                fontSize: '13px'
+                              }}
+                            >
+                              <div>
+                                <span style={{ color: '#64748b' }}>Ngày bắt đầu: </span>
+                                <strong>{c.StartDate || '---'}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: '#64748b' }}>Ngày kết thúc: </span>
+                                <strong>{c.EndDate || 'Không xác định'}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: '#64748b' }}>Ngày ký: </span>
+                                <strong>{c.SignDate || '---'}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: '#64748b' }}>Mức lương: </span>
+                                <strong style={{ color: '#0f766e' }}>{formatVND(c.AgreedSalary)}</strong>
+                              </div>
+                            </div>
+
+                            {c.TerminationReason && (
+                              <div
+                                style={{
+                                  background: '#fef2f2',
+                                  border: '1px solid #fee2e2',
+                                  borderRadius: '6px',
+                                  padding: '8px 12px',
+                                  fontSize: '12.5px',
+                                  color: '#991b1b',
+                                  marginTop: '6px'
+                                }}
+                              >
+                                <strong>Lý do chấm dứt:</strong> {c.TerminationReason} {c.TerminationDate ? `(Ngày kết thúc: ${c.TerminationDate})` : ''}
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                              <button
+                                type="button"
+                                className="btn"
+                                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                onClick={() => {
+                                  setIsHistoryModalOpen(false);
+                                  handleOpenDetailModal(c);
+                                }}
+                              >
+                                <Eye size={13} />
+                                <span>Xem chi tiết hợp đồng</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                  <AlertCircle size={32} style={{ marginBottom: '8px', opacity: 0.7 }} />
+                  <p>Không tìm thấy thông tin tiến trình hợp đồng của nhân viên này.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="lc-modal-footer" style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setIsHistoryModalOpen(false)}
+              >
+                Đóng
+              </button>
+              {employeeHistoryData?.employee && (
+                <button
+                  type="button"
+                  className="btn pri"
+                  onClick={() => {
+                    const empId = employeeHistoryData.employee.EmployeeId;
+                    setIsHistoryModalOpen(false);
+                    handleOpenCreateModal(String(empId));
+                  }}
+                >
+                  <Plus size={15} />
+                  <span>Ký tiếp / Tạo HĐ mới cho nhân sự này</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isDetailModalOpen && selectedContractDetail && (
         <div className="lc-modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
           <div className="lc-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '820px', maxHeight: '92vh' }}>
@@ -1614,6 +1834,20 @@ export default function LaborContractManagement({
             </div>
 
             <div className="lc-modal-footer">
+              <button
+                type="button"
+                className="btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => {
+                  const empId = selectedContractDetail.EmployeeId;
+                  setIsDetailModalOpen(false);
+                  handleOpenHistoryForEmp(empId);
+                }}
+                title="Xem tiến trình tất cả hợp đồng của nhân sự này"
+              >
+                <History size={14} color="#0f766e" />
+                <span>Xem lịch sử HĐ</span>
+              </button>
               {selectedContractDetail.Status !== 'Đã chấm dứt' && (
                 <button
                   type="button"
